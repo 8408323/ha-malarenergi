@@ -144,3 +144,7 @@ h2 { margin-bottom: 12px; }
 td, th { white-space: nowrap; }
 .page { container-type: inline-size; }
 @container (max-width: 760px) { .wide { display: none; } }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; color: var(--me-muted); font-size: 13px; }
+.pager label { display: inline-flex; gap: 8px; align-items: center; }
+.pager select { background: var(--me-bg); color: var(--me-text); border: 1px solid var(--me-line); border-radius: 8px; padding: 4px 8px; font: inherit; }
+.pages { display: inline-flex; gap: 10px; align-items: center; }

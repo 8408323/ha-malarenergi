@@ -22,6 +22,7 @@ const SV = {
   daily_info: "Mälarenergis mätvärden per dag. Staplar = kWh, linje = kostnad respektive ersättning i kr.",
   inv_info: "Förbrukning och produktion faktureras separat. Fasta avgifter, effektavgift och övriga poster visas per faktura.",
   fixed: "Fasta", power_fee: "Effekt", other: "Övrigt", downloading: "Hämtar…", grid: "nät", energy: "el",
+  per_page: "Per sida", of: "av", prev: "Föregående", next: "Nästa", all: "Alla",
   han_OPEN: "öppen", han_CLOSED: "stängd", han_PENDINGOPEN: "öppnas", han_PENDINGCLOSE: "stängs",
 };
 const EN: typeof SV = {
@@ -34,9 +35,11 @@ const EN: typeof SV = {
   daily_info: "Mälarenergi's meter values per day. Bars = kWh, lines = cost and compensation in SEK.",
   inv_info: "Consumption and production are invoiced separately. Fixed fees, power fee and other items are shown per invoice.",
   fixed: "Fixed", power_fee: "Power", other: "Other", downloading: "Fetching…", grid: "grid", energy: "energy",
+  per_page: "Per page", of: "of", prev: "Previous", next: "Next", all: "All",
   han_OPEN: "open", han_CLOSED: "closed", han_PENDINGOPEN: "opening", han_PENDINGCLOSE: "closing",
 };
 
+const auto = (v: number | null | undefined) => (v != null && Math.abs(v) < 10 ? 1 : 0);
 const fmt = (v: number | null | undefined, d = 0, u = "") =>
   v == null || Number.isNaN(v) ? "–" : `${v.toLocaleString("sv-SE", { minimumFractionDigits: d, maximumFractionDigits: d })}${u ? " " + u : ""}`;
 const localDay = (iso: string) => new Date(iso).toLocaleDateString("sv-SE");
@@ -68,6 +71,8 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
   const [d, setD] = useState<Data | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [perPage, setPerPage] = useState<number>(() => Number(localStorage.getItem("me_per_page")) || 12);
+  const [page, setPage] = useState(0);
   const stamp = Object.values(hass.states as Record<string, any>)
     .find((s) => s.entity_id.startsWith("sensor.") && s.attributes?.invoices)?.last_updated;
 
@@ -97,6 +102,7 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
   const han = Object.values(d?.han ?? {})[0];
 
   const download = async (id: string) => {
+    if (busy) return;
     setBusy(id);
     try {
       const r = await hass.callService("malarenergi", "download_invoice", { invoice_id: id }, undefined, false, true);
@@ -118,11 +124,11 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
       {!d ? <div className="card">{err ? t.none : t.loading}</div> : (
         <>
           <div className="kpis">
-            <Kpi label={`${t.consumption} · ${t.month}`} value={fmt(sum("cons"), 0, "kWh")} sub={`${t.cost} ${fmt(sum("cost"), 0, "kr")}`} />
-            <Kpi label={`${t.production} · ${t.month}`} value={fmt(sum("prod"), 0, "kWh")} sub={`${t.compensation} ${fmt(sum("comp"), 0, "kr")}`} />
-            <Kpi label={`${t.net} · ${t.month}`} info={t.net_info} value={fmt(sum("cost") - sum("comp"), 0, "kr")}
+            <Kpi label={`${t.consumption} · ${t.month}`} value={fmt(sum("cons"), auto(sum("cons")), "kWh")} sub={`${t.cost} ${fmt(sum("cost"), auto(sum("cost")), "kr")}`} />
+            <Kpi label={`${t.production} · ${t.month}`} value={fmt(sum("prod"), auto(sum("prod")), "kWh")} sub={`${t.compensation} ${fmt(sum("comp"), auto(sum("comp")), "kr")}`} />
+            <Kpi label={`${t.net} · ${t.month}`} info={t.net_info} value={fmt(sum("cost") - sum("comp"), auto(sum("cost") - sum("comp")), "kr")}
               tone={sum("cost") - sum("comp") <= 0 ? "pos" : "neg"} sub={`${t.energy} ${fmt(costEl, 0)} · ${t.grid} ${fmt(costGrid, 0)}`} />
-            <Kpi label={t.peak} info={t.peak_info} value={fmt(peak?.peakPowerConsumption, 1, "kW")}
+            <Kpi label={t.peak} info={t.peak_info} value={fmt(peak?.peakPowerConsumption, (peak?.peakPowerConsumption ?? 1) < 1 ? 2 : 1, "kW")}
               sub={peak?.dateTime ? new Date(peak.dateTime).toLocaleString("sv-SE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""} />
           </div>
 
@@ -153,7 +159,7 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
                   <th className="r wide">{t.fixed}</th><th className="r wide">{t.power_fee}</th><th className="r wide">{t.other}</th>
                   <th>{t.due}</th><th>{t.status}</th><th /></tr></thead>
                 <tbody>
-                  {(d.invoices ?? []).slice(0, 24).map((i) => (
+                  {(d.invoices ?? []).slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => (
                     <tr key={i.invoice_id}>
                       <td>{monthName(i.period_start.slice(0, 7), lang)}</td>
                       <td><span className={`dot ${i.kind}`} title={i.kind === "production" ? t.production : t.consumption} /><span className="wide">{i.kind === "production" ? t.production : t.consumption}</span></td>
@@ -170,9 +176,33 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
                 </tbody>
               </table>
             </div>
+            <Pager total={(d.invoices ?? []).length} page={page} perPage={perPage} t={t}
+              onPage={setPage} onPerPage={(n) => { setPerPage(n); setPage(0); localStorage.setItem("me_per_page", String(n)); }} />
           </section>
           {d.updated && <div className="muted">{t.updated} {new Date(d.updated).toLocaleString("sv-SE")}</div>}
         </>
+      )}
+    </div>
+  );
+}
+
+function Pager({ total, page, perPage, t, onPage, onPerPage }:
+  { total: number; page: number; perPage: number; t: typeof SV; onPage: (p: number) => void; onPerPage: (n: number) => void }) {
+  const pages = perPage ? Math.max(1, Math.ceil(total / perPage)) : 1;
+  return (
+    <div className="pager">
+      <label>{t.per_page}
+        <select value={perPage} onChange={(e) => onPerPage(Number(e.target.value))}>
+          {[6, 12, 24, 48].map((n) => <option key={n} value={n}>{n}</option>)}
+          <option value={0}>{t.all}</option>
+        </select>
+      </label>
+      {pages > 1 && (
+        <span className="pages">
+          <button className="btn" disabled={page === 0} onClick={() => onPage(page - 1)} aria-label={t.prev}>‹</button>
+          <span>{page + 1} {t.of} {pages}</span>
+          <button className="btn" disabled={page >= pages - 1} onClick={() => onPage(page + 1)} aria-label={t.next}>›</button>
+        </span>
       )}
     </div>
   );

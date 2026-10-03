@@ -26551,6 +26551,11 @@ var jL = DL({
 	downloading: "Hämtar…",
 	grid: "nät",
 	energy: "el",
+	per_page: "Per sida",
+	of: "av",
+	prev: "Föregående",
+	next: "Nästa",
+	all: "Alla",
 	han_OPEN: "öppen",
 	han_CLOSED: "stängd",
 	han_PENDINGOPEN: "öppnas",
@@ -26590,21 +26595,26 @@ var jL = DL({
 	downloading: "Fetching…",
 	grid: "grid",
 	energy: "energy",
+	per_page: "Per page",
+	of: "of",
+	prev: "Previous",
+	next: "Next",
+	all: "All",
 	han_OPEN: "open",
 	han_CLOSED: "closed",
 	han_PENDINGOPEN: "opening",
 	han_PENDINGCLOSE: "closing"
-}, BL = (e, t = 0, n = "") => e == null || Number.isNaN(e) ? "–" : `${e.toLocaleString("sv-SE", {
+}, BL = (e) => +(e != null && Math.abs(e) < 10), VL = (e, t = 0, n = "") => e == null || Number.isNaN(e) ? "–" : `${e.toLocaleString("sv-SE", {
 	minimumFractionDigits: t,
 	maximumFractionDigits: t
-})}${n ? "\xA0" + n : ""}`, VL = (e) => new Date(e).toLocaleDateString("sv-SE"), HL = (e, t) => (/* @__PURE__ */ new Date(`${e}-15`)).toLocaleDateString(t, {
+})}${n ? "\xA0" + n : ""}`, HL = (e) => new Date(e).toLocaleDateString("sv-SE"), UL = (e, t) => (/* @__PURE__ */ new Date(`${e}-15`)).toLocaleDateString(t, {
 	month: "short",
 	year: "numeric"
-}), UL = (e, t) => e ? new Date(e).toLocaleDateString(t, {
+}), WL = (e, t) => e ? new Date(e).toLocaleDateString(t, {
 	day: "numeric",
 	month: "short"
 }) : "–";
-function WL({ text: e }) {
+function GL({ text: e }) {
 	let [t, n] = (0, S.useState)(!1), r = (0, S.useRef)(null);
 	return (0, S.useEffect)(() => {
 		if (!t) return;
@@ -26626,27 +26636,29 @@ function WL({ text: e }) {
 		})]
 	});
 }
-function GL({ hass: e, narrow: t }) {
-	let n = String(e.locale?.language ?? e.language ?? "en").startsWith("sv"), r = n ? RL : zL, i = n ? "sv-SE" : "en-GB", [a, o] = (0, S.useState)(null), [s, c] = (0, S.useState)(null), [l, u] = (0, S.useState)(null), d = Object.values(e.states).find((e) => e.entity_id.startsWith("sensor.") && e.attributes?.invoices)?.last_updated;
+function KL({ hass: e, narrow: t }) {
+	let n = String(e.locale?.language ?? e.language ?? "en").startsWith("sv"), r = n ? RL : zL, i = n ? "sv-SE" : "en-GB", [a, o] = (0, S.useState)(null), [s, c] = (0, S.useState)(null), [l, u] = (0, S.useState)(null), [d, f] = (0, S.useState)(() => Number(localStorage.getItem("me_per_page")) || 12), [p, m] = (0, S.useState)(0), h = Object.values(e.states).find((e) => e.entity_id.startsWith("sensor.") && e.attributes?.invoices)?.last_updated;
 	(0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/data" }).then((e) => {
 			o(e.data), c(null);
 		}).catch((e) => c(e?.message ?? String(e)));
-	}, [d]);
-	let f = (0, S.useMemo)(() => {
+	}, [h]);
+	let g = (0, S.useMemo)(() => {
 		if (!a) return [];
 		let e = /* @__PURE__ */ new Map(), t = (t, n) => (t ?? []).forEach(([t, r]) => {
-			let i = VL(t);
+			let i = HL(t);
 			(e.get(i) ?? e.set(i, { k: i }).get(i))[n] = r;
 		});
 		return t(a.CONSUMPTION?.daily?.consumption, "cons"), t(a.CONSUMPTION?.daily?.cost, "cost"), t(a.PRODUCTION?.daily?.production, "prod"), t(a.PRODUCTION?.daily?.compensation, "comp"), [...e.values()].sort((e, t) => e.k.localeCompare(t.k));
-	}, [a]), p = (/* @__PURE__ */ new Date()).toLocaleDateString("sv-SE").slice(0, 7), m = (e) => f.filter((e) => e.k.startsWith(p)).reduce((t, n) => t + (n[e] ?? 0), 0), h = (a?.CONSUMPTION?.daily?.costEL ?? []).filter(([e]) => VL(e).startsWith(p)).reduce((e, [, t]) => e + t, 0), g = (a?.CONSUMPTION?.daily?.costELEXT ?? []).filter(([e]) => VL(e).startsWith(p)).reduce((e, [, t]) => e + t, 0), _ = a?.CONSUMPTION?.peak, v = Object.values(a?.han ?? {})[0], y = async (t) => {
-		u(t);
-		try {
-			let n = (await e.callService("malarenergi", "download_invoice", { invoice_id: t }, void 0, !1, !0))?.response?.url;
-			n && window.open(n, "_blank");
-		} finally {
-			u(null);
+	}, [a]), _ = (/* @__PURE__ */ new Date()).toLocaleDateString("sv-SE").slice(0, 7), v = (e) => g.filter((e) => e.k.startsWith(_)).reduce((t, n) => t + (n[e] ?? 0), 0), y = (a?.CONSUMPTION?.daily?.costEL ?? []).filter(([e]) => HL(e).startsWith(_)).reduce((e, [, t]) => e + t, 0), b = (a?.CONSUMPTION?.daily?.costELEXT ?? []).filter(([e]) => HL(e).startsWith(_)).reduce((e, [, t]) => e + t, 0), x = a?.CONSUMPTION?.peak, C = Object.values(a?.han ?? {})[0], w = async (t) => {
+		if (!l) {
+			u(t);
+			try {
+				let n = (await e.callService("malarenergi", "download_invoice", { invoice_id: t }, void 0, !1, !0))?.response?.url;
+				n && window.open(n, "_blank");
+			} finally {
+				u(null);
+			}
 		}
 	};
 	return /* @__PURE__ */ (0, $.jsxs)("div", {
@@ -26654,12 +26666,12 @@ function GL({ hass: e, narrow: t }) {
 		children: [
 			/* @__PURE__ */ (0, $.jsxs)("header", { children: [/* @__PURE__ */ (0, $.jsx)("h1", { children: r.title }), /* @__PURE__ */ (0, $.jsxs)("div", {
 				className: "chips",
-				children: [v && /* @__PURE__ */ (0, $.jsxs)("span", {
-					className: `chip ${v === "OPEN" ? "ok" : ""}`,
+				children: [C && /* @__PURE__ */ (0, $.jsxs)("span", {
+					className: `chip ${C === "OPEN" ? "ok" : ""}`,
 					children: [
 						r.han,
 						": ",
-						r[`han_${v}`] ?? v.toLowerCase()
+						r[`han_${C}`] ?? C.toLowerCase()
 					]
 				}), a?.fuse && /* @__PURE__ */ (0, $.jsxs)("span", {
 					className: "chip",
@@ -26678,28 +26690,28 @@ function GL({ hass: e, narrow: t }) {
 				/* @__PURE__ */ (0, $.jsxs)("div", {
 					className: "kpis",
 					children: [
-						/* @__PURE__ */ (0, $.jsx)(KL, {
+						/* @__PURE__ */ (0, $.jsx)(JL, {
 							label: `${r.consumption} · ${r.month}`,
-							value: BL(m("cons"), 0, "kWh"),
-							sub: `${r.cost} ${BL(m("cost"), 0, "kr")}`
+							value: VL(v("cons"), BL(v("cons")), "kWh"),
+							sub: `${r.cost} ${VL(v("cost"), BL(v("cost")), "kr")}`
 						}),
-						/* @__PURE__ */ (0, $.jsx)(KL, {
+						/* @__PURE__ */ (0, $.jsx)(JL, {
 							label: `${r.production} · ${r.month}`,
-							value: BL(m("prod"), 0, "kWh"),
-							sub: `${r.compensation} ${BL(m("comp"), 0, "kr")}`
+							value: VL(v("prod"), BL(v("prod")), "kWh"),
+							sub: `${r.compensation} ${VL(v("comp"), BL(v("comp")), "kr")}`
 						}),
-						/* @__PURE__ */ (0, $.jsx)(KL, {
+						/* @__PURE__ */ (0, $.jsx)(JL, {
 							label: `${r.net} · ${r.month}`,
 							info: r.net_info,
-							value: BL(m("cost") - m("comp"), 0, "kr"),
-							tone: m("cost") - m("comp") <= 0 ? "pos" : "neg",
-							sub: `${r.energy} ${BL(h, 0)} · ${r.grid} ${BL(g, 0)}`
+							value: VL(v("cost") - v("comp"), BL(v("cost") - v("comp")), "kr"),
+							tone: v("cost") - v("comp") <= 0 ? "pos" : "neg",
+							sub: `${r.energy} ${VL(y, 0)} · ${r.grid} ${VL(b, 0)}`
 						}),
-						/* @__PURE__ */ (0, $.jsx)(KL, {
+						/* @__PURE__ */ (0, $.jsx)(JL, {
 							label: r.peak,
 							info: r.peak_info,
-							value: BL(_?.peakPowerConsumption, 1, "kW"),
-							sub: _?.dateTime ? new Date(_.dateTime).toLocaleString("sv-SE", {
+							value: VL(x?.peakPowerConsumption, (x?.peakPowerConsumption ?? 1) < 1 ? 2 : 1, "kW"),
+							sub: x?.dateTime ? new Date(x.dateTime).toLocaleString("sv-SE", {
 								day: "numeric",
 								month: "short",
 								hour: "2-digit",
@@ -26710,11 +26722,11 @@ function GL({ hass: e, narrow: t }) {
 				}),
 				/* @__PURE__ */ (0, $.jsxs)("section", {
 					className: "card",
-					children: [/* @__PURE__ */ (0, $.jsxs)("h2", { children: [r.daily, /* @__PURE__ */ (0, $.jsx)(WL, { text: r.daily_info })] }), /* @__PURE__ */ (0, $.jsx)(Tl, {
+					children: [/* @__PURE__ */ (0, $.jsxs)("h2", { children: [r.daily, /* @__PURE__ */ (0, $.jsx)(GL, { text: r.daily_info })] }), /* @__PURE__ */ (0, $.jsx)(Tl, {
 						width: "100%",
 						height: t ? 240 : 300,
 						children: /* @__PURE__ */ (0, $.jsxs)(PL, {
-							data: f,
+							data: g,
 							margin: {
 								top: 8,
 								right: 4,
@@ -26753,7 +26765,7 @@ function GL({ hass: e, narrow: t }) {
 										borderRadius: 10,
 										fontSize: 12
 									},
-									formatter: (e, t) => [BL(Number(e), 1), t]
+									formatter: (e, t) => [VL(Number(e), 1), t]
 								}),
 								/* @__PURE__ */ (0, $.jsx)(zu, { wrapperStyle: { fontSize: 12 } }),
 								/* @__PURE__ */ (0, $.jsx)(sF, {
@@ -26806,76 +26818,89 @@ function GL({ hass: e, narrow: t }) {
 				}),
 				/* @__PURE__ */ (0, $.jsxs)("section", {
 					className: "card",
-					children: [/* @__PURE__ */ (0, $.jsxs)("h2", { children: [r.invoices, /* @__PURE__ */ (0, $.jsx)(WL, { text: r.inv_info })] }), /* @__PURE__ */ (0, $.jsx)("div", {
-						className: "table-wrap",
-						children: /* @__PURE__ */ (0, $.jsxs)("table", { children: [/* @__PURE__ */ (0, $.jsx)("thead", { children: /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
-							/* @__PURE__ */ (0, $.jsx)("th", { children: r.period }),
-							/* @__PURE__ */ (0, $.jsx)("th", {}),
-							/* @__PURE__ */ (0, $.jsx)("th", {
-								className: "r",
-								children: r.amount
-							}),
-							/* @__PURE__ */ (0, $.jsx)("th", {
-								className: "r wide",
-								children: "kWh"
-							}),
-							/* @__PURE__ */ (0, $.jsx)("th", {
-								className: "r wide",
-								children: r.fixed
-							}),
-							/* @__PURE__ */ (0, $.jsx)("th", {
-								className: "r wide",
-								children: r.power_fee
-							}),
-							/* @__PURE__ */ (0, $.jsx)("th", {
-								className: "r wide",
-								children: r.other
-							}),
-							/* @__PURE__ */ (0, $.jsx)("th", { children: r.due }),
-							/* @__PURE__ */ (0, $.jsx)("th", { children: r.status }),
-							/* @__PURE__ */ (0, $.jsx)("th", {})
-						] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: (a.invoices ?? []).slice(0, 24).map((e) => /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
-							/* @__PURE__ */ (0, $.jsx)("td", { children: HL(e.period_start.slice(0, 7), i) }),
-							/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", {
-								className: `dot ${e.kind}`,
-								title: e.kind === "production" ? r.production : r.consumption
-							}), /* @__PURE__ */ (0, $.jsx)("span", {
-								className: "wide",
-								children: e.kind === "production" ? r.production : r.consumption
-							})] }),
-							/* @__PURE__ */ (0, $.jsx)("td", {
-								className: `r ${e.amount < 0 ? "pos" : ""}`,
-								children: BL(e.amount, 0, "kr")
-							}),
-							/* @__PURE__ */ (0, $.jsx)("td", {
-								className: "r wide",
-								children: BL(e.kwh, 0)
-							}),
-							/* @__PURE__ */ (0, $.jsx)("td", {
-								className: "r wide",
-								children: BL(e.fixed, 0)
-							}),
-							/* @__PURE__ */ (0, $.jsx)("td", {
-								className: "r wide",
-								children: e.power_fee ? BL(e.power_fee, 0) : "–"
-							}),
-							/* @__PURE__ */ (0, $.jsx)("td", {
-								className: "r wide",
-								children: e.other ? BL(e.other, 0) : "–"
-							}),
-							/* @__PURE__ */ (0, $.jsx)("td", { children: UL(e.due_date, i) }),
-							/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
-								className: `badge ${e.closed ? "ok" : "warn"}`,
-								children: e.amount < 0 ? r.credit : e.closed ? r.paid : r.open
-							}) }),
-							/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("button", {
-								className: "btn",
-								disabled: l === e.invoice_id,
-								onClick: () => y(e.invoice_id),
-								children: l === e.invoice_id ? r.downloading : r.pdf
-							}) })
-						] }, e.invoice_id)) })] })
-					})]
+					children: [
+						/* @__PURE__ */ (0, $.jsxs)("h2", { children: [r.invoices, /* @__PURE__ */ (0, $.jsx)(GL, { text: r.inv_info })] }),
+						/* @__PURE__ */ (0, $.jsx)("div", {
+							className: "table-wrap",
+							children: /* @__PURE__ */ (0, $.jsxs)("table", { children: [/* @__PURE__ */ (0, $.jsx)("thead", { children: /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
+								/* @__PURE__ */ (0, $.jsx)("th", { children: r.period }),
+								/* @__PURE__ */ (0, $.jsx)("th", {}),
+								/* @__PURE__ */ (0, $.jsx)("th", {
+									className: "r",
+									children: r.amount
+								}),
+								/* @__PURE__ */ (0, $.jsx)("th", {
+									className: "r wide",
+									children: "kWh"
+								}),
+								/* @__PURE__ */ (0, $.jsx)("th", {
+									className: "r wide",
+									children: r.fixed
+								}),
+								/* @__PURE__ */ (0, $.jsx)("th", {
+									className: "r wide",
+									children: r.power_fee
+								}),
+								/* @__PURE__ */ (0, $.jsx)("th", {
+									className: "r wide",
+									children: r.other
+								}),
+								/* @__PURE__ */ (0, $.jsx)("th", { children: r.due }),
+								/* @__PURE__ */ (0, $.jsx)("th", { children: r.status }),
+								/* @__PURE__ */ (0, $.jsx)("th", {})
+							] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: (a.invoices ?? []).slice(p * d, d ? (p + 1) * d : void 0).map((e) => /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
+								/* @__PURE__ */ (0, $.jsx)("td", { children: UL(e.period_start.slice(0, 7), i) }),
+								/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", {
+									className: `dot ${e.kind}`,
+									title: e.kind === "production" ? r.production : r.consumption
+								}), /* @__PURE__ */ (0, $.jsx)("span", {
+									className: "wide",
+									children: e.kind === "production" ? r.production : r.consumption
+								})] }),
+								/* @__PURE__ */ (0, $.jsx)("td", {
+									className: `r ${e.amount < 0 ? "pos" : ""}`,
+									children: VL(e.amount, 0, "kr")
+								}),
+								/* @__PURE__ */ (0, $.jsx)("td", {
+									className: "r wide",
+									children: VL(e.kwh, 0)
+								}),
+								/* @__PURE__ */ (0, $.jsx)("td", {
+									className: "r wide",
+									children: VL(e.fixed, 0)
+								}),
+								/* @__PURE__ */ (0, $.jsx)("td", {
+									className: "r wide",
+									children: e.power_fee ? VL(e.power_fee, 0) : "–"
+								}),
+								/* @__PURE__ */ (0, $.jsx)("td", {
+									className: "r wide",
+									children: e.other ? VL(e.other, 0) : "–"
+								}),
+								/* @__PURE__ */ (0, $.jsx)("td", { children: WL(e.due_date, i) }),
+								/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
+									className: `badge ${e.closed ? "ok" : "warn"}`,
+									children: e.amount < 0 ? r.credit : e.closed ? r.paid : r.open
+								}) }),
+								/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("button", {
+									className: "btn",
+									disabled: l === e.invoice_id,
+									onClick: () => w(e.invoice_id),
+									children: l === e.invoice_id ? r.downloading : r.pdf
+								}) })
+							] }, e.invoice_id)) })] })
+						}),
+						/* @__PURE__ */ (0, $.jsx)(qL, {
+							total: (a.invoices ?? []).length,
+							page: p,
+							perPage: d,
+							t: r,
+							onPage: m,
+							onPerPage: (e) => {
+								f(e), m(0), localStorage.setItem("me_per_page", String(e));
+							}
+						})
+					]
 				}),
 				a.updated && /* @__PURE__ */ (0, $.jsxs)("div", {
 					className: "muted",
@@ -26892,13 +26917,60 @@ function GL({ hass: e, narrow: t }) {
 		]
 	});
 }
-function KL({ label: e, value: t, sub: n, info: r, tone: i }) {
+function qL({ total: e, page: t, perPage: n, t: r, onPage: i, onPerPage: a }) {
+	let o = n ? Math.max(1, Math.ceil(e / n)) : 1;
+	return /* @__PURE__ */ (0, $.jsxs)("div", {
+		className: "pager",
+		children: [/* @__PURE__ */ (0, $.jsxs)("label", { children: [r.per_page, /* @__PURE__ */ (0, $.jsxs)("select", {
+			value: n,
+			onChange: (e) => a(Number(e.target.value)),
+			children: [[
+				6,
+				12,
+				24,
+				48
+			].map((e) => /* @__PURE__ */ (0, $.jsx)("option", {
+				value: e,
+				children: e
+			}, e)), /* @__PURE__ */ (0, $.jsx)("option", {
+				value: 0,
+				children: r.all
+			})]
+		})] }), o > 1 && /* @__PURE__ */ (0, $.jsxs)("span", {
+			className: "pages",
+			children: [
+				/* @__PURE__ */ (0, $.jsx)("button", {
+					className: "btn",
+					disabled: t === 0,
+					onClick: () => i(t - 1),
+					"aria-label": r.prev,
+					children: "‹"
+				}),
+				/* @__PURE__ */ (0, $.jsxs)("span", { children: [
+					t + 1,
+					" ",
+					r.of,
+					" ",
+					o
+				] }),
+				/* @__PURE__ */ (0, $.jsx)("button", {
+					className: "btn",
+					disabled: t >= o - 1,
+					onClick: () => i(t + 1),
+					"aria-label": r.next,
+					children: "›"
+				})
+			]
+		})]
+	});
+}
+function JL({ label: e, value: t, sub: n, info: r, tone: i }) {
 	return /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "kpi",
 		children: [
 			/* @__PURE__ */ (0, $.jsxs)("div", {
 				className: "label",
-				children: [e, r && /* @__PURE__ */ (0, $.jsx)(WL, { text: r })]
+				children: [e, r && /* @__PURE__ */ (0, $.jsx)(GL, { text: r })]
 			}),
 			/* @__PURE__ */ (0, $.jsx)("div", {
 				className: `value ${i ?? ""}`,
@@ -26913,7 +26985,7 @@ function KL({ label: e, value: t, sub: n, info: r, tone: i }) {
 }
 //#endregion
 //#region src/styles.css?inline
-var qL = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--card-background-color,#fff);--me-text:var(--primary-text-color,#1d2330);--me-muted:var(--secondary-text-color,#6b7484);--me-line:color-mix(in srgb, var(--me-muted) 18%, transparent);--me-accent:var(--primary-color,#03a9f4);--me-pos:#2ec27e;--me-neg:#e5484d;--me-radius:16px;display:block}*{box-sizing:border-box}.page{max-width:1480px;min-height:100vh;color:var(--me-text);font:14px/1.45 var(--paper-font-body1_-_font-family,Inter, Roboto, system-ui, sans-serif);background:var(--me-bg);margin:0 auto;padding:20px 28px 56px}.page.narrow{padding:10px 10px 40px}header{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;display:flex}.brand{align-items:center;gap:8px;display:flex}h1{letter-spacing:-.02em;margin:0;font-size:26px;font-weight:600}h2{align-items:center;gap:6px;margin:0;font-size:15px;font-weight:600;display:flex}.menu{color:inherit;cursor:pointer;background:0 0;border:0;font-size:22px}.tabs,.seg{background:var(--me-card);border:1px solid var(--me-line);border-radius:999px;gap:2px;max-width:100%;padding:4px;display:inline-flex;overflow-x:auto}.tabs button,.seg button{color:var(--me-muted);font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:7px 14px;font-weight:500;transition:background .15s,color .15s}.tabs button:hover,.seg button:hover{color:var(--me-text)}.tabs button.on,.seg button.on{background:var(--me-accent);color:var(--text-primary-color,#fff)}.card{background:var(--me-card);border-radius:var(--me-radius);border:1px solid var(--me-line);margin-bottom:16px;padding:18px;box-shadow:0 1px 2px #0000000a,0 8px 24px -12px #0000001f}.card.error{color:var(--me-neg)}.card-head{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;display:flex}.grid-overview{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:16px;display:grid}.narrow .grid-overview,.narrow .two{grid-template-columns:1fr}@media (width<=1000px){.grid-overview,.two{grid-template-columns:1fr}}.side .card{margin-bottom:16px}.two{grid-template-columns:1fr 1fr;gap:16px;display:grid}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px;display:grid}.kpis>.stat{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.kpis.compact{margin-bottom:4px}.kpis.compact>.stat{padding:8px 12px}.stats-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}.settings-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:start;gap:16px;display:grid}.settings-grid .card{margin-bottom:0}.label{color:var(--me-muted);align-items:center;gap:4px;font-size:12px;font-weight:500;display:flex}.value{letter-spacing:-.02em;margin:2px 0;font-size:26px;font-weight:600}.value:first-letter{text-transform:uppercase}.pos{color:var(--me-pos)}.neg{color:var(--me-neg)}.muted{color:var(--me-muted);font-size:12.5px}.big{letter-spacing:-.02em;margin-bottom:10px;font-size:30px;font-weight:600}.big small{color:var(--me-muted);font-size:15px;font-weight:500}.row-between{flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:8px;display:flex}.badge{background:color-mix(in srgb, var(--me-accent) 15%, transparent);color:var(--me-accent);border-radius:999px;align-items:center;gap:4px;padding:3px 4px 3px 10px;font-size:12px;font-weight:500;display:inline-flex}.plan-chip{background:color-mix(in srgb, var(--me-accent) 8%, transparent);border-radius:12px;align-items:center;gap:8px;margin:14px 0 4px;padding:10px 12px;font-size:13.5px;display:flex}.legend{color:var(--me-muted);flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:12px;display:flex}.dot{border-radius:50%;flex:none;width:9px;height:9px;margin-right:6px;display:inline-block}table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;font-size:13.5px}th{text-align:left;color:var(--me-muted);font-size:12px;font-weight:500}th,td{border-bottom:1px solid var(--me-line);padding:8px 6px}tr:last-child td{border-bottom:0}.money td:not(:first-child),.money th:not(:first-child){text-align:right}.money.compact{margin-top:12px}.meter{background:var(--me-line);border-radius:999px;height:10px;overflow:hidden}.meter>div{border-radius:999px;height:100%;transition:width .4s}.info{display:inline-flex;position:relative}.info-btn{border:1px solid var(--me-muted);width:17px;height:17px;color:var(--me-muted);cursor:pointer;opacity:.7;background:0 0;border-radius:50%;place-items:center;padding:0;font:italic 600 10px/1 Georgia,serif;display:inline-grid}.info-btn:hover{opacity:1;color:var(--me-accent);border-color:var(--me-accent)}.pop{z-index:20;background:var(--me-card);width:min(300px,80vw);color:var(--me-text);border:1px solid var(--me-line);text-transform:none;letter-spacing:0;border-radius:12px;padding:12px 14px;font-size:12.5px;font-weight:400;line-height:1.5;position:absolute;top:24px;left:50%;transform:translate(-50%);box-shadow:0 12px 32px -8px #00000059}.setting{border-bottom:1px solid var(--me-line);justify-content:space-between;align-items:center;gap:12px;padding:9px 0;display:flex}.setting:last-child{border-bottom:0}.num{align-items:center;gap:6px;display:inline-flex}.num em{color:var(--me-muted);min-width:52px;font-size:12px;font-style:normal}.num input{width:96px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);text-align:right;border-radius:10px;padding:6px 10px}.num input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.switch{flex:none;width:40px;height:22px;position:relative}.switch input{opacity:0;width:0;height:0}.switch span{background:var(--me-line);cursor:pointer;border-radius:999px;transition:all .2s;position:absolute;inset:0}.switch span:before{content:\"\";background:#fff;border-radius:50%;width:16px;height:16px;transition:all .2s;position:absolute;top:3px;left:3px;box-shadow:0 1px 3px #0000004d}.switch input:checked+span{background:var(--me-accent)}.switch input:checked+span:before{transform:translate(18px)}.flow-card{padding:8px}.flow{width:100%;height:auto;display:block}.flow-line{fill:none;stroke:var(--me-muted);stroke-width:3px;stroke-linecap:round}.house-shape{fill:color-mix(in srgb, var(--me-accent) 5%, transparent);stroke:var(--me-line);stroke-width:2px;stroke-linejoin:round}.node-bg{fill:var(--me-card);stroke-width:2px;stroke-opacity:.35}.node-val{text-anchor:middle;fill:var(--me-text);font-size:15px;font-weight:600}.node-sub{text-anchor:middle;fill:var(--me-muted);font-size:10.5px}.node-label{text-anchor:middle;fill:var(--me-muted);font-size:12.5px;font-weight:500}.recharts-cartesian-axis-tick-value{fill:var(--me-muted)}.recharts-legend-item-text{color:var(--me-muted)!important}.settings-grid .seg{border-radius:14px;flex-wrap:wrap}.range{width:100%;accent-color:var(--me-accent);margin:10px 0 14px}.be{grid-template-columns:1fr 1fr;gap:16px;display:grid}.phases{gap:10px;display:grid}.phases .row-between{margin:0 0 4px}.stack{border-top:1px solid var(--me-line);gap:6px;margin-top:14px;padding-top:12px;display:grid}.row{align-items:center;gap:8px;display:flex}.btn{border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;cursor:pointer;border-radius:10px;padding:6px 12px}.btn.primary{background:var(--me-accent);color:var(--text-primary-color,#fff);border-color:#0000}.btn:disabled{opacity:.45;cursor:default}.btn.ghost{color:var(--me-muted);background:0 0;border:0}table.edit input{width:100%;min-width:80px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);border-radius:8px;padding:6px 8px}table.edit input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.tabs,.seg{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.seg::-webkit-scrollbar{display:none}.narrow .node-val{font-size:22px}.narrow .node-sub{font-size:15px}.narrow .node-label{font-size:17px}.narrow .flow-card{padding:4px}.narrow .kpis{gap:10px}.narrow .value{font-size:22px}.narrow header{margin-bottom:12px}.narrow .tabs{width:100%}.chips{flex-wrap:wrap;gap:8px;display:flex}.chip{border:1px solid var(--me-line);color:var(--me-muted);border-radius:999px;padding:4px 10px;font-size:12px}.chip.ok{color:var(--me-pos);border-color:color-mix(in srgb, var(--me-pos) 40%, transparent)}.kpi{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.table-wrap{overflow-x:auto}td.r,th.r{text-align:right}.dot.production{background:#f5b301}.dot.consumption{background:#3daee9}.badge.ok{background:color-mix(in srgb, var(--me-pos) 15%, transparent);color:var(--me-pos);padding:3px 8px}.badge.warn{color:#e5a50a;background:#e5a50a2e;padding:3px 8px}h2{margin-bottom:12px}td,th{white-space:nowrap}.page{container-type:inline-size}@container (width<=760px){.wide{display:none}}", JL = class extends HTMLElement {
+var YL = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--card-background-color,#fff);--me-text:var(--primary-text-color,#1d2330);--me-muted:var(--secondary-text-color,#6b7484);--me-line:color-mix(in srgb, var(--me-muted) 18%, transparent);--me-accent:var(--primary-color,#03a9f4);--me-pos:#2ec27e;--me-neg:#e5484d;--me-radius:16px;display:block}*{box-sizing:border-box}.page{max-width:1480px;min-height:100vh;color:var(--me-text);font:14px/1.45 var(--paper-font-body1_-_font-family,Inter, Roboto, system-ui, sans-serif);background:var(--me-bg);margin:0 auto;padding:20px 28px 56px}.page.narrow{padding:10px 10px 40px}header{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;display:flex}.brand{align-items:center;gap:8px;display:flex}h1{letter-spacing:-.02em;margin:0;font-size:26px;font-weight:600}h2{align-items:center;gap:6px;margin:0;font-size:15px;font-weight:600;display:flex}.menu{color:inherit;cursor:pointer;background:0 0;border:0;font-size:22px}.tabs,.seg{background:var(--me-card);border:1px solid var(--me-line);border-radius:999px;gap:2px;max-width:100%;padding:4px;display:inline-flex;overflow-x:auto}.tabs button,.seg button{color:var(--me-muted);font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:7px 14px;font-weight:500;transition:background .15s,color .15s}.tabs button:hover,.seg button:hover{color:var(--me-text)}.tabs button.on,.seg button.on{background:var(--me-accent);color:var(--text-primary-color,#fff)}.card{background:var(--me-card);border-radius:var(--me-radius);border:1px solid var(--me-line);margin-bottom:16px;padding:18px;box-shadow:0 1px 2px #0000000a,0 8px 24px -12px #0000001f}.card.error{color:var(--me-neg)}.card-head{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;display:flex}.grid-overview{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:16px;display:grid}.narrow .grid-overview,.narrow .two{grid-template-columns:1fr}@media (width<=1000px){.grid-overview,.two{grid-template-columns:1fr}}.side .card{margin-bottom:16px}.two{grid-template-columns:1fr 1fr;gap:16px;display:grid}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px;display:grid}.kpis>.stat{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.kpis.compact{margin-bottom:4px}.kpis.compact>.stat{padding:8px 12px}.stats-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}.settings-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:start;gap:16px;display:grid}.settings-grid .card{margin-bottom:0}.label{color:var(--me-muted);align-items:center;gap:4px;font-size:12px;font-weight:500;display:flex}.value{letter-spacing:-.02em;margin:2px 0;font-size:26px;font-weight:600}.value:first-letter{text-transform:uppercase}.pos{color:var(--me-pos)}.neg{color:var(--me-neg)}.muted{color:var(--me-muted);font-size:12.5px}.big{letter-spacing:-.02em;margin-bottom:10px;font-size:30px;font-weight:600}.big small{color:var(--me-muted);font-size:15px;font-weight:500}.row-between{flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:8px;display:flex}.badge{background:color-mix(in srgb, var(--me-accent) 15%, transparent);color:var(--me-accent);border-radius:999px;align-items:center;gap:4px;padding:3px 4px 3px 10px;font-size:12px;font-weight:500;display:inline-flex}.plan-chip{background:color-mix(in srgb, var(--me-accent) 8%, transparent);border-radius:12px;align-items:center;gap:8px;margin:14px 0 4px;padding:10px 12px;font-size:13.5px;display:flex}.legend{color:var(--me-muted);flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:12px;display:flex}.dot{border-radius:50%;flex:none;width:9px;height:9px;margin-right:6px;display:inline-block}table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;font-size:13.5px}th{text-align:left;color:var(--me-muted);font-size:12px;font-weight:500}th,td{border-bottom:1px solid var(--me-line);padding:8px 6px}tr:last-child td{border-bottom:0}.money td:not(:first-child),.money th:not(:first-child){text-align:right}.money.compact{margin-top:12px}.meter{background:var(--me-line);border-radius:999px;height:10px;overflow:hidden}.meter>div{border-radius:999px;height:100%;transition:width .4s}.info{display:inline-flex;position:relative}.info-btn{border:1px solid var(--me-muted);width:17px;height:17px;color:var(--me-muted);cursor:pointer;opacity:.7;background:0 0;border-radius:50%;place-items:center;padding:0;font:italic 600 10px/1 Georgia,serif;display:inline-grid}.info-btn:hover{opacity:1;color:var(--me-accent);border-color:var(--me-accent)}.pop{z-index:20;background:var(--me-card);width:min(300px,80vw);color:var(--me-text);border:1px solid var(--me-line);text-transform:none;letter-spacing:0;border-radius:12px;padding:12px 14px;font-size:12.5px;font-weight:400;line-height:1.5;position:absolute;top:24px;left:50%;transform:translate(-50%);box-shadow:0 12px 32px -8px #00000059}.setting{border-bottom:1px solid var(--me-line);justify-content:space-between;align-items:center;gap:12px;padding:9px 0;display:flex}.setting:last-child{border-bottom:0}.num{align-items:center;gap:6px;display:inline-flex}.num em{color:var(--me-muted);min-width:52px;font-size:12px;font-style:normal}.num input{width:96px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);text-align:right;border-radius:10px;padding:6px 10px}.num input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.switch{flex:none;width:40px;height:22px;position:relative}.switch input{opacity:0;width:0;height:0}.switch span{background:var(--me-line);cursor:pointer;border-radius:999px;transition:all .2s;position:absolute;inset:0}.switch span:before{content:\"\";background:#fff;border-radius:50%;width:16px;height:16px;transition:all .2s;position:absolute;top:3px;left:3px;box-shadow:0 1px 3px #0000004d}.switch input:checked+span{background:var(--me-accent)}.switch input:checked+span:before{transform:translate(18px)}.flow-card{padding:8px}.flow{width:100%;height:auto;display:block}.flow-line{fill:none;stroke:var(--me-muted);stroke-width:3px;stroke-linecap:round}.house-shape{fill:color-mix(in srgb, var(--me-accent) 5%, transparent);stroke:var(--me-line);stroke-width:2px;stroke-linejoin:round}.node-bg{fill:var(--me-card);stroke-width:2px;stroke-opacity:.35}.node-val{text-anchor:middle;fill:var(--me-text);font-size:15px;font-weight:600}.node-sub{text-anchor:middle;fill:var(--me-muted);font-size:10.5px}.node-label{text-anchor:middle;fill:var(--me-muted);font-size:12.5px;font-weight:500}.recharts-cartesian-axis-tick-value{fill:var(--me-muted)}.recharts-legend-item-text{color:var(--me-muted)!important}.settings-grid .seg{border-radius:14px;flex-wrap:wrap}.range{width:100%;accent-color:var(--me-accent);margin:10px 0 14px}.be{grid-template-columns:1fr 1fr;gap:16px;display:grid}.phases{gap:10px;display:grid}.phases .row-between{margin:0 0 4px}.stack{border-top:1px solid var(--me-line);gap:6px;margin-top:14px;padding-top:12px;display:grid}.row{align-items:center;gap:8px;display:flex}.btn{border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;cursor:pointer;border-radius:10px;padding:6px 12px}.btn.primary{background:var(--me-accent);color:var(--text-primary-color,#fff);border-color:#0000}.btn:disabled{opacity:.45;cursor:default}.btn.ghost{color:var(--me-muted);background:0 0;border:0}table.edit input{width:100%;min-width:80px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);border-radius:8px;padding:6px 8px}table.edit input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.tabs,.seg{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.seg::-webkit-scrollbar{display:none}.narrow .node-val{font-size:22px}.narrow .node-sub{font-size:15px}.narrow .node-label{font-size:17px}.narrow .flow-card{padding:4px}.narrow .kpis{gap:10px}.narrow .value{font-size:22px}.narrow header{margin-bottom:12px}.narrow .tabs{width:100%}.chips{flex-wrap:wrap;gap:8px;display:flex}.chip{border:1px solid var(--me-line);color:var(--me-muted);border-radius:999px;padding:4px 10px;font-size:12px}.chip.ok{color:var(--me-pos);border-color:color-mix(in srgb, var(--me-pos) 40%, transparent)}.kpi{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.table-wrap{overflow-x:auto}td.r,th.r{text-align:right}.dot.production{background:#f5b301}.dot.consumption{background:#3daee9}.badge.ok{background:color-mix(in srgb, var(--me-pos) 15%, transparent);color:var(--me-pos);padding:3px 8px}.badge.warn{color:#e5a50a;background:#e5a50a2e;padding:3px 8px}h2{margin-bottom:12px}td,th{white-space:nowrap}.page{container-type:inline-size}@container (width<=760px){.wide{display:none}}.pager{color:var(--me-muted);flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:13px;display:flex}.pager label{align-items:center;gap:8px;display:inline-flex}.pager select{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:8px;padding:4px 8px}.pages{align-items:center;gap:10px;display:inline-flex}", XL = class extends HTMLElement {
 	root;
 	_hass;
 	_narrow = !1;
@@ -26926,7 +26998,7 @@ var qL = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--
 	connectedCallback() {
 		if (this.root) return;
 		let e = this.attachShadow({ mode: "open" }), t = document.createElement("style");
-		t.textContent = qL;
+		t.textContent = YL;
 		let n = document.createElement("div");
 		e.append(t, n), this.root = (0, LL.createRoot)(n), this.render();
 	}
@@ -26934,11 +27006,11 @@ var qL = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--
 		this.root?.unmount(), this.root = void 0;
 	}
 	render() {
-		this.root && this._hass && this.root.render(/* @__PURE__ */ (0, $.jsx)(GL, {
+		this.root && this._hass && this.root.render(/* @__PURE__ */ (0, $.jsx)(KL, {
 			hass: this._hass,
 			narrow: this._narrow
 		}));
 	}
 };
-customElements.get("malarenergi-panel") || customElements.define("malarenergi-panel", JL);
+customElements.get("malarenergi-panel") || customElements.define("malarenergi-panel", XL);
 //#endregion

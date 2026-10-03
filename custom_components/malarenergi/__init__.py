@@ -58,7 +58,8 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             out: dict[str, Any] = {"updated": now.isoformat()}
             f = self.facility
             month0 = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            start = month0 - timedelta(days=1)  # includes yesterday on the 1st
+            # ~a month of daily values for the chart; the API returns nothing unless `from` is local midnight
+            start = min(month0, (now - timedelta(days=31)).replace(hour=0, minute=0, second=0, microsecond=0))
             for kind in ("CONSUMPTION", "PRODUCTION"):
                 mp = f.point(kind) if f else None
                 if not mp:
@@ -92,7 +93,7 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "/api/v3/customers/{cid}/invoices",
                     page=1,
                     pageSize=1000,
-                    **{"from": (now - timedelta(days=730)).strftime("%Y-%m-%d"), "to": now.strftime("%Y-%m-%d")},
+                    **{"from": (now - timedelta(days=3650)).strftime("%Y-%m-%d"), "to": now.strftime("%Y-%m-%d")},
                 )
             )
             out["han"] = parse.han_ports(await self._get("/api/v2/hanport/{cid}"))
