@@ -15,11 +15,6 @@ def test_hidden_field_parsing_unescapes():
     assert api._hidden(page, "Missing") == ""
 
 
-def test_first_customer_id_nested():
-    assert api._first_customer_id({"user": {"customers": [{"customerId": 1234567}]}}) == 1234567
-    assert api._first_customer_id({"name": "x"}) is None
-
-
 def test_tokens_roundtrip():
     t = api.Tokens.from_response({"access_token": "a", "refresh_token": "r", "expires_in": 60})
     d = t.as_dict()

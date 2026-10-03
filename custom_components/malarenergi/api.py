@@ -208,28 +208,26 @@ class MalarenergiClient:
         return await self.request("GET", path, params={k: v for k, v in params.items() if v is not None})
 
     async def account(self) -> dict:
+        """Account + customer number. The number is the ``mecid`` claim of /connect/userinfo."""
         acc = await self.get("/api/v2/account")
         if not self.customer_id:
-            self.customer_id = str(_first_customer_id(acc))
+            if time.time() > self.tokens.expires_at - 60:
+                await self._refresh()
+            async with self._s.get(
+                f"{IDENTITY}/connect/userinfo",
+                headers={"Authorization": f"Bearer {self.tokens.access_token}", "User-Agent": UA},
+            ) as r:
+                if r.status == 401:
+                    raise AuthError("userinfo rejected")
+                info = await r.json(content_type=None)
+            cid = info.get("mecid")
+            self.customer_id = str(cid[0] if isinstance(cid, list) else cid) if cid else None
+            if not self.customer_id:
+                raise MalarenergiError("no customer number on this login")
         return acc
+
+    async def put(self, path: str, **params) -> Any:
+        return await self.request("PUT", path, params=params)
 
     def c(self, suffix: str, version: int = 2) -> str:
         return f"/api/v{version}/customers/{self.customer_id}{suffix}"
-
-
-def _first_customer_id(acc: Any) -> Any:
-    """Find the customer number in the account payload (shape varies: object or list)."""
-    if isinstance(acc, dict):
-        for k in ("customerId", "customerNumber", "customerNo", "id"):
-            if k in acc and str(acc[k]).isdigit():
-                return acc[k]
-        for v in acc.values():
-            found = _first_customer_id(v)
-            if found:
-                return found
-    if isinstance(acc, list):
-        for v in acc:
-            found = _first_customer_id(v)
-            if found:
-                return found
-    return None

@@ -27,6 +27,69 @@
     "sensor": {
       "connection": {
         "name": "Connection"
+      },
+      "consumption_yesterday": {
+        "name": "Consumption yesterday"
+      },
+      "consumption_month": {
+        "name": "Consumption this month"
+      },
+      "production_yesterday": {
+        "name": "Production yesterday"
+      },
+      "production_month": {
+        "name": "Production this month"
+      },
+      "cost_month": {
+        "name": "Cost this month"
+      },
+      "compensation_month": {
+        "name": "Production compensation this month"
+      },
+      "peak_power_month": {
+        "name": "Power peak this month"
+      },
+      "latest_invoice": {
+        "name": "Latest invoice"
+      },
+      "unpaid_invoices": {
+        "name": "Unpaid invoices"
+      },
+      "overdue_invoices": {
+        "name": "Overdue invoices"
+      },
+      "fuse_size": {
+        "name": "Fuse size"
+      },
+      "han_port": {
+        "name": "HAN port",
+        "state": {
+          "open": "Open",
+          "closed": "Closed",
+          "pendingopen": "Opening",
+          "pendingclose": "Closing",
+          "unknown": "Unknown"
+        }
+      },
+      "unread_messages": {
+        "name": "Unread messages"
+      }
+    },
+    "switch": {
+      "han_port": {
+        "name": "HAN port"
+      }
+    }
+  },
+  "services": {
+    "download_invoice": {
+      "name": "Download invoice",
+      "description": "Fetches one invoice as PDF and returns a temporary link (valid 10 minutes).",
+      "fields": {
+        "invoice_id": {
+          "name": "Invoice id",
+          "description": "From the invoices attribute of the Latest invoice sensor."
+        }
       }
     }
   }

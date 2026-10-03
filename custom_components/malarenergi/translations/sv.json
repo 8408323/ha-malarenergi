@@ -25,7 +25,72 @@
   },
   "entity": {
     "sensor": {
-      "connection": {"name": "Anslutning"}
+      "connection": {
+        "name": "Anslutning"
+      },
+      "consumption_yesterday": {
+        "name": "Förbrukning igår"
+      },
+      "consumption_month": {
+        "name": "Förbrukning denna månad"
+      },
+      "production_yesterday": {
+        "name": "Produktion igår"
+      },
+      "production_month": {
+        "name": "Produktion denna månad"
+      },
+      "cost_month": {
+        "name": "Kostnad denna månad"
+      },
+      "compensation_month": {
+        "name": "Ersättning produktion denna månad"
+      },
+      "peak_power_month": {
+        "name": "Effekttopp denna månad"
+      },
+      "latest_invoice": {
+        "name": "Senaste faktura"
+      },
+      "unpaid_invoices": {
+        "name": "Obetalda fakturor"
+      },
+      "overdue_invoices": {
+        "name": "Förfallna fakturor"
+      },
+      "fuse_size": {
+        "name": "Säkring"
+      },
+      "han_port": {
+        "name": "HAN-port",
+        "state": {
+          "open": "Öppen",
+          "closed": "Stängd",
+          "pendingopen": "Öppnas",
+          "pendingclose": "Stängs",
+          "unknown": "Okänd"
+        }
+      },
+      "unread_messages": {
+        "name": "Olästa meddelanden"
+      }
+    },
+    "switch": {
+      "han_port": {
+        "name": "HAN-port"
+      }
+    }
+  },
+  "services": {
+    "download_invoice": {
+      "name": "Ladda ner faktura",
+      "description": "Hämtar en faktura som PDF och returnerar en tillfällig länk (giltig 10 minuter).",
+      "fields": {
+        "invoice_id": {
+          "name": "Faktura-id",
+          "description": "Från attributet invoices på sensorn Senaste faktura."
+        }
+      }
     }
   }
 }
