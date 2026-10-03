@@ -86,8 +86,29 @@ def invoices(payload: Any) -> list[dict]:
     for page in _data(payload):
         for i in page.get("items") or []:
             details = i.get("invoiceDetails") or []
+            utils = {_name(d.get("utilityType")) for d in details} - {""}
+            amount = i.get("invoicedAmount") or 0
+            kind = "production" if utils <= {"ELPROD", "ELEXT"} and amount < 0 else "consumption"
+            spot_kwh = sum(
+                abs(d.get("consumptionMonth") or 0)
+                for d in details
+                if "spottim" in (d.get("productType") or "").replace(" ", "").lower()
+            )
+            vat = 1.0 if kind == "production" else 1.25  # production payout is VAT-free
             out.append(
                 {
+                    "kind": kind,
+                    "kwh": round(spot_kwh, 1),
+                    "fixed": round(sum(d.get("costFixedMonth") or 0 for d in details) * vat, 2),
+                    "power_fee": round(
+                        sum(
+                            d.get("costVariableMonth") or 0
+                            for d in details
+                            if "kW" in (d.get("productType") or "").split()
+                        )
+                        * vat,
+                        2,
+                    ),
                     "invoice_id": i.get("invoiceId"),
                     "issue_date": (i.get("issueDate") or "")[:10],
                     "due_date": (i.get("dueDate") or "")[:10],

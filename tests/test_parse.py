@@ -100,3 +100,41 @@ def test_han_and_counters():
     ) == {"111": "OPEN"}
     assert parse.unread_inbox({"data": [{"isRead": False}, {"isRead": True}]}) == 1
     assert parse.overdue_invoices({"data": [{"overDueInvoices": {"total": 2}}]}) == 2
+
+
+def test_invoice_kind_kwh_and_power_fee():
+    p = {
+        "data": [
+            {
+                "items": [
+                    {
+                        "invoiceId": "p",
+                        "issueDate": "2026-07-04",
+                        "invoicedAmount": -830,
+                        "invoiceDetails": [
+                            {
+                                "utilityType": {"name": "ELEXT"},
+                                "productType": "Prod SpotTim Momsfri",
+                                "consumptionMonth": -2080,
+                                "costVariableMonth": -830,
+                            }
+                        ],
+                    },
+                    {
+                        "invoiceId": "c",
+                        "issueDate": "2026-02-04",
+                        "invoicedAmount": 2839,
+                        "invoiceDetails": [
+                            {"utilityType": {"name": "ELEXT"}, "productType": "Spot Tim Ext", "consumptionMonth": 1170},
+                            {"utilityType": {"name": "EL"}, "productType": "El kW", "costVariableMonth": 100},
+                            {"utilityType": {"name": "EL"}, "productType": "El Fast Avg", "costFixedMonth": 308},
+                        ],
+                    },
+                ]
+            }
+        ]
+    }
+    by = {i["invoice_id"]: i for i in parse.invoices(p)}
+    assert by["p"]["kind"] == "production" and by["p"]["kwh"] == 2080 and by["p"]["fixed"] == 0
+    assert by["c"]["kind"] == "consumption" and by["c"]["kwh"] == 1170
+    assert by["c"]["power_fee"] == 125 and by["c"]["fixed"] == 385
