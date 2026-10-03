@@ -1,0 +1,13 @@
+{
+  "domain": "malarenergi",
+  "name": "Mälarenergi",
+  "codeowners": ["@8408323"],
+  "config_flow": true,
+  "dependencies": ["http"],
+  "documentation": "https://github.com/8408323/ha-malarenergi",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/8408323/ha-malarenergi/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

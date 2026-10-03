@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mälarenergi",
+        "description": "Logga in med BankID. Ett nytt fönster öppnas med en QR-kod som du skannar med BankID-appen."
+      },
+      "reauth_confirm": {
+        "title": "Logga in igen",
+        "description": "Inloggningen har gått ut. Logga in med BankID igen."
+      },
+      "bankid": {
+        "title": "BankID",
+        "description": "Skanna QR-koden i fönstret som öppnades. Stäng inte den här dialogen."
+      }
+    },
+    "error": {
+      "bankid_failed": "BankID-inloggningen misslyckades: {error}",
+      "cannot_connect": "Kunde inte hämta kontot från Mälarenergi."
+    },
+    "abort": {
+      "already_configured": "Det här kundkontot är redan tillagt.",
+      "reauth_successful": "Inloggad igen."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "connection": {"name": "Anslutning"}
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mälarenergi",
+        "description": "Log in with BankID. A new window opens with a QR code to scan in the BankID app."
+      },
+      "reauth_confirm": {
+        "title": "Log in again",
+        "description": "The login has expired. Log in with BankID again."
+      },
+      "bankid": {
+        "title": "BankID",
+        "description": "Scan the QR code in the window that opened. Keep this dialog open."
+      }
+    },
+    "error": {
+      "bankid_failed": "BankID login failed: {error}",
+      "cannot_connect": "Could not fetch the account from Mälarenergi."
+    },
+    "abort": {
+      "already_configured": "This customer account is already added.",
+      "reauth_successful": "Logged in again."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "connection": {
+        "name": "Connection"
+      }
+    }
+  }
+}
