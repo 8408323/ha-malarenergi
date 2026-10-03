@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
+from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
@@ -141,6 +142,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coord.async_config_entry_first_refresh()
     entry.runtime_data = coord
     _register_services(hass)
+    if not hass.data.get(f"{DOMAIN}_ws"):
+        websocket_api.async_register_command(hass, ws_data)
+        hass.data[f"{DOMAIN}_ws"] = True
+    from .panel import async_register_panel
+
+    await async_register_panel(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -185,4 +192,15 @@ def _register_services(hass: HomeAssistant) -> None:
         download,
         schema=vol.Schema({vol.Required("invoice_id"): str}),
         supports_response=SupportsResponse.ONLY,
+    )
+
+
+@websocket_api.websocket_command({vol.Required("type"): "malarenergi/data"})
+@callback
+def ws_data(hass, connection, msg):
+    """Coordinator data for the dashboard panel."""
+    entries = [e for e in hass.config_entries.async_entries(DOMAIN) if getattr(e, "runtime_data", None)]
+    coord = entries[0].runtime_data if entries else None
+    connection.send_result(
+        msg["id"], {"data": coord.data if coord else None, "ok": bool(coord and coord.last_update_success)}
     )

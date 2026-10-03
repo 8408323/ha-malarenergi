@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mälarenergi panel preview</title>
+<style>body{margin:0;background:#111;--primary-background-color:#111;--card-background-color:#1c1c1c;--primary-text-color:#e1e1e1;--secondary-text-color:#9b9b9b;--primary-color:#03a9f4;color-scheme:dark}</style>
+</head><body><malarenergi-panel id="p"></malarenergi-panel>
+<script type="module">
+import "/src/main.tsx";
+import mock from "/dev/mock.json";
+const p = document.getElementById("p");
+p.narrow = innerWidth < 600;
+p.hass = { language: new URLSearchParams(location.search).get("lang") || "sv", states: {},
+  connection: { sendMessagePromise: async () => ({ data: mock, ok: true }) },
+  callService: async () => ({ response: { url: "about:blank" } }) };
+</script></body></html>

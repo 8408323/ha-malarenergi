@@ -4,8 +4,8 @@ Home Assistant custom integration for [Mälarenergi](https://www.malarenergi.se)
 electricity grid owner and supplier for Västerås and the Mälardalen area. Logs in to
 **Mitt Mälarenergi** with BankID and brings your account into Home Assistant.
 
-> **Status**: Early (0.1). BankID login, token refresh and endpoint discovery work;
-> data entities (consumption, surplus, invoices, power peaks, HAN port) are being added.
+> **Status**: 0.2 — BankID login with automatic token refresh, sensors, invoices with PDF download,
+> HAN port control and a sidebar dashboard. Tested against a real private customer account.
 
 Not an official API. Reverse-engineered from the public Mitt Mälarenergi web app — see
 the docstring in [`api.py`](custom_components/malarenergi/api.py) for the login flow and
@@ -56,14 +56,25 @@ you to scan once more.
 
 Your personal number is never entered or stored — BankID handles identification.
 
-## Features (planned for 0.2)
+## Features
 
-- Consumption and surplus (export) per hour/day/month as long-term statistics
-- Invoices: latest invoice sensor, history attribute, PDF download action, new-invoice event
-- Contracts (elhandel, elnät, produktion) and fuse size
-- Power peaks (effekttopp) and the grid-tariff calculator, ready for a power-based tariff
-- HAN port status and on/off control
-- Spot price and Mälarenergi's historical weather for your facility
+- **Dashboard** in the sidebar (React): this month's consumption, production, net cost and power peak,
+  a per-day chart from Mälarenergi's own meter values, and all invoices with one-click PDF download
+- Sensors: consumption and production (yesterday / this month), cost (energy + grid) and production
+  compensation this month, monthly power peak, latest invoice (24-invoice history attribute), unpaid
+  and overdue invoices, fuse size, unread messages, connection status
+- Each invoice is classified (consumption / production) with metered kWh, fixed fees, power fee and
+  other one-off charges, so you can check it against your own metering
+- **HAN port** status sensor and on/off switch. Turning it off disconnects local meter readers
+  (e.g. Mälarenergi PowerHub) from the meter.
+- `malarenergi.download_invoice` action (PDF, temporary link valid 10 minutes) and a
+  `malarenergi_new_invoice` event fired once per new invoice
+
+## Dashboard
+
+The integration adds a **Mälarenergi** item to the sidebar, following your Home Assistant language
+(Swedish or English). Source is in [`frontend/`](frontend/) (React + Vite + Recharts); the built bundle is
+committed to `custom_components/malarenergi/www/` so HACS installs need no build step.
 
 ## Development
 
@@ -74,6 +85,7 @@ because they contain personal data.
 ```bash
 uv sync --dev
 uv run pytest tests/
+(cd frontend && npm ci && npm run build)  # rebuilds custom_components/malarenergi/www/panel.js
 uv run ruff check custom_components/ tests/
 uv run ruff format custom_components/ tests/
 ```

@@ -3,7 +3,7 @@
   "name": "Mälarenergi",
   "codeowners": ["@8408323"],
   "config_flow": true,
-  "dependencies": ["http"],
+  "dependencies": ["http", "frontend", "panel_custom", "websocket_api"],
   "documentation": "https://github.com/8408323/ha-malarenergi",
   "integration_type": "service",
   "iot_class": "cloud_polling",
