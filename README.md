@@ -58,8 +58,14 @@ Your personal number is never entered or stored — BankID handles identificatio
 
 ## Features
 
-- **Dashboard** in the sidebar (React): this month's consumption, production, net cost and power peak,
-  a per-day chart from Mälarenergi's own meter values, and all invoices with one-click PDF download
+- **Dashboard** in the sidebar (React) with five tabs:
+  - *Overview*: this month's consumption, production, net cost and power peak, last 30 days chart
+  - *History*: any day (per hour), month (per day) or year (per month), step back in time, zoom, period totals
+  - *Invoices*: paginated list, year-to-date totals, fees per invoice, one-click PDF download
+  - *Contracts*: active and ended contracts (grid, supply, production, broadband) with fuse size and grid area
+  - *Settings*: language (English, Svenska, Norsk, Dansk, Suomi, Íslenska — default follows Home Assistant),
+    notification targets and events, BankID re-login, invoices per page
+- Notifications (opt-in, to any `notify` service): new invoice, overdue invoice, HAN port changed, login expired
 - Sensors: consumption and production (yesterday / this month), cost (energy + grid) and production
   compensation this month, monthly power peak, latest invoice (24-invoice history attribute), unpaid
   and overdue invoices, fuse size, unread messages, connection status

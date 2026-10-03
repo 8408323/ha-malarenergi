@@ -142,3 +142,26 @@ def unread_inbox(payload: Any) -> int:
 def overdue_invoices(payload: Any) -> int:
     d = _data(payload)
     return int(((d[0] if d else {}).get("overDueInvoices") or {}).get("total") or 0)
+
+
+def contracts(payload: Any) -> list[dict]:
+    """Active (and recently expired) contracts grouped by utility: name, number, start/end, fuse, yearly kWh."""
+    out = []
+    for group in _data(payload):
+        for utility, items in (group or {}).items():
+            for c in items or []:
+                attrs = c.get("attributes") or {}
+                end = c.get("endDate") or ""
+                out.append(
+                    {
+                        "utility": utility,
+                        "product": c.get("productName"),
+                        "contract": c.get("contractNumber"),
+                        "start": (c.get("startDate") or "")[:10],
+                        "end": "" if end.startswith("9999") or not end[:1].isdigit() else end[:10],
+                        "fuse": attrs.get("fuseSize"),
+                        "area": attrs.get("meteringGridArea"),
+                        "yearly_kwh": c.get("expectedYearlyConsumption"),
+                    }
+                )
+    return sorted(out, key=lambda x: (x["end"] != "", x["utility"], x["start"]))
