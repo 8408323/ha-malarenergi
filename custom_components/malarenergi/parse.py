@@ -109,6 +109,7 @@ def invoices(payload: Any) -> list[dict]:
                         * vat,
                         2,
                     ),
+                    "other": round(sum(d.get("otherMonth") or 0 for d in details) * vat, 2),
                     "invoice_id": i.get("invoiceId"),
                     "issue_date": (i.get("issueDate") or "")[:10],
                     "due_date": (i.get("dueDate") or "")[:10],

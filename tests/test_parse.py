@@ -128,6 +128,7 @@ def test_invoice_kind_kwh_and_power_fee():
                             {"utilityType": {"name": "ELEXT"}, "productType": "Spot Tim Ext", "consumptionMonth": 1170},
                             {"utilityType": {"name": "EL"}, "productType": "El kW", "costVariableMonth": 100},
                             {"utilityType": {"name": "EL"}, "productType": "El Fast Avg", "costFixedMonth": 308},
+                            {"utilityType": {"name": "ELEXT"}, "productType": None, "otherMonth": 279.2},
                         ],
                     },
                 ]
@@ -137,4 +138,4 @@ def test_invoice_kind_kwh_and_power_fee():
     by = {i["invoice_id"]: i for i in parse.invoices(p)}
     assert by["p"]["kind"] == "production" and by["p"]["kwh"] == 2080 and by["p"]["fixed"] == 0
     assert by["c"]["kind"] == "consumption" and by["c"]["kwh"] == 1170
-    assert by["c"]["power_fee"] == 125 and by["c"]["fixed"] == 385
+    assert by["c"]["power_fee"] == 125 and by["c"]["fixed"] == 385 and by["c"]["other"] == 349
