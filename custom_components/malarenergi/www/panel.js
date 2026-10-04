@@ -28451,76 +28451,79 @@ function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 					/* @__PURE__ */ (0, $.jsx)("th", { children: t.due }),
 					/* @__PURE__ */ (0, $.jsx)("th", { children: t.status }),
 					/* @__PURE__ */ (0, $.jsx)("th", {})
-				] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: r.slice(s * a, a ? (s + 1) * a : void 0).map((e) => /* @__PURE__ */ (0, $.jsxs)(S.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("tr", {
-					className: "clickable",
-					onClick: () => f(d === e.invoice_id ? null : e.invoice_id),
-					title: t.show_lines,
-					children: [
-						/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", {
-							className: `chev ${d === e.invoice_id ? "open" : ""}`,
-							children: "›"
-						}), m(e.period_start.slice(0, 7))] }),
-						/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", { className: `dot ${e.kind}` }), /* @__PURE__ */ (0, $.jsx)("span", {
-							className: "wide",
-							children: e.kind === "production" ? t.production : t.consumption
-						})] }),
-						/* @__PURE__ */ (0, $.jsx)("td", {
-							className: `r ${e.amount < 0 ? "pos" : ""}`,
-							children: iz(-e.amount)
-						}),
-						/* @__PURE__ */ (0, $.jsx)("td", {
-							className: "r wide",
-							children: KR(e.kwh, 0)
-						}),
-						/* @__PURE__ */ (0, $.jsx)("td", {
-							className: "r wide",
-							children: e.fixed ? iz(-e.fixed) : "–"
-						}),
-						/* @__PURE__ */ (0, $.jsx)("td", {
-							className: "r wide",
-							children: e.power_fee ? iz(-e.power_fee) : "–"
-						}),
-						/* @__PURE__ */ (0, $.jsx)("td", {
-							className: "r wide",
-							children: e.other ? iz(-e.other) : "–"
-						}),
-						/* @__PURE__ */ (0, $.jsx)("td", { children: h(e.due_date) }),
-						/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
-							className: `badge ${e.closed ? "ok" : "warn"}`,
-							children: e.amount < 0 ? t.credit : e.closed ? t.paid : t.open
-						}) }),
-						/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("button", {
-							className: "btn",
-							disabled: l === e.invoice_id,
-							onClick: (t) => {
-								t.stopPropagation(), g(e.invoice_id);
-							},
-							children: l === e.invoice_id ? t.downloading : t.pdf
-						}) })
-					]
-				}), d === e.invoice_id && /* @__PURE__ */ (0, $.jsx)("tr", {
-					className: "lines-row",
-					children: /* @__PURE__ */ (0, $.jsx)("td", {
-						colSpan: 10,
-						children: /* @__PURE__ */ (0, $.jsx)("div", {
-							className: "lines",
-							children: Object.entries(az(e.lines ?? [])).sort((e, t) => Math.abs(t[1].amount) - Math.abs(e[1].amount)).map(([e, n]) => /* @__PURE__ */ (0, $.jsxs)("div", {
-								className: "line",
-								children: [
-									/* @__PURE__ */ (0, $.jsx)("span", { children: t[`c_${e}`] ?? e }),
-									/* @__PURE__ */ (0, $.jsx)("span", {
-										className: "muted",
-										children: n.kwh ? `${KR(n.kwh, 0)} kWh` : ""
-									}),
-									/* @__PURE__ */ (0, $.jsx)("b", {
-										className: n.amount < 0 ? "pos" : "",
-										children: iz(-n.amount, 2)
-									})
-								]
-							}, e))
+				] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: r.slice(s * a, a ? (s + 1) * a : void 0).map((e, n) => {
+					let r = e.invoice_id ?? `row-${s}-${n}`;
+					return /* @__PURE__ */ (0, $.jsxs)(S.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("tr", {
+						className: "clickable",
+						onClick: () => f(d === r ? null : r),
+						title: t.show_lines,
+						children: [
+							/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", {
+								className: `chev ${d === r ? "open" : ""}`,
+								children: "›"
+							}), m(e.period_start.slice(0, 7))] }),
+							/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", { className: `dot ${e.kind}` }), /* @__PURE__ */ (0, $.jsx)("span", {
+								className: "wide",
+								children: e.kind === "production" ? t.production : t.consumption
+							})] }),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: `r ${e.amount < 0 ? "pos" : ""}`,
+								children: iz(e.amount == null ? null : -e.amount)
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: "r wide",
+								children: KR(e.kwh, 0)
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: "r wide",
+								children: e.fixed ? iz(-e.fixed) : "–"
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: "r wide",
+								children: e.power_fee ? iz(-e.power_fee) : "–"
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: "r wide",
+								children: e.other ? iz(-e.other) : "–"
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", { children: h(e.due_date) }),
+							/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
+								className: `badge ${e.closed ? "ok" : "warn"}`,
+								children: e.amount < 0 ? t.credit : e.closed ? t.paid : t.open
+							}) }),
+							/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("button", {
+								className: "btn",
+								disabled: l === e.invoice_id,
+								onClick: (t) => {
+									t.stopPropagation(), g(e.invoice_id);
+								},
+								children: l === e.invoice_id ? t.downloading : t.pdf
+							}) })
+						]
+					}), d === r && /* @__PURE__ */ (0, $.jsx)("tr", {
+						className: "lines-row",
+						children: /* @__PURE__ */ (0, $.jsx)("td", {
+							colSpan: 10,
+							children: /* @__PURE__ */ (0, $.jsx)("div", {
+								className: "lines",
+								children: Object.entries(az(e.lines ?? [])).sort((e, t) => Math.abs(t[1].amount) - Math.abs(e[1].amount)).map(([e, n]) => /* @__PURE__ */ (0, $.jsxs)("div", {
+									className: "line",
+									children: [
+										/* @__PURE__ */ (0, $.jsx)("span", { children: t[`c_${e}`] ?? e }),
+										/* @__PURE__ */ (0, $.jsx)("span", {
+											className: "muted",
+											children: n.kwh ? `${KR(n.kwh, 0)} kWh` : ""
+										}),
+										/* @__PURE__ */ (0, $.jsx)("b", {
+											className: n.amount < 0 ? "pos" : "",
+											children: iz(-n.amount, 2)
+										})
+									]
+								}, e))
+							})
 						})
-					})
-				})] }, e.invoice_id)) })] })
+					})] }, r);
+				}) })] })
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("div", {
 				className: "pager",

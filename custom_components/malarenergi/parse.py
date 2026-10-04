@@ -120,7 +120,8 @@ def invoice_lines(details: list[dict], vat: float, production_invoice: bool = Fa
         # on an invoice that is a production payout as a whole, any unknown row (payout or correction) is
         # part of it; elsewhere only a row with negative energy and a non-positive amount is a payout
         credit = production_invoice or (amount <= 0 and (d.get("consumptionMonth") or 0) < 0)
-        if not cat.startswith("production_") and (util == "ELPROD" or (util == "ELEXT" and credit)):
+        # only genuinely unknown rows: recognised consumption lines (e.g. Spot Tim Ext) keep their category
+        if cat == "other" and (util == "ELPROD" or (util == "ELEXT" and credit)):
             cat = "production_other"  # unknown product on a production row: still a VAT-free payout
         out.append(
             {

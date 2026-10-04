@@ -322,12 +322,15 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
               <th className="r wide">{t.fixed}</th><th className="r wide">{t.power_fee}</th><th className="r wide">{t.other}</th>
               <th>{t.due}</th><th>{t.status}</th><th /></tr></thead>
             <tbody>
-              {invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => (
-                <Fragment key={i.invoice_id}>
-                <tr className="clickable" onClick={() => setOpen(open === i.invoice_id ? null : i.invoice_id)} title={t.show_lines}>
-                  <td><span className={`chev ${open === i.invoice_id ? "open" : ""}`}>›</span>{monthName(i.period_start.slice(0, 7))}</td>
+              {invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i, idx) => {
+                // expansion key: an invoice without an id must not equal the "nothing open" null
+                const key = i.invoice_id ?? `row-${page}-${idx}`;
+                return (
+                <Fragment key={key}>
+                <tr className="clickable" onClick={() => setOpen(open === key ? null : key)} title={t.show_lines}>
+                  <td><span className={`chev ${open === key ? "open" : ""}`}>›</span>{monthName(i.period_start.slice(0, 7))}</td>
                   <td><span className={`dot ${i.kind}`} /><span className="wide">{i.kind === "production" ? t.production : t.consumption}</span></td>
-                  <td className={`r ${i.amount < 0 ? "pos" : ""}`}>{money(-i.amount)}</td>
+                  <td className={`r ${i.amount < 0 ? "pos" : ""}`}>{money(i.amount == null ? null : -i.amount)}</td>
                   <td className="r wide">{fmt(i.kwh, 0)}</td>
                   <td className="r wide">{i.fixed ? money(-i.fixed) : "–"}</td><td className="r wide">{i.power_fee ? money(-i.power_fee) : "–"}</td>
                   <td className="r wide">{i.other ? money(-i.other) : "–"}</td>
@@ -335,7 +338,7 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
                   <td><span className={`badge ${i.closed ? "ok" : "warn"}`}>{i.amount < 0 ? t.credit : i.closed ? t.paid : t.open}</span></td>
                   <td><button className="btn" disabled={busy === i.invoice_id} onClick={(e) => { e.stopPropagation(); download(i.invoice_id); }}>{busy === i.invoice_id ? t.downloading : t.pdf}</button></td>
                 </tr>
-                {open === i.invoice_id && (
+                {open === key && (
                   <tr className="lines-row"><td colSpan={10}>
                     <div className="lines">
                       {Object.entries(groupLines(i.lines ?? []))
@@ -351,7 +354,8 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
                   </td></tr>
                 )}
                 </Fragment>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

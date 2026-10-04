@@ -228,3 +228,26 @@ def test_positive_unknown_correction_on_production_invoice_stays_production():
     )
     assert [x["category"] for x in lines] == ["production_spot", "production_other"]
     assert sum(x["amount"] for x in lines) == -90.0  # net payout, no VAT added to the correction
+
+
+def test_recognised_consumption_line_on_net_credit_invoice_keeps_category():
+    lines = parse.invoice_lines(
+        [
+            {
+                "productType": "Spot Tim Ext",
+                "utilityType": {"name": "ELEXT"},
+                "consumptionMonth": 50,
+                "costVariableMonth": 30.0,
+            },
+            {
+                "productType": "Prod SpotTim",
+                "utilityType": {"name": "ELEXT"},
+                "consumptionMonth": -500,
+                "costVariableMonth": -200.0,
+            },
+        ],
+        1.25,
+        production_invoice=True,
+    )
+    assert [x["category"] for x in lines] == ["spot_energy", "production_spot"]
+    assert lines[0]["amount"] == 37.5  # consumption keeps its VAT
