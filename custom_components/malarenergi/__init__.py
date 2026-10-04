@@ -123,6 +123,10 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if prev:
             if (out.get("overdue") or 0) > (prev.get("overdue") or 0):
                 await self.notify("notify_overdue", "Mälarenergi", f"{out['overdue']} förfallen faktura/fakturor.")
+            elif not out.get("overdue") and prev.get("overdue"):  # paid: drop a fallback alert that's now stale
+                persistent_notification.async_dismiss(
+                    self.hass, f"{DOMAIN}_{self.config_entry.entry_id}_notify_overdue"
+                )
             if prev.get("han") and out.get("han") != prev.get("han"):
                 st = ", ".join(v.lower() for v in out["han"].values())
                 await self.notify("notify_han_change", "Mälarenergi HAN-port", f"HAN-porten är nu: {st}.")

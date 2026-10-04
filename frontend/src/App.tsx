@@ -431,6 +431,7 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
   const closeLogin = () => {  // closing aborts the flow, so its BankID attempt stops polling
     if (login) cancelFlow(login.flow);
     setLogin(null);
+    setMsg((m) => (m === t.relogin_checking ? null : m));
   };
   // leaving the panel with the dialog open must abort the flow too
   useEffect(() => () => { if (loginRef.current) cancelFlow(loginRef.current.flow); }, []);
@@ -448,7 +449,7 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
         const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth_status", flow_id: mine }).catch(() => null);
         if (r?.done && live()) { setLogin(null); setMsg(r.ok ? t.relogin_done : t.relogin_failed); return; }
       }
-      if (live()) { setLogin(null); setMsg(t.relogin_failed); }
+      if (live()) { cancelFlow(mine); setLogin(null); setMsg(t.relogin_failed); }  // don't leave the failed flow behind
     };
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);
@@ -499,7 +500,8 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
             <label className="switch"><input type="checkbox" checked={targets.includes(s)}
               onChange={(e) => save({ notify_targets: e.target.checked ? [...targets, s] : targets.filter((x) => x !== s) })} /><span /></label></div>
         ))}
-        {targets.length === 0 && <div className="muted" style={{ marginTop: 6 }}>{t.no_targets}</div>}
+        {/* also when every saved target has since disappeared: the backend then falls back the same way */}
+        {!targets.some((x) => services.includes(x)) && <div className="muted" style={{ marginTop: 6 }}>{t.no_targets}</div>}
         <div className="label" style={{ margin: "12px 0 6px" }}>{t.settings_notify}</div>
         {["notify_new_invoice", "notify_overdue", "notify_han_change", "notify_auth"].map(toggle)}
       </section>

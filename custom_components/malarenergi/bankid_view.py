@@ -96,7 +96,8 @@ class LoginAttempt:
         self._login: BankIDLogin | None = None
         self._task: asyncio.Task | None = None
         self._qr_at = 0.0
-        self.this_device = False  # chosen on the page: BankID app on this phone vs QR for another device
+        self.this_device = False
+        self._cancelled = False  # chosen on the page: BankID app on this phone vs QR for another device
         self._device_of_order = False
 
     @property
@@ -165,11 +166,13 @@ class LoginAttempt:
         finally:
             if self._login:
                 await self._login.close()
-            await asyncio.sleep(5)  # let the page show the final state
-            ATTEMPTS.pop(self.key, None)
-            await self.hass.config_entries.flow.async_configure(self.flow_id, {"done": True})
+            if not self._cancelled:  # a cancelled attempt's flow is already gone
+                await asyncio.sleep(5)  # let the page show the final state
+                ATTEMPTS.pop(self.key, None)
+                await self.hass.config_entries.flow.async_configure(self.flow_id, {"done": True})
 
     def cancel(self) -> None:
+        self._cancelled = True  # the flow is being removed: _run must not configure it afterwards
         if self._task and not self._task.done():
             self._task.cancel()
         ATTEMPTS.pop(self.key, None)

@@ -28668,7 +28668,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 		type: "malarenergi/reauth_cancel",
 		flow_id: t
 	}).catch(() => void 0), f = () => {
-		c && d(c.flow), l(null);
+		c && d(c.flow), l(null), s((e) => e === t.relogin_checking ? null : e);
 	};
 	(0, S.useEffect)(() => () => {
 		u.current && d(u.current.flow);
@@ -28689,7 +28689,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 					return;
 				}
 			}
-			i() && (l(null), s(t.relogin_failed));
+			i() && (d(r), l(null), s(t.relogin_failed));
 		};
 		return window.addEventListener("message", n), () => window.removeEventListener("message", n);
 	}, [c]), (0, S.useEffect)(() => {
@@ -28795,7 +28795,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 						})]
 					}, e)),
-					h.length === 0 && /* @__PURE__ */ (0, $.jsx)("div", {
+					!h.some((e) => i.includes(e)) && /* @__PURE__ */ (0, $.jsx)("div", {
 						className: "muted",
 						style: { marginTop: 6 },
 						children: t.no_targets

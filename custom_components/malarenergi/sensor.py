@@ -265,6 +265,9 @@ def _device(entry) -> DeviceInfo:
 
 class MeEntity(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
+    # the invoice history (with line items) is for live use (panel, other integrations), not for the
+    # recorder: it exceeds the 16 KB attribute limit and would bloat the database
+    _unrecorded_attributes = frozenset({"invoices", "lines"})
     entity_description: MeSensor
 
     def __init__(self, coord, entry, desc: MeSensor):
