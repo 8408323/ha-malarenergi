@@ -168,3 +168,17 @@ tr.clickable:hover td { background: color-mix(in srgb, var(--me-accent) 5%, tran
 .lines { display: grid; gap: 6px; max-width: 520px; }
 .line { display: grid; grid-template-columns: 1fr auto 110px; gap: 12px; align-items: center; font-size: 13px; }
 .line b { text-align: right; font-variant-numeric: tabular-nums; }
+
+.langs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.lang { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; cursor: pointer; text-align: left;
+  border: 1px solid var(--me-line); background: var(--me-bg); color: var(--me-text); font: inherit; transition: border-color .15s, background .15s; }
+.lang:hover { border-color: color-mix(in srgb, var(--me-accent) 50%, transparent); }
+.lang.on { border-color: var(--me-accent); background: color-mix(in srgb, var(--me-accent) 14%, transparent); }
+.lang.auto { grid-column: 1 / -1; }
+.lang .flag { font-size: 20px; line-height: 1; }
+.lang .lname { display: flex; flex-direction: column; flex: 1; }
+.lang .lname small { color: var(--me-muted); font-size: 12px; }
+.lang .check { color: var(--me-accent); font-weight: 700; }
+.hint { font-size: 12px; margin-top: 6px; }
+table.sum tfoot th { border-top: 2px solid var(--me-line); }
+table.sum td, table.sum th { white-space: nowrap; }

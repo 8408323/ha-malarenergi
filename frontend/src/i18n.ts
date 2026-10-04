@@ -1,5 +1,6 @@
 // Default follows the Home Assistant user's language; overridable in the panel's Settings tab.
 const en = {
+  zoom_hint: "Drag across the chart to zoom; the slider below adjusts the same window. Double-click to reset.", table_zoom: "Zoomed", table_full: "Whole period",
   title: "Mälarenergi", tab_overview: "Overview", tab_history: "History", tab_invoices: "Invoices", tab_contracts: "Contracts", tab_settings: "Settings",
   month: "This month", consumption: "Consumption", production: "Production", cost: "Cost", compensation: "Compensation",
   peak: "Power peak", net: "Net", daily: "Last 30 days", invoices: "Invoices", period: "Period", amount: "Amount", due: "Due",
@@ -8,6 +9,7 @@ const en = {
   net_info: "Cost of bought power minus compensation for sold power this month, from Mälarenergi's own meter values (incl. VAT, excl. fixed fees).",
   peak_info: "The month's highest hourly grid power according to the meter.",
   daily_info: "Mälarenergi's meter values. Bars = kWh, lines = cost and compensation in SEK.",
+  wallet_info: "Shown from your wallet: + (green) is money paid to you, − is money you pay. Amounts incl. VAT; production payouts are VAT-free.", wallet_net_info: "Your net for the year: production payouts minus consumption invoices. Negative (red) means you paid more than you were paid.",
   inv_info: "Consumption and production are invoiced separately. Fixed fees, power fee and other items are shown per invoice.",
   fixed: "Fixed", power_fee: "Power", other: "Other", downloading: "Fetching…", per_page: "Per page", of: "of", all: "All",
   han_OPEN: "open", han_CLOSED: "closed", han_PENDINGOPEN: "opening", han_PENDINGCLOSE: "closing",
@@ -30,7 +32,8 @@ const en = {
 type Dict = typeof en;
 
 const sv: Dict = {
-  ...en, tab_overview: "Översikt", tab_history: "Historik", tab_invoices: "Fakturor", tab_contracts: "Avtal", tab_settings: "Inställningar",
+  ...en,
+  zoom_hint: "Dra över diagrammet för att zooma; reglaget under justerar samma fönster. Dubbelklicka för att återställa.", table_zoom: "Inzoomat", table_full: "Hela perioden", tab_overview: "Översikt", tab_history: "Historik", tab_invoices: "Fakturor", tab_contracts: "Avtal", tab_settings: "Inställningar",
   month: "Denna månad", consumption: "Förbrukning", production: "Produktion", cost: "Kostnad", compensation: "Ersättning",
   peak: "Effekttopp", net: "Netto", daily: "Senaste 30 dagarna", invoices: "Fakturor", period: "Period", amount: "Belopp", due: "Förfaller",
   status: "Status", paid: "Betald", open: "Obetald", credit: "Utbetalning", han: "HAN-port", fuse: "Säkring",
@@ -38,6 +41,7 @@ const sv: Dict = {
   net_info: "Kostnad för köpt el minus ersättning för såld el, denna månad, enligt Mälarenergis egna mätvärden (inkl. moms, utan fasta avgifter).",
   peak_info: "Månadens högsta timeffekt från nätet enligt elmätaren.",
   daily_info: "Mälarenergis mätvärden. Staplar = kWh, linjer = kostnad respektive ersättning i kr.",
+  wallet_info: "Visas från din plånbok: + (grönt) är pengar till dig, − är pengar du betalar. Belopp inkl. moms; ersättning för produktion är momsfri.", wallet_net_info: "Ditt netto för året: utbetalningar för produktion minus fakturor för förbrukning. Negativt (rött) betyder att du betalat mer än du fått.",
   inv_info: "Förbrukning och produktion faktureras separat. Fasta avgifter, effektavgift och övriga poster visas per faktura.",
   fixed: "Fasta", power_fee: "Effekt", other: "Övrigt", downloading: "Hämtar…", per_page: "Per sida", of: "av", all: "Alla",
   han_OPEN: "öppen", han_CLOSED: "stängd", han_PENDINGOPEN: "öppnas", han_PENDINGCLOSE: "stängs",
@@ -59,7 +63,9 @@ const sv: Dict = {
 };
 
 const nb: Dict = {
-  ...en, tab_overview: "Oversikt", tab_history: "Historikk", tab_invoices: "Fakturaer", tab_contracts: "Avtaler", tab_settings: "Innstillinger",
+  ...en,
+  zoom_hint: "Dra over diagrammet for å zoome; glidebryteren under justerer samme vindu. Dobbeltklikk for å tilbakestille.", table_zoom: "Zoomet", table_full: "Hele perioden",
+  wallet_info: "Vist fra lommeboken din: + (grønn) er penger til deg, − er penger du betaler. Beløp inkl. mva; produksjonsutbetaling er mva-fri.", wallet_net_info: "Ditt netto for året: utbetalinger for produksjon minus fakturaer for forbruk. Negativt (rødt) betyr at du har betalt mer enn du har fått.", tab_overview: "Oversikt", tab_history: "Historikk", tab_invoices: "Fakturaer", tab_contracts: "Avtaler", tab_settings: "Innstillinger",
   month: "Denne måneden", consumption: "Forbruk", production: "Produksjon", cost: "Kostnad", compensation: "Godtgjørelse",
   peak: "Effekttopp", net: "Netto", daily: "Siste 30 dager", invoices: "Fakturaer", period: "Periode", amount: "Beløp", due: "Forfall",
   paid: "Betalt", open: "Ubetalt", credit: "Utbetaling", han: "HAN-port", fuse: "Sikring", none: "Ingen data ennå", loading: "Laster…",
@@ -74,7 +80,9 @@ const nb: Dict = {
 };
 
 const da: Dict = {
-  ...en, tab_overview: "Overblik", tab_history: "Historik", tab_invoices: "Fakturaer", tab_contracts: "Aftaler", tab_settings: "Indstillinger",
+  ...en,
+  zoom_hint: "Træk hen over diagrammet for at zoome; skyderen nedenfor justerer samme vindue. Dobbeltklik for at nulstille.", table_zoom: "Zoomet", table_full: "Hele perioden",
+  wallet_info: "Vist fra din pung: + (grøn) er penge til dig, − er penge du betaler. Beløb inkl. moms; afregning for produktion er momsfri.", wallet_net_info: "Dit netto for året: udbetalinger for produktion minus fakturaer for forbrug. Negativt (rødt) betyder, at du har betalt mere, end du har fået.", tab_overview: "Overblik", tab_history: "Historik", tab_invoices: "Fakturaer", tab_contracts: "Aftaler", tab_settings: "Indstillinger",
   month: "Denne måned", consumption: "Forbrug", production: "Produktion", cost: "Omkostning", compensation: "Godtgørelse",
   peak: "Effekttop", net: "Netto", daily: "Seneste 30 dage", invoices: "Fakturaer", period: "Periode", amount: "Beløb", due: "Forfald",
   paid: "Betalt", open: "Ubetalt", credit: "Udbetaling", han: "HAN-port", fuse: "Sikring", none: "Ingen data endnu", loading: "Indlæser…",
@@ -89,7 +97,9 @@ const da: Dict = {
 };
 
 const fi: Dict = {
-  ...en, tab_overview: "Yleiskatsaus", tab_history: "Historia", tab_invoices: "Laskut", tab_contracts: "Sopimukset", tab_settings: "Asetukset",
+  ...en,
+  zoom_hint: "Vedä kaavion yli zoomataksesi; alla oleva liukusäädin säätää samaa ikkunaa. Palauta kaksoisnapsautuksella.", table_zoom: "Zoomattu", table_full: "Koko jakso",
+  wallet_info: "Näytetään lompakkosi kannalta: + (vihreä) on sinulle maksettua rahaa, − on rahaa, jonka maksat. Summat sis. ALV; tuotannon hyvitys on ALV-vapaa.", wallet_net_info: "Vuoden nettosi: tuotannon hyvitykset miinus kulutuslaskut. Negatiivinen (punainen) tarkoittaa, että olet maksanut enemmän kuin saanut.", tab_overview: "Yleiskatsaus", tab_history: "Historia", tab_invoices: "Laskut", tab_contracts: "Sopimukset", tab_settings: "Asetukset",
   month: "Tämä kuukausi", consumption: "Kulutus", production: "Tuotanto", cost: "Kustannus", compensation: "Hyvitys",
   peak: "Tehohuippu", net: "Netto", daily: "Viimeiset 30 päivää", invoices: "Laskut", period: "Jakso", amount: "Summa", due: "Eräpäivä",
   paid: "Maksettu", open: "Maksamatta", credit: "Maksu sinulle", han: "HAN-portti", fuse: "Sulake", none: "Ei vielä tietoja", loading: "Ladataan…",
@@ -104,7 +114,9 @@ const fi: Dict = {
 };
 
 const is: Dict = {
-  ...en, tab_overview: "Yfirlit", tab_history: "Saga", tab_invoices: "Reikningar", tab_contracts: "Samningar", tab_settings: "Stillingar",
+  ...en,
+  zoom_hint: "Dragðu yfir grafið til að þysja; sleðinn fyrir neðan stillir sama glugga. Tvísmelltu til að endurstilla.", table_zoom: "Þysjað", table_full: "Allt tímabilið",
+  wallet_info: "Sýnt frá veskinu þínu: + (grænt) eru peningar til þín, − eru peningar sem þú greiðir. Upphæðir með VSK; greiðsla fyrir framleiðslu er án VSK.", wallet_net_info: "Nettó ársins: greiðslur fyrir framleiðslu að frádregnum reikningum fyrir notkun. Neikvætt (rautt) þýðir að þú hefur greitt meira en þú fékkst.", tab_overview: "Yfirlit", tab_history: "Saga", tab_invoices: "Reikningar", tab_contracts: "Samningar", tab_settings: "Stillingar",
   month: "Þessi mánuður", consumption: "Notkun", production: "Framleiðsla", cost: "Kostnaður", compensation: "Endurgreiðsla",
   peak: "Aflstoppur", net: "Nettó", daily: "Síðustu 30 dagar", invoices: "Reikningar", period: "Tímabil", amount: "Upphæð", due: "Gjalddagi",
   paid: "Greitt", open: "Ógreitt", credit: "Útgreiðsla", han: "HAN-tengi", fuse: "Öryggi", none: "Engin gögn enn", loading: "Hleð…",

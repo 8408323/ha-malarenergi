@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { LANG_NAMES, T, pick } from "./i18n";
 
 type Series = Record<string, [string, number][]>;
@@ -132,10 +132,28 @@ function Overview({ t, locale, narrow, d }: Ctx & { d: Data }) {
   );
 }
 
-function EnergyChart({ rows, t, height, tick, brush }: { rows: any[]; t: T; height: number; tick: (k: any) => string; brush?: boolean }) {
+type Zoom = { a: number; b: number } | null;
+
+function EnergyChart({ rows, t, height, tick, brush, zoom, setZoom }: {
+  rows: any[]; t: T; height: number; tick: (k: any) => string; brush?: boolean; zoom?: Zoom; setZoom?: (z: Zoom) => void;
+}) {
+  // drag across the plot to zoom (the Brush below shows and adjusts the same window); double-click resets
+  const [drag, setDrag] = useState<{ a: string; b: string } | null>(null);
+  const idx = (k: string) => rows.findIndex((r) => r.k === k);
+  const end = () => {
+    if (drag && setZoom) {
+      const [a, b] = [idx(drag.a), idx(drag.b)].sort((x, y) => x - y);
+      if (b > a) setZoom({ a, b });
+    }
+    setDrag(null);
+  };
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <ComposedChart data={rows} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+      <ComposedChart data={rows} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}
+        onMouseDown={(e: any) => setZoom && e?.activeLabel && setDrag({ a: e.activeLabel, b: e.activeLabel })}
+        onMouseMove={(e: any) => drag && e?.activeLabel && setDrag({ ...drag, b: e.activeLabel })}
+        onMouseUp={end} onMouseLeave={() => setDrag(null)} onDoubleClick={() => setZoom?.(null)}
+        style={{ cursor: setZoom ? "crosshair" : undefined, userSelect: "none" }}>
         <CartesianGrid stroke="var(--me-line)" vertical={false} />
         <XAxis dataKey="k" tickFormatter={tick} minTickGap={24} {...axis} />
         <YAxis yAxisId="e" width={44} {...axis} />
@@ -146,9 +164,37 @@ function EnergyChart({ rows, t, height, tick, brush }: { rows: any[]; t: T; heig
         <Bar yAxisId="e" dataKey="prod" name={`${t.production} (kWh)`} fill="#f5b301" radius={[3, 3, 0, 0]} isAnimationActive={false} />
         <Line yAxisId="m" dataKey="cost" name={`${t.cost} (kr)`} stroke="#e5484d" dot={false} strokeWidth={2} isAnimationActive={false} />
         <Line yAxisId="m" dataKey="comp" name={`${t.compensation} (kr)`} stroke="#2ec27e" dot={false} strokeWidth={2} isAnimationActive={false} />
-        {brush && rows.length > 8 && <Brush dataKey="k" height={22} stroke="var(--me-accent)" fill="var(--me-card)" tickFormatter={tick} travellerWidth={8} />}
+        {drag && <ReferenceArea yAxisId="e" x1={drag.a} x2={drag.b} fill="var(--me-accent)" fillOpacity={0.15} stroke="var(--me-accent)" strokeOpacity={0.5} />}
+        {brush && rows.length > 8 && <Brush dataKey="k" height={22} stroke="var(--me-accent)" fill="var(--me-card)" tickFormatter={tick} travellerWidth={8}
+          startIndex={zoom?.a ?? 0} endIndex={zoom?.b ?? rows.length - 1}
+          onChange={(r: any) => setZoom?.(r.startIndex === 0 && r.endIndex === rows.length - 1 ? null : { a: r.startIndex, b: r.endIndex })} />}
       </ComposedChart>
     </ResponsiveContainer>
+  );
+}
+
+function SumTable({ rows, t, label, title }: { rows: any[]; t: T; label: (k: any) => string; title: string }) {
+  const sum = (k: string) => rows.reduce((s, r) => s + (r[k] ?? 0), 0);
+  const cols: [string, string, number][] = [["cons", `${t.consumption} (kWh)`, 1], ["prod", `${t.production} (kWh)`, 1],
+    ["cost", `${t.cost} (kr)`, 0], ["comp", `${t.compensation} (kr)`, 0]];
+  const net = (r: any) => (r.comp ?? 0) - (r.cost ?? 0);
+  return (
+    <section className="card">
+      <h2>{title}</h2>
+      <div className="table-wrap">
+        <table className="sum">
+          <thead><tr><th>{t.period}</th>{cols.map(([k, n]) => <th key={k} className="r">{n}</th>)}<th className="r">{t.net} (kr)<Info text={t.wallet_info} /></th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.k}><td>{label(r.k)}</td>{cols.map(([k, , d]) => <td key={k} className="r">{fmt(r[k], d)}</td>)}
+                <td className={`r ${net(r) >= 0 ? "pos" : "neg"}`}>{money(net(r))}</td></tr>
+            ))}
+          </tbody>
+          <tfoot><tr><th>{t.total}</th>{cols.map(([k, , d]) => <th key={k} className="r">{fmt(sum(k), d)}</th>)}
+            <th className={`r ${sum("comp") - sum("cost") >= 0 ? "pos" : "neg"}`}>{money(sum("comp") - sum("cost"))}</th></tr></tfoot>
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -159,6 +205,7 @@ function History({ hass, t, locale, narrow }: Ctx) {
   const [offset, setOffset] = useState(0); // 0 = current day/month/year, -1 = previous …
   const [rows, setRows] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<Zoom>(null);
   const range = useMemo(() => {
     const n = new Date(); let s: Date, e: Date;
     if (res === "hour") { s = new Date(n.getFullYear(), n.getMonth(), n.getDate() + offset); e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 1); }
@@ -167,7 +214,7 @@ function History({ hass, t, locale, narrow }: Ctx) {
     return { s, e };
   }, [res, offset]);
   useEffect(() => {
-    setRows(null); setError(null);
+    setRows(null); setError(null); setZoom(null);
     hass.connection.sendMessagePromise({ type: "malarenergi/series", resolution: res, start: range.s.toISOString(), end: range.e.toISOString() })
       .then((r: any) => {
         const m = new Map<string, any>();
@@ -188,6 +235,10 @@ function History({ hass, t, locale, narrow }: Ctx) {
   const tick = (k: any) => res === "hour" ? new Date(rows?.find((r) => r.k === k)?.t ?? k).toLocaleTimeString(locale, { hour: "2-digit" })
     : res === "day" ? String(k).slice(8) : new Date(String(k) + "-15").toLocaleDateString(locale, { month: "short" });
   const tot = (k: string) => (rows ?? []).reduce((s, r) => s + (r[k] ?? 0), 0);
+  // full label for table rows (the axis tick is abbreviated)
+  const rowLabel = (k: any) => res === "hour" ? new Date(rows?.find((r) => r.k === k)?.t ?? k).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
+    : res === "day" ? new Date(String(k)).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })
+    : new Date(String(k) + "-15").toLocaleDateString(locale, { month: "long", year: "numeric" });
   return (
     <>
       <div className="toolbar">
@@ -209,13 +260,23 @@ function History({ hass, t, locale, narrow }: Ctx) {
       <section className="card">
         <h2>{label}<Info text={t.history_info} /></h2>
         {error ? <div className="muted">{error}</div> : !rows ? <div className="muted">{t.loading}</div> : !rows.length ? <div className="muted">{t.none}</div> :
-          <EnergyChart rows={rows} t={t} height={narrow ? 260 : 340} tick={tick} brush />}
+          <EnergyChart rows={rows} t={t} height={narrow ? 260 : 340} tick={tick} brush zoom={zoom} setZoom={setZoom} />}
+        {rows && rows.length > 8 && <div className="muted hint">{t.zoom_hint}</div>}
       </section>
+      {rows && rows.length > 0 && zoom &&
+        <SumTable rows={rows.slice(zoom.a, zoom.b + 1)} t={t} label={rowLabel} title={`${t.table_zoom}: ${rowLabel(rows[zoom.a].k)} – ${rowLabel(rows[zoom.b].k)}`} />}
+      {rows && rows.length > 0 && <SumTable rows={rows} t={t} label={rowLabel} title={`${t.table_full}: ${label}`} />}
     </>
   );
 }
 
 /* ---------------- Invoices ---------------- */
+const FLAGS: Record<string, string> = { en: "🇬🇧", sv: "🇸🇪", nb: "🇳🇴", da: "🇩🇰", fi: "🇫🇮", is: "🇮🇸" };
+
+// wallet view: + is money paid to you, − is money you pay (the API's sign is the opposite)
+const money = (v: number | null | undefined, d = 0) =>
+  v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${fmt(Math.abs(v), d, "kr")}`;
+
 // amounts add up per category, kWh do not: several charges in one category (spot markup, certificates,
 // fossil-free mix…) are each billed on the same consumption. Rows of the same product (a period split by a
 // tariff change) do add up, so: sum per product name, then take the largest product.
@@ -248,12 +309,13 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
   return (
     <>
       <div className="kpis">
-        <Kpi label={`${t.consumption} · ${year}`} value={fmt(ytd("consumption"), 0, "kr")} />
-        <Kpi label={`${t.production} · ${year}`} value={fmt(-ytd("production"), 0, "kr")} tone="pos" />
-        <Kpi label={`${t.net} · ${year}`} value={fmt(ytd("consumption") + ytd("production"), 0, "kr")} tone={ytd("consumption") + ytd("production") <= 0 ? "pos" : "neg"} />
+        <Kpi label={`${t.consumption} · ${year}`} info={t.wallet_info} value={money(-ytd("consumption"))} />
+        <Kpi label={`${t.production} · ${year}`} info={t.wallet_info} value={money(-ytd("production"))} tone="pos" />
+        <Kpi label={`${t.net} · ${year}`} info={t.wallet_net_info} value={money(-(ytd("consumption") + ytd("production")))}
+          tone={ytd("consumption") + ytd("production") <= 0 ? "pos" : "neg"} />
       </div>
       <section className="card">
-        <h2>{t.invoices}<Info text={t.inv_info} /></h2>
+        <h2>{t.invoices}<Info text={`${t.inv_info} ${t.wallet_info}`} /></h2>
         <div className="table-wrap">
           <table>
             <thead><tr><th>{t.period}</th><th /><th className="r">{t.amount}</th><th className="r wide">kWh</th>
@@ -265,7 +327,7 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
                 <tr className="clickable" onClick={() => setOpen(open === i.invoice_id ? null : i.invoice_id)} title={t.show_lines}>
                   <td><span className={`chev ${open === i.invoice_id ? "open" : ""}`}>›</span>{monthName(i.period_start.slice(0, 7))}</td>
                   <td><span className={`dot ${i.kind}`} /><span className="wide">{i.kind === "production" ? t.production : t.consumption}</span></td>
-                  <td className={`r ${i.amount < 0 ? "pos" : ""}`}>{fmt(i.amount, 0, "kr")}</td>
+                  <td className={`r ${i.amount < 0 ? "pos" : ""}`}>{money(-i.amount)}</td>
                   <td className="r wide">{fmt(i.kwh, 0)}</td>
                   <td className="r wide">{fmt(i.fixed, 0)}</td><td className="r wide">{i.power_fee ? fmt(i.power_fee, 0) : "–"}</td>
                   <td className="r wide">{i.other ? fmt(i.other, 0) : "–"}</td>
@@ -282,7 +344,7 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
                           <div className="line" key={cat}>
                             <span>{(t as any)[`c_${cat}`] ?? cat}</span>
                             <span className="muted">{v.kwh ? `${fmt(v.kwh, 0)} kWh` : ""}</span>
-                            <b className={v.amount < 0 ? "pos" : ""}>{fmt(v.amount, 2, "kr")}</b>
+                            <b className={v.amount < 0 ? "pos" : ""}>{money(-v.amount, 2)}</b>
                           </div>
                         ))}
                     </div>
@@ -360,11 +422,20 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
     <div className="settings-grid">
       <section className="card">
         <h2>{t.settings_lang}</h2>
-        <div className="seg wrap">
-          {["auto", "en", "sv", "nb", "da", "fi", "is"].map((c) => (
-            <button key={c} className={(opts.language ?? "auto") === c ? "on" : ""} onClick={() => save({ language: c })}>
-              {c === "auto" ? t.lang_auto : LANG_NAMES[c]}</button>
-          ))}
+        <div className="langs" role="radiogroup" aria-label={t.settings_lang}>
+          {["auto", "en", "sv", "nb", "da", "fi", "is"].map((c) => {
+            const on = (opts.language ?? "auto") === c;
+            const haCode = pick(hass.locale?.language ?? hass.language, "auto").code;
+            return (
+              <button key={c} role="radio" aria-checked={on} className={`lang ${on ? "on" : ""} ${c === "auto" ? "auto" : ""}`}
+                onClick={() => save({ language: c })}>
+                <span className="flag">{c === "auto" ? "🏠" : FLAGS[c]}</span>
+                <span className="lname">{c === "auto" ? t.lang_auto : LANG_NAMES[c]}
+                  {c === "auto" && <small>{LANG_NAMES[haCode] ?? haCode}</small>}</span>
+                {on && <span className="check">✓</span>}
+              </button>
+            );
+          })}
         </div>
       </section>
       <section className="card">
