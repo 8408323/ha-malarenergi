@@ -37,7 +37,8 @@ a.b{display:inline-block;margin-top:16px;padding:12px 20px;border-radius:12px;ba
 <div class=c><h2>Logga in med BankID</h2>
 <div class=seg id=seg><button id=b-this>BankID på den här enheten</button><button id=b-other>BankID på annan enhet</button></div>
 <div id=other><img id=q alt="BankID QR"><p class=m id=l><span class=live></span>QR-koden uppdateras varje sekund</p></div>
-<div id=this style="display:none"><a class=b id=a href="#" target=_top style="display:none">Öppna BankID</a></div>
+<div id=this style="display:none"><a class=b id=a href="#" target=_blank rel=noopener style="display:none">Öppna BankID</a>
+<p class=m id=alt style="display:none">Öppnas inte appen? <a id=a2 href="#" style="color:#9fc3ff">Prova den här länken</a></p></div>
 <p class=m id=s></p></div>
 <script>
 const base=location.pathname, mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent), ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -46,7 +47,7 @@ async function choose(d){
   device=d;
   document.getElementById('b-this').className=d==='this'?'on':''; document.getElementById('b-other').className=d==='other'?'on':'';
   document.getElementById('this').style.display=d==='this'?'block':'none'; document.getElementById('other').style.display=d==='other'?'block':'none';
-  document.getElementById('a').style.display='none';
+  document.getElementById('a').style.display='none'; document.getElementById('alt').style.display='none';
   try{ await fetch(base+'/device',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device:d})}); }catch(e){}
 }
 document.getElementById('b-this').onclick=()=>choose('this');
@@ -56,10 +57,15 @@ async function tick(){
   let r; try{ r=await (await fetch(base+'/state',{cache:'no-store'})).json(); }catch(e){ setTimeout(tick,1500); return; }
   if(r.qr && device==='other') document.getElementById('q').src='data:image/png;base64,'+r.qr;
   if(device==='this' && r.device==='this' && r.autostart){
-    const a=document.getElementById('a');
-    // iOS: come back to this page after signing (Android must keep redirect=null)
-    a.href=ios?r.autostart.replace(/redirect=null/,'redirect='+encodeURIComponent(location.href)):r.autostart;
-    a.style.display='inline-block';
+    // BankID's universal link (https://app.bankid.com) works from frames, the HA app and mobile browsers,
+    // where a bankid:/// custom-scheme link is often silently ignored; keep bankid:/// as a fallback.
+    // iOS: return to this page after signing (Android must keep redirect=null).
+    const tok=(r.autostart.match(/autostarttoken=([^&]+)/)||[])[1]||'';
+    const red=ios?encodeURIComponent(location.href):'null';
+    const a=document.getElementById('a'), a2=document.getElementById('a2');
+    a.href='https://app.bankid.com/?autostarttoken='+tok+'&redirect='+red; a.style.display='inline-block';
+    a2.href='bankid:///?autostarttoken='+tok+'&redirect='+red; a2.target='_top';
+    document.getElementById('alt').style.display='block';
   }
   // Mälarenergi's hint for the previous order can still mention the QR code right after switching device
   const hint=device==='this'?'Tryck på knappen för att öppna BankID-appen.':'Öppna BankID-appen och skanna QR-koden.';
