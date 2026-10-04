@@ -5,7 +5,7 @@ import { LANG_NAMES, T, pick } from "./i18n";
 type Series = Record<string, [string, number][]>;
 type Invoice = {
   invoice_id: string; kind: string; issue_date: string; due_date: string; period_start: string; period_end: string;
-  amount: number; status: string; closed: boolean; kwh: number; fixed: number; power_fee: number; other: number;
+  amount: number; status: string; closed: boolean; kwh: number; fixed: number; power_fee: number; other: number; utilities?: string[];
   lines?: { category: string; name: string; kwh: number; amount: number }[];
 };
 type Data = {
@@ -165,7 +165,7 @@ function EnergyChart({ rows, t, height, tick, brush, zoom, setZoom }: {
         <Line yAxisId="m" dataKey="cost" name={`${t.cost} (kr)`} stroke="#e5484d" dot={false} strokeWidth={2} isAnimationActive={false} />
         <Line yAxisId="m" dataKey="comp" name={`${t.compensation} (kr)`} stroke="#2ec27e" dot={false} strokeWidth={2} isAnimationActive={false} />
         {drag && <ReferenceArea yAxisId="e" x1={drag.a} x2={drag.b} fill="var(--me-accent)" fillOpacity={0.15} stroke="var(--me-accent)" strokeOpacity={0.5} />}
-        {brush && rows.length > 8 && <Brush dataKey="k" height={22} stroke="var(--me-accent)" fill="var(--me-card)" tickFormatter={tick} travellerWidth={8}
+        {brush && rows.length > 1 && <Brush dataKey="k" height={22} stroke="var(--me-accent)" fill="var(--me-card)" tickFormatter={tick} travellerWidth={8}
           startIndex={zoom?.a ?? 0} endIndex={zoom?.b ?? rows.length - 1}
           onChange={(r: any) => setZoom?.(r.startIndex === 0 && r.endIndex === rows.length - 1 ? null : { a: r.startIndex, b: r.endIndex })} />}
       </ComposedChart>
@@ -261,7 +261,7 @@ function History({ hass, t, locale, narrow }: Ctx) {
         <h2>{label}<Info text={t.history_info} /></h2>
         {error ? <div className="muted">{error}</div> : !rows ? <div className="muted">{t.loading}</div> : !rows.length ? <div className="muted">{t.none}</div> :
           <EnergyChart rows={rows} t={t} height={narrow ? 260 : 340} tick={tick} brush zoom={zoom} setZoom={setZoom} />}
-        {rows && rows.length > 8 && <div className="muted hint">{t.zoom_hint}</div>}
+        {rows && rows.length > 1 && <div className="muted hint">{t.zoom_hint}</div>}
       </section>
       {rows && rows.length > 0 && zoom &&
         <SumTable rows={rows.slice(zoom.a, zoom.b + 1)} t={t} label={rowLabel} title={`${t.table_zoom}: ${rowLabel(rows[zoom.a].k)} – ${rowLabel(rows[zoom.b].k)}`} />}
@@ -294,16 +294,22 @@ function groupLines(lines: { category: string; name: string; kwh: number; amount
 function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Invoice[]; perPage0: number }) {
   const [perPage, setPerPage] = useState<number>(() => Number(localStorage.getItem("me_per_page")) || perPage0);
   const [page, setPage] = useState(0);
-  const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [signed, setSigned] = useState<Record<string, string>>({});
   const pages = perPage ? Math.max(1, Math.ceil(invoices.length / perPage)) : 1;
   const monthName = (ym: string) => new Date(`${ym}-15`).toLocaleDateString(locale, { month: "short", year: "numeric" });
   const shortDate = (s: string) => (s ? new Date(s).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "–");
-  const download = async (id: string) => {
-    if (busy) return; setBusy(id);
-    try { const r = await hass.callService("malarenergi", "download_invoice", { invoice_id: id }, undefined, false, true); if (r?.response?.url) window.open(r.response.url, "_blank"); }
-    finally { setBusy(null); }
-  };
+  // PDF links are signed in advance (HA's auth/sign_path, valid 1 h, renewed every 30 min) so a tap opens a
+  // plain link: phones and the HA app block window.open() after an await
+  const visible = invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => i.invoice_id).filter(Boolean);
+  useEffect(() => {
+    const sign = () => Promise.all(visible.map((id) => hass.connection.sendMessagePromise({
+      type: "auth/sign_path", path: `/api/malarenergi/invoice/${id}`, expires: 3600 }).then((r: any) => [id, r.path] as const)))
+      .then((pairs) => setSigned(Object.fromEntries(pairs))).catch(() => undefined);
+    sign();
+    const t = setInterval(sign, 30 * 60 * 1000);
+    return () => clearInterval(t);
+  }, [visible.join(",")]);
   const year = new Date().getFullYear();
   const ytd = (kind: string) => invoices.filter((i) => i.kind === kind && i.period_start.startsWith(String(year))).reduce((s, i) => s + (i.amount ?? 0), 0);
   return (
@@ -325,7 +331,8 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
               {invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => {
                 // expansion key: an invoice without an id must not equal the "nothing open" null
                 // stable across refreshes and paging: built from the invoice's own fields, not its position
-                const key = i.invoice_id ?? `${i.period_start}|${i.kind}|${i.issue_date}|${i.amount}`;
+                const key = i.invoice_id ?? JSON.stringify([i.period_start, i.period_end, i.kind, i.issue_date, i.due_date,
+                  i.amount, i.utilities, (i.lines ?? []).map((l) => [l.name, l.amount])]);
                 return (
                 <Fragment key={key}>
                 <tr className="clickable" onClick={() => setOpen(open === key ? null : key)} title={t.show_lines}>
@@ -337,7 +344,9 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
                   <td className="r wide">{i.other ? money(-i.other) : "–"}</td>
                   <td>{shortDate(i.due_date)}</td>
                   <td><span className={`badge ${i.closed ? "ok" : "warn"}`}>{i.amount < 0 ? t.credit : i.closed ? t.paid : t.open}</span></td>
-                  <td><button className="btn" disabled={busy === i.invoice_id} onClick={(e) => { e.stopPropagation(); download(i.invoice_id); }}>{busy === i.invoice_id ? t.downloading : t.pdf}</button></td>
+                  <td>{signed[i.invoice_id]
+                    ? <a className="btn" href={signed[i.invoice_id]} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()}>{t.pdf}</a>
+                    : <button className="btn" disabled>{t.pdf}</button>}</td>
                 </tr>
                 {open === key && (
                   <tr className="lines-row"><td colSpan={10}>
@@ -413,6 +422,14 @@ function Contracts({ hass, t, locale }: Ctx) {
 function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o: Options) => void }) {
   const [services, setServices] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
+  const [login, setLogin] = useState<string | null>(null);  // BankID page shown in a dialog over the panel
+  useEffect(() => {
+    const on = (e: MessageEvent) => {
+      if (e.origin === location.origin && e.data?.malarenergi === "bankid-complete") { setLogin(null); setMsg(t.relogin_done); }
+    };
+    window.addEventListener("message", on);
+    return () => window.removeEventListener("message", on);
+  }, []);
   useEffect(() => { hass.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((r: any) => setServices(r.notify_services)); }, []);
   const save = async (patch: Options) => {
     const r = await hass.connection.sendMessagePromise({ type: "malarenergi/settings/set", options: patch });
@@ -425,6 +442,14 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
   const targets: string[] = opts.notify_targets ?? [];
   return (
     <div className="settings-grid">
+      {login && (
+        <div className="modal" role="dialog" aria-modal="true" onClick={() => setLogin(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="btn ghost modal-x" aria-label={t.close} onClick={() => setLogin(null)}>✕</button>
+            <iframe src={login} title="BankID" />
+          </div>
+        </div>
+      )}
       <section className="card">
         <h2>{t.settings_lang}</h2>
         <div className="langs" role="radiogroup" aria-label={t.settings_lang}>
@@ -458,7 +483,10 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
       <section className="card">
         <h2>{t.settings_account}</h2>
         <div className="setting"><span>{t.relogin}<Info text={t.relogin_info} /></span>
-          <button className="btn" onClick={async () => { await hass.connection.sendMessagePromise({ type: "malarenergi/reauth" }); setMsg(t.relogin_started); }}>BankID</button></div>
+          <button className="btn" onClick={async () => {
+            const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth" });
+            if (r?.url) setLogin(r.url); else setMsg(t.relogin_started);
+          }}>BankID</button></div>
         <div className="setting"><span>{t.invoices_per_page}</span>
           <select className="sel" value={opts.invoices_per_page ?? 12} onChange={(e) => save({ invoices_per_page: Number(e.target.value) })}>
             {[6, 12, 24, 48].map((n) => <option key={n} value={n}>{n}</option>)}</select></div>

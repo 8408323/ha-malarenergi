@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
+from aiohttp import web
 from homeassistant.components import persistent_notification, websocket_api
+from homeassistant.components.http import KEY_HASS, HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
@@ -226,25 +228,62 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
+async def _fetch_pdf(hass: HomeAssistant, inv_id: str) -> bytes:
+    entries = [e for e in hass.config_entries.async_entries(DOMAIN) if getattr(e, "runtime_data", None)]
+    if not entries:
+        raise HomeAssistantError("Mälarenergi is not set up")
+    coord: MalarenergiCoordinator = entries[0].runtime_data
+    try:
+        body, ctype = await coord.client.request(
+            "GET", f"/api/v2/customers/{coord.client.customer_id}/invoices/{inv_id}/document", raw=True
+        )
+    except MalarenergiError as err:
+        raise HomeAssistantError(f"Could not download invoice: {err}") from err
+    if not body.startswith(b"%PDF"):
+        raise HomeAssistantError(f"Unexpected document type {ctype}")
+    return body
+
+
+class InvoicePdfView(HomeAssistantView):
+    """Streams one invoice PDF to an authenticated user (or a URL signed with auth/sign_path).
+
+    The panel signs these URLs in advance, so a tap opens a plain link: phones and the HA app block
+    window.open() calls that come after an await.
+    """
+
+    url = "/api/malarenergi/invoice/{invoice_id}"
+    name = "api:malarenergi:invoice"
+    requires_auth = True
+
+    async def get(self, request: web.Request, invoice_id: str) -> web.Response:
+        if not invoice_id.isdigit():
+            return web.Response(status=400)
+        try:
+            body = await _fetch_pdf(request.app[KEY_HASS], invoice_id)
+        except HomeAssistantError as err:
+            return web.Response(status=502, text=str(err))
+        return web.Response(
+            body=body,
+            content_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="malarenergi-{invoice_id}.pdf"',
+                "Cache-Control": "no-store",
+            },
+        )
+
+
 def _register_services(hass: HomeAssistant) -> None:
     if hass.services.has_service(DOMAIN, "download_invoice"):
         return
+    hass.http.register_view(InvoicePdfView())
 
     async def download(call: ServiceCall) -> dict:
-        """Save one invoice PDF under a random name in www/ (served unauthenticated), deleted after 10 min."""
-        entries = [e for e in hass.config_entries.async_entries(DOMAIN) if getattr(e, "runtime_data", None)]
-        if not entries:
-            raise HomeAssistantError("Mälarenergi is not set up")
-        coord: MalarenergiCoordinator = entries[0].runtime_data
+        """Save one invoice PDF under a random name in www/ (served unauthenticated), deleted after 10 min.
+
+        For automations/scripts; the panel uses the authenticated InvoicePdfView instead.
+        """
         inv_id = call.data["invoice_id"]
-        try:
-            body, ctype = await coord.client.request(
-                "GET", f"/api/v2/customers/{coord.client.customer_id}/invoices/{inv_id}/document", raw=True
-            )
-        except MalarenergiError as err:
-            raise HomeAssistantError(f"Could not download invoice: {err}") from err
-        if not body.startswith(b"%PDF"):
-            raise HomeAssistantError(f"Unexpected document type {ctype}")
+        body = await _fetch_pdf(hass, inv_id)
         folder = Path(hass.config.path("www", DOMAIN))
         name = f"{secrets.token_urlsafe(16)}.pdf"
 
@@ -338,9 +377,16 @@ def ws_settings_set(hass, connection, msg):
 
 @websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth"})
 @websocket_api.require_admin
-@callback
-def ws_reauth(hass, connection, msg):
-    """Start HA's reauth flow (BankID) on demand; it appears under Settings → Devices & services."""
-    coord = _coord(hass)
-    coord.config_entry.async_start_reauth(hass)
-    connection.send_result(msg["id"], {"started": True})
+@websocket_api.async_response
+async def ws_reauth(hass, connection, msg):
+    """Start a reauth flow and drive it to its BankID step; returns the login page URL so the panel can
+    show it in place (no detour via Settings → Devices & services)."""
+    from homeassistant.config_entries import SOURCE_REAUTH
+
+    entry = _coord(hass).config_entry
+    res = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}, data=dict(entry.data)
+    )
+    if res.get("step_id") == "reauth_confirm":
+        res = await hass.config_entries.flow.async_configure(res["flow_id"], {})
+    connection.send_result(msg["id"], {"started": True, "flow_id": res.get("flow_id"), "url": res.get("url")})

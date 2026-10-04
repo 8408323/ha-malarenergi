@@ -251,3 +251,8 @@ def test_recognised_consumption_line_on_net_credit_invoice_keeps_category():
     )
     assert [x["category"] for x in lines] == ["spot_energy", "production_spot"]
     assert lines[0]["amount"] == 37.5  # consumption keeps its VAT
+
+
+def test_unknown_row_without_utility_on_production_invoice_is_production():
+    (line,) = parse.invoice_lines([{"productType": "Ny", "costVariableMonth": -30.0}], 1.25, production_invoice=True)
+    assert line["category"] == "production_other" and line["amount"] == -30.0

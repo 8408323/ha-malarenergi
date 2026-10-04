@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import MalarenergiClient, MalarenergiError
-from .bankid_view import BankIDPageView, BankIDStateView, LoginAttempt
+from .bankid_view import BankIDDeviceView, BankIDPageView, BankIDStateView, LoginAttempt
 from .const import CONF_TOKENS, DOMAIN
 
 _VIEWS_REGISTERED = "malarenergi_views"
@@ -39,6 +39,7 @@ class MalarenergiConfigFlow(ConfigFlow, domain=DOMAIN):
             if not self.hass.data.get(_VIEWS_REGISTERED):
                 self.hass.http.register_view(BankIDPageView())
                 self.hass.http.register_view(BankIDStateView())
+                self.hass.http.register_view(BankIDDeviceView())
                 self.hass.data[_VIEWS_REGISTERED] = True
             self._attempt = LoginAttempt(self.hass, self.flow_id)
             self._attempt.start()
