@@ -116,7 +116,8 @@ def invoice_lines(details: list[dict], vat: float) -> list[dict]:
         amount = sum(d.get(k) or 0 for k in ("costVariableMonth", "costFixedMonth", "taxMonth", "otherMonth"))
         cat = line_category(d.get("productType"))
         util = _name(d.get("utilityType"))
-        credit = amount < 0 and (d.get("consumptionMonth") or 0) < 0  # negative energy and money: a payout
+        # negative energy and a non-positive amount (a 0 kr settlement too): a payout
+        credit = amount <= 0 and (d.get("consumptionMonth") or 0) < 0
         if not cat.startswith("production_") and (util == "ELPROD" or (util == "ELEXT" and credit)):
             cat = "production_other"  # unknown product on a production row: still a VAT-free payout
         out.append(
