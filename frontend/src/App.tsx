@@ -311,7 +311,13 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
     return () => clearInterval(t);
   }, [visible.join(",")]);
   const year = new Date().getFullYear();
-  const ytd = (kind: string) => invoices.filter((i) => i.kind === kind && i.period_start.startsWith(String(year))).reduce((s, i) => s + (i.amount ?? 0), 0);
+  // from the categorised lines, so a mixed invoice counts its consumption and production parts separately
+  // (invoices without lines fall back to the whole amount by kind)
+  const isProd = (c: string) => c.startsWith("production_");
+  const ytd = (kind: string) => invoices.filter((i) => i.period_start.startsWith(String(year))).reduce((s, i) => {
+    if (!i.lines?.length) return s + (i.kind === kind ? i.amount ?? 0 : 0);
+    return s + i.lines.filter((l) => isProd(l.category) === (kind === "production")).reduce((a, l) => a + l.amount, 0);
+  }, 0);
   return (
     <>
       <div className="kpis">
@@ -424,6 +430,7 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
   const [msg, setMsg] = useState<string | null>(null);
   // BankID page shown in a dialog over the panel; flow = the reauth flow behind it
   const [login, setLogin] = useState<{ url: string; flow: string } | null>(null);
+  const [starting, setStarting] = useState(false);
   const loginRef = useRef<{ url: string; flow: string } | null>(null);  // for the unmount cleanup and the poll
   loginRef.current = login;
   const cancelFlow = (flow: string) =>
@@ -508,9 +515,12 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
       <section className="card">
         <h2>{t.settings_account}</h2>
         <div className="setting"><span>{t.relogin}<Info text={t.relogin_info} /></span>
-          <button className="btn" onClick={async () => {
-            const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth" });
-            if (r?.url && r?.flow_id) setLogin({ url: r.url, flow: r.flow_id }); else setMsg(t.relogin_started);
+          <button className="btn" disabled={starting || !!login} onClick={async () => {
+            setStarting(true);  // one flow per click: a double-click would start an uncancellable second flow
+            try {
+              const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth" });
+              if (r?.url && r?.flow_id) setLogin({ url: r.url, flow: r.flow_id }); else setMsg(t.relogin_started);
+            } finally { setStarting(false); }
           }}>BankID</button></div>
         <div className="setting"><span>{t.invoices_per_page}</span>
           <select className="sel" value={opts.invoices_per_page ?? 12} onChange={(e) => save({ invoices_per_page: Number(e.target.value) })}>

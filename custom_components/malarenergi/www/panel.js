@@ -28406,26 +28406,26 @@ function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 		let n = setInterval(t, 18e5);
 		return () => clearInterval(n);
 	}, [g.join(",")]);
-	let _ = (/* @__PURE__ */ new Date()).getFullYear(), v = (e) => r.filter((t) => t.kind === e && t.period_start.startsWith(String(_))).reduce((e, t) => e + (t.amount ?? 0), 0);
+	let _ = (/* @__PURE__ */ new Date()).getFullYear(), v = (e) => e.startsWith("production_"), y = (e) => r.filter((e) => e.period_start.startsWith(String(_))).reduce((t, n) => n.lines?.length ? t + n.lines.filter((t) => v(t.category) === (e === "production")).reduce((e, t) => e + t.amount, 0) : t + (n.kind === e ? n.amount ?? 0 : 0), 0);
 	return /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "kpis",
 		children: [
 			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${t.consumption} · ${_}`,
 				info: t.wallet_info,
-				value: iz(-v("consumption"))
+				value: iz(-y("consumption"))
 			}),
 			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${t.production} · ${_}`,
 				info: t.wallet_info,
-				value: iz(-v("production")),
+				value: iz(-y("production")),
 				tone: "pos"
 			}),
 			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${t.net} · ${_}`,
 				info: t.wallet_net_info,
-				value: iz(-(v("consumption") + v("production"))),
-				tone: v("consumption") + v("production") <= 0 ? "pos" : "neg"
+				value: iz(-(y("consumption") + y("production"))),
+				tone: y("consumption") + y("production") <= 0 ? "pos" : "neg"
 			})
 		]
 	}), /* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28662,22 +28662,22 @@ function sz({ hass: e, t, locale: n }) {
 	}, String(e))) });
 }
 function cz({ hass: e, t, opts: n, setOpts: r }) {
-	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), u = (0, S.useRef)(null);
-	u.current = c;
-	let d = (t) => e.connection.sendMessagePromise({
+	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), [u, d] = (0, S.useState)(!1), f = (0, S.useRef)(null);
+	f.current = c;
+	let p = (t) => e.connection.sendMessagePromise({
 		type: "malarenergi/reauth_cancel",
 		flow_id: t
-	}).catch(() => void 0), f = () => {
-		c && d(c.flow), l(null), s((e) => e === t.relogin_checking ? null : e);
+	}).catch(() => void 0), m = () => {
+		c && p(c.flow), l(null), s((e) => e === t.relogin_checking ? null : e);
 	};
 	(0, S.useEffect)(() => () => {
-		u.current && d(u.current.flow);
+		f.current && p(f.current.flow);
 	}, []), (0, S.useEffect)(() => {
 		if (!c) return;
 		let n = async (n) => {
 			if (n.origin !== location.origin || n.data?.malarenergi !== "bankid-complete") return;
 			s(t.relogin_checking);
-			let r = c.flow, i = () => u.current?.flow === r;
+			let r = c.flow, i = () => f.current?.flow === r;
 			for (let n = 0; n < 40 && i(); n++) {
 				if (await new Promise((e) => setTimeout(e, 1e3)), !i()) return;
 				let n = await e.connection.sendMessagePromise({
@@ -28689,28 +28689,28 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 					return;
 				}
 			}
-			i() && (d(r), l(null), s(t.relogin_failed));
+			i() && (p(r), l(null), s(t.relogin_failed));
 		};
 		return window.addEventListener("message", n), () => window.removeEventListener("message", n);
 	}, [c]), (0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((e) => a(e.notify_services));
 	}, []);
-	let p = async (n) => {
+	let h = async (n) => {
 		r((await e.connection.sendMessagePromise({
 			type: "malarenergi/settings/set",
 			options: n
 		})).options), s(t.saved), setTimeout(() => s(null), 1500);
-	}, m = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
+	}, g = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "setting",
 		children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t[e] }), /* @__PURE__ */ (0, $.jsxs)("label", {
 			className: "switch",
 			children: [/* @__PURE__ */ (0, $.jsx)("input", {
 				type: "checkbox",
 				checked: !!n[e],
-				onChange: (t) => p({ [e]: t.target.checked })
+				onChange: (t) => h({ [e]: t.target.checked })
 			}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 		})]
-	}, e), h = n.notify_targets ?? [];
+	}, e), _ = n.notify_targets ?? [];
 	return /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "settings-grid",
 		children: [
@@ -28718,14 +28718,14 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 				className: "modal",
 				role: "dialog",
 				"aria-modal": "true",
-				onClick: f,
+				onClick: m,
 				children: /* @__PURE__ */ (0, $.jsxs)("div", {
 					className: "modal-box",
 					onClick: (e) => e.stopPropagation(),
 					children: [/* @__PURE__ */ (0, $.jsx)("button", {
 						className: "btn ghost modal-x",
 						"aria-label": t.close,
-						onClick: f,
+						onClick: m,
 						children: "✕"
 					}), /* @__PURE__ */ (0, $.jsx)("iframe", {
 						src: c.url,
@@ -28753,7 +28753,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							role: "radio",
 							"aria-checked": i,
 							className: `lang ${i ? "on" : ""} ${r === "auto" ? "auto" : ""}`,
-							onClick: () => p({ language: r }),
+							onClick: () => h({ language: r }),
 							children: [
 								/* @__PURE__ */ (0, $.jsx)("span", {
 									className: "flag",
@@ -28790,12 +28790,12 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							className: "switch",
 							children: [/* @__PURE__ */ (0, $.jsx)("input", {
 								type: "checkbox",
-								checked: h.includes(e),
-								onChange: (t) => p({ notify_targets: t.target.checked ? [...h, e] : h.filter((t) => t !== e) })
+								checked: _.includes(e),
+								onChange: (t) => h({ notify_targets: t.target.checked ? [..._, e] : _.filter((t) => t !== e) })
 							}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 						})]
 					}, e)),
-					!h.some((e) => i.includes(e)) && /* @__PURE__ */ (0, $.jsx)("div", {
+					!_.some((e) => i.includes(e)) && /* @__PURE__ */ (0, $.jsx)("div", {
 						className: "muted",
 						style: { marginTop: 6 },
 						children: t.no_targets
@@ -28810,7 +28810,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						"notify_overdue",
 						"notify_han_change",
 						"notify_auth"
-					].map(m)
+					].map(g)
 				]
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28821,12 +28821,18 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						className: "setting",
 						children: [/* @__PURE__ */ (0, $.jsxs)("span", { children: [t.relogin, /* @__PURE__ */ (0, $.jsx)(XR, { text: t.relogin_info })] }), /* @__PURE__ */ (0, $.jsx)("button", {
 							className: "btn",
+							disabled: u || !!c,
 							onClick: async () => {
-								let n = await e.connection.sendMessagePromise({ type: "malarenergi/reauth" });
-								n?.url && n?.flow_id ? l({
-									url: n.url,
-									flow: n.flow_id
-								}) : s(t.relogin_started);
+								d(!0);
+								try {
+									let n = await e.connection.sendMessagePromise({ type: "malarenergi/reauth" });
+									n?.url && n?.flow_id ? l({
+										url: n.url,
+										flow: n.flow_id
+									}) : s(t.relogin_started);
+								} finally {
+									d(!1);
+								}
 							},
 							children: "BankID"
 						})]
@@ -28836,7 +28842,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t.invoices_per_page }), /* @__PURE__ */ (0, $.jsx)("select", {
 							className: "sel",
 							value: n.invoices_per_page ?? 12,
-							onChange: (e) => p({ invoices_per_page: Number(e.target.value) }),
+							onChange: (e) => h({ invoices_per_page: Number(e.target.value) }),
 							children: [
 								6,
 								12,
