@@ -322,9 +322,10 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
               <th className="r wide">{t.fixed}</th><th className="r wide">{t.power_fee}</th><th className="r wide">{t.other}</th>
               <th>{t.due}</th><th>{t.status}</th><th /></tr></thead>
             <tbody>
-              {invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i, idx) => {
+              {invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => {
                 // expansion key: an invoice without an id must not equal the "nothing open" null
-                const key = i.invoice_id ?? `row-${page}-${idx}`;
+                // stable across refreshes and paging: built from the invoice's own fields, not its position
+                const key = i.invoice_id ?? `${i.period_start}|${i.kind}|${i.issue_date}|${i.amount}`;
                 return (
                 <Fragment key={key}>
                 <tr className="clickable" onClick={() => setOpen(open === key ? null : key)} title={t.show_lines}>

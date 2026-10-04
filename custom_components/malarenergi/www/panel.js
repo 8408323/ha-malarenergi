@@ -28451,15 +28451,15 @@ function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 					/* @__PURE__ */ (0, $.jsx)("th", { children: t.due }),
 					/* @__PURE__ */ (0, $.jsx)("th", { children: t.status }),
 					/* @__PURE__ */ (0, $.jsx)("th", {})
-				] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: r.slice(s * a, a ? (s + 1) * a : void 0).map((e, n) => {
-					let r = e.invoice_id ?? `row-${s}-${n}`;
+				] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: r.slice(s * a, a ? (s + 1) * a : void 0).map((e) => {
+					let n = e.invoice_id ?? `${e.period_start}|${e.kind}|${e.issue_date}|${e.amount}`;
 					return /* @__PURE__ */ (0, $.jsxs)(S.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("tr", {
 						className: "clickable",
-						onClick: () => f(d === r ? null : r),
+						onClick: () => f(d === n ? null : n),
 						title: t.show_lines,
 						children: [
 							/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", {
-								className: `chev ${d === r ? "open" : ""}`,
+								className: `chev ${d === n ? "open" : ""}`,
 								children: "›"
 							}), m(e.period_start.slice(0, 7))] }),
 							/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", { className: `dot ${e.kind}` }), /* @__PURE__ */ (0, $.jsx)("span", {
@@ -28500,7 +28500,7 @@ function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 								children: l === e.invoice_id ? t.downloading : t.pdf
 							}) })
 						]
-					}), d === r && /* @__PURE__ */ (0, $.jsx)("tr", {
+					}), d === n && /* @__PURE__ */ (0, $.jsx)("tr", {
 						className: "lines-row",
 						children: /* @__PURE__ */ (0, $.jsx)("td", {
 							colSpan: 10,
@@ -28522,7 +28522,7 @@ function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 								}, e))
 							})
 						})
-					})] }, r);
+					})] }, n);
 				}) })] })
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("div", {
