@@ -170,3 +170,18 @@ def test_invoice_lines_vat_and_kwh_per_line():
     assert grid["amount"] == 25.0 and grid["kwh"] == 100
     assert prod["amount"] == -50.0  # no VAT on production payouts
     assert prod["kwh"] == 200  # shown as a positive quantity, like the invoice summary
+
+
+def test_elprod_row_with_unknown_product_is_production():
+    (line,) = parse.invoice_lines(
+        [
+            {
+                "productType": "Ny ersättning",
+                "utilityType": {"name": "ELPROD"},
+                "consumptionMonth": -10,
+                "costVariableMonth": -5.0,
+            }
+        ],
+        1.25,
+    )
+    assert line["category"] == "production_other" and line["amount"] == -5.0

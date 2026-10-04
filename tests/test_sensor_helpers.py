@@ -71,3 +71,8 @@ def test_category_sensors_skip_invoices_without_that_category():
 
 def test_production_payout_found_in_mixed_invoice():
     assert sensor._line_sum(DATA, sensor.PRODUCTION) == -900.0
+
+
+def test_production_attrs_only_production_part():
+    a = sensor._production_attrs(DATA)
+    assert a["kwh"] == 1417 and [x["category"] for x in a["lines"]] == ["production_spot"]

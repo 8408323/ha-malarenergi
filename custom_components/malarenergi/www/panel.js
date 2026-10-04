@@ -27361,6 +27361,7 @@ var PR = AR({
 	c_production_spot: "Sold electricity (spot)",
 	c_production_bonus: "Production bonus",
 	c_production_grid: "Grid benefit",
+	c_production_other: "Other production payout",
 	c_other: "Other",
 	show_lines: "Show invoice lines"
 }, BR = {
@@ -27464,6 +27465,7 @@ var PR = AR({
 		c_production_spot: "Såld el (spotpris)",
 		c_production_bonus: "Produktionsersättning",
 		c_production_grid: "Nätnytta",
+		c_production_other: "Övrig produktionsersättning",
 		c_other: "Övrigt",
 		show_lines: "Visa fakturarader"
 	},

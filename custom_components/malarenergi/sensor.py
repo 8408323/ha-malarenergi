@@ -69,7 +69,7 @@ def _line_sum(data: dict, cats: tuple[str, ...]) -> float | None:
     return round(sum(line["amount"] for line in inv.get("lines") or [] if line["category"] in cats), 2)
 
 
-PRODUCTION = ("production_spot", "production_bonus", "production_grid")
+PRODUCTION = ("production_spot", "production_bonus", "production_grid", "production_other")
 
 
 def _line_rate(data: dict, cat: str) -> float | None:
@@ -81,6 +81,16 @@ def _line_rate(data: dict, cat: str) -> float | None:
         by_name[line["name"]] = by_name.get(line["name"], 0) + line["kwh"]
     kwh = max(by_name.values(), default=0)
     return round(sum(line["amount"] for line in lines) / kwh, 4) if kwh else None
+
+
+def _production_attrs(data: dict) -> dict:
+    """Period, kWh and lines of the production part only (a mixed invoice also carries consumption)."""
+    inv = _latest_with(data, PRODUCTION) or {}
+    lines = [line for line in inv.get("lines") or [] if line["category"] in PRODUCTION]
+    by_name: dict[str, float] = {}
+    for line in lines:
+        by_name[line["name"]] = by_name.get(line["name"], 0) + line["kwh"]
+    return {"period_start": inv.get("period_start"), "kwh": max(by_name.values(), default=None), "lines": lines}
 
 
 def _line_sensor(key: str, cat: str) -> "MeSensor":
@@ -166,7 +176,7 @@ SENSORS: tuple[MeSensor, ...] = (
         **SEK,
         # from production lines, so a payout netted into a consumption invoice still counts
         value=lambda d: -(_line_sum(d, PRODUCTION) or 0) or None,
-        attrs=lambda d: {k: (_latest_with(d, PRODUCTION) or {}).get(k) for k in ("period_start", "kwh", "lines")},
+        attrs=lambda d: _production_attrs(d),
     ),
     *(
         _line_sensor(f"invoice_{cat}", cat)
