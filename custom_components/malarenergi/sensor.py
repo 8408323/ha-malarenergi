@@ -54,16 +54,27 @@ def _latest_of(data: dict, kind: str) -> dict | None:
     return next((i for i in data.get("invoices") or [] if i.get("kind") == kind), None)
 
 
-def _line_sum(data: dict, kind: str, cats: tuple[str, ...]) -> float | None:
-    inv = _latest_of(data, kind)
+def _latest_with(data: dict, cats: tuple[str, ...]) -> dict | None:
+    """Newest invoice that has a line in `cats` (a broadband-only or mixed invoice must not hide it)."""
+    return next(
+        (i for i in data.get("invoices") or [] if any(line["category"] in cats for line in i.get("lines") or [])),
+        None,
+    )
+
+
+def _line_sum(data: dict, cats: tuple[str, ...]) -> float | None:
+    inv = _latest_with(data, cats)
     if not inv:
         return None
     return round(sum(line["amount"] for line in inv.get("lines") or [] if line["category"] in cats), 2)
 
 
+PRODUCTION = ("production_spot", "production_bonus", "production_grid")
+
+
 def _line_rate(data: dict, cat: str) -> float | None:
     """SEK/kWh incl. VAT for a per-kWh line category on the latest consumption invoice."""
-    lines = [line for line in (_latest_of(data, "consumption") or {}).get("lines") or [] if line["category"] == cat]
+    lines = [line for line in (_latest_with(data, (cat,)) or {}).get("lines") or [] if line["category"] == cat]
     # same rule as the panel: kWh add up within one product (split periods), not across products
     by_name: dict[str, float] = {}
     for line in lines:
@@ -73,7 +84,12 @@ def _line_rate(data: dict, cat: str) -> float | None:
 
 
 def _line_sensor(key: str, cat: str) -> "MeSensor":
-    return MeSensor(key=key, **SEK, value=lambda d: _line_sum(d, "consumption", (cat,)))
+    return MeSensor(
+        key=key,
+        **SEK,
+        value=lambda d: _line_sum(d, (cat,)),
+        attrs=lambda d: {"period_start": (_latest_with(d, (cat,)) or {}).get("period_start")},
+    )
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -148,8 +164,9 @@ SENSORS: tuple[MeSensor, ...] = (
     MeSensor(
         key="invoice_production_total",
         **SEK,
-        value=lambda d: -((_latest_of(d, "production") or {}).get("amount") or 0) or None,
-        attrs=lambda d: {k: (_latest_of(d, "production") or {}).get(k) for k in ("period_start", "kwh", "lines")},
+        # from production lines, so a payout netted into a consumption invoice still counts
+        value=lambda d: -(_line_sum(d, PRODUCTION) or 0) or None,
+        attrs=lambda d: {k: (_latest_with(d, PRODUCTION) or {}).get(k) for k in ("period_start", "kwh", "lines")},
     ),
     *(
         _line_sensor(f"invoice_{cat}", cat)
@@ -170,7 +187,7 @@ SENSORS: tuple[MeSensor, ...] = (
         native_unit_of_measurement="SEK/kWh",
         icon="mdi:transmission-tower",
         value=lambda d: _line_rate(d, "grid_transfer"),
-        attrs=lambda d: {"period_start": (_latest_of(d, "consumption") or {}).get("period_start")},
+        attrs=lambda d: {"period_start": (_latest_with(d, ("grid_transfer",)) or {}).get("period_start")},
     ),
     MeSensor(
         key="unpaid_invoices",
