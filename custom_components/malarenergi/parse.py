@@ -105,7 +105,7 @@ def line_category(product_type: str | None) -> str:
     return "other"
 
 
-def invoice_lines(details: list[dict], vat: float) -> list[dict]:
+def invoice_lines(details: list[dict], vat: float, production_invoice: bool = False) -> list[dict]:
     """Invoice detail rows -> [{category, name, kwh, amount}], amount incl. VAT where applicable.
 
     VAT is decided per line (production payouts are VAT-free), not per invoice: one invoice can mix
@@ -117,7 +117,8 @@ def invoice_lines(details: list[dict], vat: float) -> list[dict]:
         cat = line_category(d.get("productType"))
         util = _name(d.get("utilityType"))
         # negative energy and a non-positive amount (a 0 kr settlement too): a payout
-        credit = amount <= 0 and (d.get("consumptionMonth") or 0) < 0
+        # on an invoice that is a production payout as a whole, an unknown non-positive row is part of it
+        credit = amount <= 0 and ((d.get("consumptionMonth") or 0) < 0 or production_invoice)
         if not cat.startswith("production_") and (util == "ELPROD" or (util == "ELEXT" and credit)):
             cat = "production_other"  # unknown product on a production row: still a VAT-free payout
         out.append(
@@ -171,7 +172,7 @@ def invoices(payload: Any) -> list[dict]:
                     "status": _name(i.get("paymentStatus")),
                     "closed": bool(i.get("closedDate")),
                     "utilities": sorted({_name(d.get("utilityType")) for d in details} - {""}),
-                    "lines": invoice_lines(details, 1.25),
+                    "lines": invoice_lines(details, 1.25, production_invoice=kind == "production"),
                 }
             )
     return sorted(out, key=lambda x: (x["issue_date"], x["invoice_id"] or ""), reverse=True)
