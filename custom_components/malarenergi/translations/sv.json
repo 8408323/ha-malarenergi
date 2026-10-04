@@ -106,6 +106,9 @@
       },
       "invoice_other": {
         "name": "Faktura: övrigt"
+      },
+      "grid_transfer_price": {
+        "name": "Elöverföringspris"
       }
     },
     "switch": {

@@ -61,6 +61,13 @@ def _line_sum(data: dict, kind: str, cats: tuple[str, ...]) -> float | None:
     return round(sum(line["amount"] for line in inv.get("lines") or [] if line["category"] in cats), 2)
 
 
+def _line_rate(data: dict, cat: str) -> float | None:
+    """SEK/kWh incl. VAT for a per-kWh line category on the latest consumption invoice."""
+    lines = [line for line in (_latest_of(data, "consumption") or {}).get("lines") or [] if line["category"] == cat]
+    kwh = sum(line["kwh"] for line in lines)
+    return round(sum(line["amount"] for line in lines) / kwh, 4) if kwh else None
+
+
 def _line_sensor(key: str, cat: str) -> "MeSensor":
     return MeSensor(key=key, **SEK, value=lambda d: _line_sum(d, "consumption", (cat,)))
 
@@ -153,6 +160,13 @@ SENSORS: tuple[MeSensor, ...] = (
             "broadband",
             "other",
         )
+    ),
+    MeSensor(
+        key="grid_transfer_price",
+        native_unit_of_measurement="SEK/kWh",
+        icon="mdi:transmission-tower",
+        value=lambda d: _line_rate(d, "grid_transfer"),
+        attrs=lambda d: {"period_start": (_latest_of(d, "consumption") or {}).get("period_start")},
     ),
     MeSensor(
         key="unpaid_invoices",

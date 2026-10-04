@@ -106,6 +106,9 @@
       },
       "invoice_other": {
         "name": "Invoice: other"
+      },
+      "grid_transfer_price": {
+        "name": "Grid transfer price"
       }
     },
     "switch": {
