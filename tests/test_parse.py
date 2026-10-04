@@ -185,3 +185,11 @@ def test_elprod_row_with_unknown_product_is_production():
         1.25,
     )
     assert line["category"] == "production_other" and line["amount"] == -5.0
+
+
+def test_elext_credit_with_unknown_product_is_production():
+    (line,) = parse.invoice_lines(
+        [{"productType": "Ny", "utilityType": {"name": "ELEXT"}, "consumptionMonth": -50, "costVariableMonth": -20.0}],
+        1.25,
+    )
+    assert line["category"] == "production_other" and line["amount"] == -20.0

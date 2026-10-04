@@ -84,3 +84,11 @@ def test_consumption_total_from_consumption_lines():
     assert sensor._consumption_total(DATA) == 40.0
     mixed = {"invoices": DATA["invoices"][1:]}
     assert sensor._consumption_total(mixed) == 2.7
+
+
+def test_zero_payout_stays_available():
+    d = {
+        "invoices": [{"kind": "production", "period_start": "2026-09-01", "lines": [LINE("production_spot", 0.0, 10)]}]
+    }
+    desc = next(x for x in sensor.SENSORS if x.key == "invoice_production_total")
+    assert desc.value(d) == 0.0

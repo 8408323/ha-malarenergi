@@ -199,7 +199,7 @@ SENSORS: tuple[MeSensor, ...] = (
         key="invoice_production_total",
         **SEK,
         # from production lines, so a payout netted into a consumption invoice still counts
-        value=lambda d: -(_line_sum(d, PRODUCTION) or 0) or None,
+        value=lambda d: None if (v := _line_sum(d, PRODUCTION)) is None else -v + 0.0,  # 0 kr stays 0, not unknown
         attrs=lambda d: _production_attrs(d),
     ),
     *(
