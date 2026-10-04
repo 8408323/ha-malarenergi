@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.components import websocket_api
+from homeassistant.components import persistent_notification, websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
@@ -134,9 +134,11 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         opts = self.options
         if not opts.get(kind):
             return
-        for target in opts.get("notify_targets") or []:
-            if self.hass.services.has_service("notify", target):
-                await self.hass.services.async_call("notify", target, {"title": title, "message": message})
+        targets = [t for t in opts.get("notify_targets") or [] if self.hass.services.has_service("notify", t)]
+        for target in targets:
+            await self.hass.services.async_call("notify", target, {"title": title, "message": message})
+        if not targets:  # enabled but nowhere to send: show it in HA's notification panel instead of dropping it
+            persistent_notification.async_create(self.hass, message, title, f"{DOMAIN}_{kind}")
 
     async def _announce(self, invoices: list[dict]) -> None:
         """Fire malarenergi_new_invoice once per invoice id; first run seeds silently."""

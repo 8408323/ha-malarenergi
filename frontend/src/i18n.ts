@@ -17,7 +17,7 @@ const en = {
   active: "Active", ended: "Ended", yearly: "Expected kWh/year",
   u_EL: "Grid", u_ELEXT: "Electricity supply", u_ELPROD: "Grid production", u_BB: "Broadband", u_FV: "District heating",
   settings_lang: "Language", lang_auto: "Same as Home Assistant", settings_notify: "Notifications",
-  notify_targets: "Send to", notify_new_invoice: "New invoice", notify_overdue: "Overdue invoice", notify_han_change: "HAN port changed",
+  notify_targets: "Send to", no_targets: "No recipient selected: notifications appear in Home Assistant's notification panel.", notify_new_invoice: "New invoice", notify_overdue: "Overdue invoice", notify_han_change: "HAN port changed",
   notify_auth: "Login expired", settings_account: "Account", relogin: "Log in again with BankID",
   relogin_info: "Starts a new BankID login. It shows up as a notification under Settings → Devices & services.",
   relogin_started: "Login started — open Settings → Devices & services in Home Assistant.", saved: "Saved", none_found: "No notify services found",
@@ -47,7 +47,7 @@ const sv: Dict = {
   active: "Aktiva", ended: "Avslutade", yearly: "Förväntad kWh/år",
   u_EL: "Elnät", u_ELEXT: "Elhandel", u_ELPROD: "Elnät produktion", u_BB: "Bredband", u_FV: "Fjärrvärme",
   settings_lang: "Språk", lang_auto: "Som Home Assistant", settings_notify: "Notiser",
-  notify_targets: "Skicka till", notify_new_invoice: "Ny faktura", notify_overdue: "Förfallen faktura", notify_han_change: "HAN-port ändrad",
+  notify_targets: "Skicka till", no_targets: "Ingen mottagare vald: notiser visas i Home Assistants notispanel.", notify_new_invoice: "Ny faktura", notify_overdue: "Förfallen faktura", notify_han_change: "HAN-port ändrad",
   notify_auth: "Inloggning utgången", settings_account: "Konto", relogin: "Logga in igen med BankID",
   relogin_info: "Startar en ny BankID-inloggning. Den syns som en notis under Inställningar → Enheter och tjänster.",
   relogin_started: "Inloggning startad — öppna Inställningar → Enheter och tjänster i Home Assistant.", saved: "Sparat", none_found: "Inga notify-tjänster hittades",
@@ -68,7 +68,7 @@ const nb: Dict = {
   res_hour: "Dag", res_day: "Måned", res_month: "År", total: "Totalt", prev: "Forrige", next: "Neste", today: "Nå",
   contracts: "Avtaler", product: "Produkt", end: "Slutt", until_further: "Inntil videre", area: "Nettområde", active: "Aktive", ended: "Avsluttet",
   u_EL: "Strømnett", u_ELEXT: "Strømavtale", u_ELPROD: "Nett produksjon", u_BB: "Bredbånd", u_FV: "Fjernvarme",
-  settings_lang: "Språk", lang_auto: "Som Home Assistant", settings_notify: "Varsler", notify_targets: "Send til",
+  settings_lang: "Språk", lang_auto: "Som Home Assistant", settings_notify: "Varsler", notify_targets: "Send til", no_targets: "Ingen mottaker valgt: varsler vises i Home Assistants varselpanel.",
   notify_new_invoice: "Ny faktura", notify_overdue: "Forfalt faktura", notify_han_change: "HAN-port endret", notify_auth: "Innlogging utløpt",
   settings_account: "Konto", relogin: "Logg inn igjen med BankID", saved: "Lagret", invoices_per_page: "Fakturaer per side",
 };
@@ -83,7 +83,7 @@ const da: Dict = {
   res_hour: "Dag", res_day: "Måned", res_month: "År", total: "I alt", prev: "Forrige", next: "Næste", today: "Nu",
   contracts: "Aftaler", product: "Produkt", end: "Slut", until_further: "Indtil videre", area: "Netområde", active: "Aktive", ended: "Afsluttede",
   u_EL: "Elnet", u_ELEXT: "Elaftale", u_ELPROD: "Elnet produktion", u_BB: "Bredbånd", u_FV: "Fjernvarme",
-  settings_lang: "Sprog", lang_auto: "Som Home Assistant", settings_notify: "Notifikationer", notify_targets: "Send til",
+  settings_lang: "Sprog", lang_auto: "Som Home Assistant", settings_notify: "Notifikationer", notify_targets: "Send til", no_targets: "Ingen modtager valgt: notifikationer vises i Home Assistants notifikationspanel.",
   notify_new_invoice: "Ny faktura", notify_overdue: "Forfalden faktura", notify_han_change: "HAN-port ændret", notify_auth: "Login udløbet",
   settings_account: "Konto", relogin: "Log ind igen med BankID", saved: "Gemt", invoices_per_page: "Fakturaer pr. side",
 };
@@ -98,7 +98,7 @@ const fi: Dict = {
   res_hour: "Päivä", res_day: "Kuukausi", res_month: "Vuosi", total: "Yhteensä", prev: "Edellinen", next: "Seuraava", today: "Nyt",
   contracts: "Sopimukset", product: "Tuote", start: "Alku", end: "Loppu", until_further: "Toistaiseksi", area: "Verkkoalue", active: "Voimassa", ended: "Päättyneet",
   u_EL: "Sähköverkko", u_ELEXT: "Sähkösopimus", u_ELPROD: "Verkko tuotanto", u_BB: "Laajakaista", u_FV: "Kaukolämpö",
-  settings_lang: "Kieli", lang_auto: "Kuten Home Assistant", settings_notify: "Ilmoitukset", notify_targets: "Lähetä",
+  settings_lang: "Kieli", lang_auto: "Kuten Home Assistant", settings_notify: "Ilmoitukset", notify_targets: "Lähetä", no_targets: "Vastaanottajaa ei ole valittu: ilmoitukset näkyvät Home Assistantin ilmoituspaneelissa.",
   notify_new_invoice: "Uusi lasku", notify_overdue: "Erääntynyt lasku", notify_han_change: "HAN-portti muuttui", notify_auth: "Kirjautuminen vanhentui",
   settings_account: "Tili", relogin: "Kirjaudu uudelleen BankID:llä", saved: "Tallennettu", invoices_per_page: "Laskuja sivulla",
 };
@@ -111,7 +111,7 @@ const is: Dict = {
   updated: "Uppfært", fixed: "Föst", power_fee: "Afl", other: "Annað", per_page: "Á síðu", of: "af", all: "Allt",
   res_hour: "Dagur", res_day: "Mánuður", res_month: "Ár", total: "Samtals", prev: "Fyrri", next: "Næsta", today: "Núna",
   contracts: "Samningar", until_further: "Ótímabundið", active: "Virkir", ended: "Lokið",
-  settings_lang: "Tungumál", lang_auto: "Eins og Home Assistant", settings_notify: "Tilkynningar", notify_targets: "Senda til",
+  settings_lang: "Tungumál", lang_auto: "Eins og Home Assistant", settings_notify: "Tilkynningar", notify_targets: "Senda til", no_targets: "Enginn viðtakandi valinn: tilkynningar birtast í tilkynningaspjaldi Home Assistant.",
   notify_new_invoice: "Nýr reikningur", notify_overdue: "Gjaldfallinn reikningur", settings_account: "Aðgangur", relogin: "Skrá inn aftur með BankID",
   saved: "Vistað",
 };

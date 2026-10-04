@@ -27186,6 +27186,7 @@ var _R = pR({
 	lang_auto: "Same as Home Assistant",
 	settings_notify: "Notifications",
 	notify_targets: "Send to",
+	no_targets: "No recipient selected: notifications appear in Home Assistant's notification panel.",
 	notify_new_invoice: "New invoice",
 	notify_overdue: "Overdue invoice",
 	notify_han_change: "HAN port changed",
@@ -27283,6 +27284,7 @@ var _R = pR({
 		lang_auto: "Som Home Assistant",
 		settings_notify: "Notiser",
 		notify_targets: "Skicka till",
+		no_targets: "Ingen mottagare vald: notiser visas i Home Assistants notispanel.",
 		notify_new_invoice: "Ny faktura",
 		notify_overdue: "Förfallen faktura",
 		notify_han_change: "HAN-port ändrad",
@@ -27371,6 +27373,7 @@ var _R = pR({
 		lang_auto: "Som Home Assistant",
 		settings_notify: "Varsler",
 		notify_targets: "Send til",
+		no_targets: "Ingen mottaker valgt: varsler vises i Home Assistants varselpanel.",
 		notify_new_invoice: "Ny faktura",
 		notify_overdue: "Forfalt faktura",
 		notify_han_change: "HAN-port endret",
@@ -27443,6 +27446,7 @@ var _R = pR({
 		lang_auto: "Som Home Assistant",
 		settings_notify: "Notifikationer",
 		notify_targets: "Send til",
+		no_targets: "Ingen modtager valgt: notifikationer vises i Home Assistants notifikationspanel.",
 		notify_new_invoice: "Ny faktura",
 		notify_overdue: "Forfalden faktura",
 		notify_han_change: "HAN-port ændret",
@@ -27516,6 +27520,7 @@ var _R = pR({
 		lang_auto: "Kuten Home Assistant",
 		settings_notify: "Ilmoitukset",
 		notify_targets: "Lähetä",
+		no_targets: "Vastaanottajaa ei ole valittu: ilmoitukset näkyvät Home Assistantin ilmoituspaneelissa.",
 		notify_new_invoice: "Uusi lasku",
 		notify_overdue: "Erääntynyt lasku",
 		notify_han_change: "HAN-portti muuttui",
@@ -27573,6 +27578,7 @@ var _R = pR({
 		lang_auto: "Eins og Home Assistant",
 		settings_notify: "Tilkynningar",
 		notify_targets: "Senda til",
+		no_targets: "Enginn viðtakandi valinn: tilkynningar birtast í tilkynningaspjaldi Home Assistant.",
 		notify_new_invoice: "Nýr reikningur",
 		notify_overdue: "Gjaldfallinn reikningur",
 		settings_account: "Aðgangur",
@@ -28357,6 +28363,11 @@ function VR({ hass: e, t, opts: n, setOpts: r }) {
 							}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 						})]
 					}, e)),
+					u.length === 0 && /* @__PURE__ */ (0, $.jsx)("div", {
+						className: "muted",
+						style: { marginTop: 6 },
+						children: t.no_targets
+					}),
 					/* @__PURE__ */ (0, $.jsx)("div", {
 						className: "label",
 						style: { margin: "12px 0 6px" },

@@ -362,6 +362,7 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
             <label className="switch"><input type="checkbox" checked={targets.includes(s)}
               onChange={(e) => save({ notify_targets: e.target.checked ? [...targets, s] : targets.filter((x) => x !== s) })} /><span /></label></div>
         ))}
+        {targets.length === 0 && <div className="muted" style={{ marginTop: 6 }}>{t.no_targets}</div>}
         <div className="label" style={{ margin: "12px 0 6px" }}>{t.settings_notify}</div>
         {["notify_new_invoice", "notify_overdue", "notify_han_change", "notify_auth"].map(toggle)}
       </section>
