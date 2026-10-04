@@ -329,8 +329,8 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
                   <td><span className={`dot ${i.kind}`} /><span className="wide">{i.kind === "production" ? t.production : t.consumption}</span></td>
                   <td className={`r ${i.amount < 0 ? "pos" : ""}`}>{money(-i.amount)}</td>
                   <td className="r wide">{fmt(i.kwh, 0)}</td>
-                  <td className="r wide">{fmt(i.fixed, 0)}</td><td className="r wide">{i.power_fee ? fmt(i.power_fee, 0) : "–"}</td>
-                  <td className="r wide">{i.other ? fmt(i.other, 0) : "–"}</td>
+                  <td className="r wide">{i.fixed ? money(-i.fixed) : "–"}</td><td className="r wide">{i.power_fee ? money(-i.power_fee) : "–"}</td>
+                  <td className="r wide">{i.other ? money(-i.other) : "–"}</td>
                   <td>{shortDate(i.due_date)}</td>
                   <td><span className={`badge ${i.closed ? "ok" : "warn"}`}>{i.amount < 0 ? t.credit : i.closed ? t.paid : t.open}</span></td>
                   <td><button className="btn" disabled={busy === i.invoice_id} onClick={(e) => { e.stopPropagation(); download(i.invoice_id); }}>{busy === i.invoice_id ? t.downloading : t.pdf}</button></td>

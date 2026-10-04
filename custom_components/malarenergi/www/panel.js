@@ -28474,15 +28474,15 @@ function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 						}),
 						/* @__PURE__ */ (0, $.jsx)("td", {
 							className: "r wide",
-							children: KR(e.fixed, 0)
+							children: e.fixed ? iz(-e.fixed) : "–"
 						}),
 						/* @__PURE__ */ (0, $.jsx)("td", {
 							className: "r wide",
-							children: e.power_fee ? KR(e.power_fee, 0) : "–"
+							children: e.power_fee ? iz(-e.power_fee) : "–"
 						}),
 						/* @__PURE__ */ (0, $.jsx)("td", {
 							className: "r wide",
-							children: e.other ? KR(e.other, 0) : "–"
+							children: e.other ? iz(-e.other) : "–"
 						}),
 						/* @__PURE__ */ (0, $.jsx)("td", { children: h(e.due_date) }),
 						/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {

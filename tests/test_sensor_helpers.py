@@ -76,3 +76,11 @@ def test_production_payout_found_in_mixed_invoice():
 def test_production_attrs_only_production_part():
     a = sensor._production_attrs(DATA)
     assert a["kwh"] == 1417 and [x["category"] for x in a["lines"]] == ["production_spot"]
+
+
+def test_consumption_total_from_consumption_lines():
+    # the mixed August invoice: consumption part 2.7 kr, production credit not netted in;
+    # the newer broadband-only invoice (40 kr) is the latest with consumption lines
+    assert sensor._consumption_total(DATA) == 40.0
+    mixed = {"invoices": DATA["invoices"][1:]}
+    assert sensor._consumption_total(mixed) == 2.7

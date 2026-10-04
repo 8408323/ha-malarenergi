@@ -83,6 +83,31 @@ def _line_rate(data: dict, cat: str) -> float | None:
     return round(sum(line["amount"] for line in lines) / kwh, 4) if kwh else None
 
 
+def _latest_consumption(data: dict) -> dict | None:
+    return next(
+        (
+            i
+            for i in data.get("invoices") or []
+            if any(line["category"] not in PRODUCTION for line in i.get("lines") or [])
+        ),
+        None,
+    )
+
+
+def _consumption_total(data: dict) -> float | None:
+    inv = _latest_consumption(data)
+    if not inv:
+        return None
+    return round(sum(line["amount"] for line in inv["lines"] if line["category"] not in PRODUCTION), 2)
+
+
+def _consumption_attrs(data: dict) -> dict:
+    inv = _latest_consumption(data) or {}
+    attrs = {k: inv.get(k) for k in ("period_start", "period_end", "due_date", "status")}
+    attrs["lines"] = [line for line in inv.get("lines") or [] if line["category"] not in PRODUCTION]
+    return attrs
+
+
 def _production_attrs(data: dict) -> dict:
     """Period, kWh and lines of the production part only (a mixed invoice also carries consumption)."""
     inv = _latest_with(data, PRODUCTION) or {}
@@ -165,11 +190,10 @@ SENSORS: tuple[MeSensor, ...] = (
     MeSensor(
         key="invoice_consumption_total",
         **SEK,
-        value=lambda d: (_latest_of(d, "consumption") or {}).get("amount"),
-        attrs=lambda d: {
-            k: (_latest_of(d, "consumption") or {}).get(k)
-            for k in ("period_start", "period_end", "due_date", "status", "lines")
-        },
+        # from the consumption lines, symmetrical with the payout sensor: a production credit on the same
+        # invoice must not shrink it (or hide the invoice when the net turns negative)
+        value=lambda d: _consumption_total(d),
+        attrs=lambda d: _consumption_attrs(d),
     ),
     MeSensor(
         key="invoice_production_total",
