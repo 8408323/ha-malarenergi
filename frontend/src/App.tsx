@@ -322,7 +322,8 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
     <>
       <div className="kpis">
         <Kpi label={`${t.consumption} · ${year}`} info={t.wallet_info} value={money(-ytd("consumption"))} />
-        <Kpi label={`${t.production} · ${year}`} info={t.wallet_info} value={money(-ytd("production"))} tone="pos" />
+        <Kpi label={`${t.production} · ${year}`} info={t.wallet_info} value={money(-ytd("production"))}
+          tone={-ytd("production") >= 0 ? "pos" : "neg"} />
         <Kpi label={`${t.net} · ${year}`} info={t.wallet_net_info} value={money(-(ytd("consumption") + ytd("production")))}
           tone={ytd("consumption") + ytd("production") <= 0 ? "pos" : "neg"} />
       </div>
@@ -441,7 +442,8 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
     setMsg((m) => (m === t.relogin_checking ? null : m));
   };
   // leaving the panel with the dialog open must abort the flow too
-  useEffect(() => () => { if (loginRef.current) cancelFlow(loginRef.current.flow); }, []);
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; if (loginRef.current) cancelFlow(loginRef.current.flow); }, []);
   useEffect(() => {
     if (!login) return;
     const on = async (e: MessageEvent) => {
@@ -519,8 +521,9 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
             setStarting(true);  // one flow per click: a double-click would start an uncancellable second flow
             try {
               const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth" });
+              if (!mounted.current) { if (r?.flow_id) cancelFlow(r.flow_id); return; }  // left the panel meanwhile
               if (r?.url && r?.flow_id) setLogin({ url: r.url, flow: r.flow_id }); else setMsg(t.relogin_started);
-            } finally { setStarting(false); }
+            } finally { if (mounted.current) setStarting(false); }
           }}>BankID</button></div>
         <div className="setting"><span>{t.invoices_per_page}</span>
           <select className="sel" value={opts.invoices_per_page ?? 12} onChange={(e) => save({ invoices_per_page: Number(e.target.value) })}>

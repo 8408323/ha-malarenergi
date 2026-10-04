@@ -28419,7 +28419,7 @@ function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 				label: `${t.production} · ${_}`,
 				info: t.wallet_info,
 				value: iz(-y("production")),
-				tone: "pos"
+				tone: -y("production") >= 0 ? "pos" : "neg"
 			}),
 			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${t.net} · ${_}`,
@@ -28669,9 +28669,9 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 		flow_id: t
 	}).catch(() => void 0), m = () => {
 		c && p(c.flow), l(null), s((e) => e === t.relogin_checking ? null : e);
-	};
+	}, h = (0, S.useRef)(!0);
 	(0, S.useEffect)(() => () => {
-		f.current && p(f.current.flow);
+		h.current = !1, f.current && p(f.current.flow);
 	}, []), (0, S.useEffect)(() => {
 		if (!c) return;
 		let n = async (n) => {
@@ -28695,22 +28695,22 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 	}, [c]), (0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((e) => a(e.notify_services));
 	}, []);
-	let h = async (n) => {
+	let g = async (n) => {
 		r((await e.connection.sendMessagePromise({
 			type: "malarenergi/settings/set",
 			options: n
 		})).options), s(t.saved), setTimeout(() => s(null), 1500);
-	}, g = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
+	}, _ = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "setting",
 		children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t[e] }), /* @__PURE__ */ (0, $.jsxs)("label", {
 			className: "switch",
 			children: [/* @__PURE__ */ (0, $.jsx)("input", {
 				type: "checkbox",
 				checked: !!n[e],
-				onChange: (t) => h({ [e]: t.target.checked })
+				onChange: (t) => g({ [e]: t.target.checked })
 			}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 		})]
-	}, e), _ = n.notify_targets ?? [];
+	}, e), v = n.notify_targets ?? [];
 	return /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "settings-grid",
 		children: [
@@ -28753,7 +28753,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							role: "radio",
 							"aria-checked": i,
 							className: `lang ${i ? "on" : ""} ${r === "auto" ? "auto" : ""}`,
-							onClick: () => h({ language: r }),
+							onClick: () => g({ language: r }),
 							children: [
 								/* @__PURE__ */ (0, $.jsx)("span", {
 									className: "flag",
@@ -28790,12 +28790,12 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							className: "switch",
 							children: [/* @__PURE__ */ (0, $.jsx)("input", {
 								type: "checkbox",
-								checked: _.includes(e),
-								onChange: (t) => h({ notify_targets: t.target.checked ? [..._, e] : _.filter((t) => t !== e) })
+								checked: v.includes(e),
+								onChange: (t) => g({ notify_targets: t.target.checked ? [...v, e] : v.filter((t) => t !== e) })
 							}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 						})]
 					}, e)),
-					!_.some((e) => i.includes(e)) && /* @__PURE__ */ (0, $.jsx)("div", {
+					!v.some((e) => i.includes(e)) && /* @__PURE__ */ (0, $.jsx)("div", {
 						className: "muted",
 						style: { marginTop: 6 },
 						children: t.no_targets
@@ -28810,7 +28810,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						"notify_overdue",
 						"notify_han_change",
 						"notify_auth"
-					].map(g)
+					].map(_)
 				]
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28826,12 +28826,16 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 								d(!0);
 								try {
 									let n = await e.connection.sendMessagePromise({ type: "malarenergi/reauth" });
+									if (!h.current) {
+										n?.flow_id && p(n.flow_id);
+										return;
+									}
 									n?.url && n?.flow_id ? l({
 										url: n.url,
 										flow: n.flow_id
 									}) : s(t.relogin_started);
 								} finally {
-									d(!1);
+									h.current && d(!1);
 								}
 							},
 							children: "BankID"
@@ -28842,7 +28846,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t.invoices_per_page }), /* @__PURE__ */ (0, $.jsx)("select", {
 							className: "sel",
 							value: n.invoices_per_page ?? 12,
-							onChange: (e) => h({ invoices_per_page: Number(e.target.value) }),
+							onChange: (e) => g({ invoices_per_page: Number(e.target.value) }),
 							children: [
 								6,
 								12,
