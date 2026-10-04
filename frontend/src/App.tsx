@@ -424,22 +424,31 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
   const [msg, setMsg] = useState<string | null>(null);
   // BankID page shown in a dialog over the panel; flow = the reauth flow behind it
   const [login, setLogin] = useState<{ url: string; flow: string } | null>(null);
+  const loginRef = useRef<{ url: string; flow: string } | null>(null);  // for the unmount cleanup and the poll
+  loginRef.current = login;
+  const cancelFlow = (flow: string) =>
+    hass.connection.sendMessagePromise({ type: "malarenergi/reauth_cancel", flow_id: flow }).catch(() => undefined);
   const closeLogin = () => {  // closing aborts the flow, so its BankID attempt stops polling
-    if (login) hass.connection.sendMessagePromise({ type: "malarenergi/reauth_cancel", flow_id: login.flow }).catch(() => undefined);
+    if (login) cancelFlow(login.flow);
     setLogin(null);
   };
+  // leaving the panel with the dialog open must abort the flow too
+  useEffect(() => () => { if (loginRef.current) cancelFlow(loginRef.current.flow); }, []);
   useEffect(() => {
     if (!login) return;
     const on = async (e: MessageEvent) => {
       if (e.origin !== location.origin || e.data?.malarenergi !== "bankid-complete") return;
       setMsg(t.relogin_checking);
       // BankID done: wait for the flow itself (account check + reload) before claiming success
-      for (let i = 0; i < 40; i++) {
+      // stop as soon as the dialog is closed or replaced (closing aborts the flow; that's not a success)
+      const mine = login.flow, live = () => loginRef.current?.flow === mine;
+      for (let i = 0; i < 40 && live(); i++) {
         await new Promise((r) => setTimeout(r, 1000));
-        const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth_status", flow_id: login.flow }).catch(() => null);
-        if (r?.done) { setLogin(null); setMsg(r.ok ? t.relogin_done : t.relogin_failed); return; }
+        if (!live()) return;
+        const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth_status", flow_id: mine }).catch(() => null);
+        if (r?.done && live()) { setLogin(null); setMsg(r.ok ? t.relogin_done : t.relogin_failed); return; }
       }
-      setLogin(null); setMsg(t.relogin_failed);
+      if (live()) { setLogin(null); setMsg(t.relogin_failed); }
     };
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);

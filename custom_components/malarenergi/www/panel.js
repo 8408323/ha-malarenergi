@@ -27349,7 +27349,7 @@ var PR = AR({
 	notify_auth: "Login expired",
 	settings_account: "Account",
 	relogin: "Log in again with BankID",
-	relogin_info: "Starts a new BankID login. It shows up as a notification under Settings → Devices & services.",
+	relogin_info: "Starts a new BankID login in a dialog here: scan the QR code, or choose BankID on this device on a phone.",
 	relogin_started: "Login started — open Settings → Devices & services in Home Assistant.",
 	saved: "Saved",
 	none_found: "No notify services found",
@@ -27457,7 +27457,7 @@ var PR = AR({
 		notify_auth: "Inloggning utgången",
 		settings_account: "Konto",
 		relogin: "Logga in igen med BankID",
-		relogin_info: "Startar en ny BankID-inloggning. Den syns som en notis under Inställningar → Enheter och tjänster.",
+		relogin_info: "Startar en ny BankID-inloggning i en ruta här: skanna QR-koden, eller välj BankID på den här enheten på mobilen.",
 		relogin_started: "Inloggning startad — öppna Inställningar → Enheter och tjänster i Home Assistant.",
 		saved: "Sparat",
 		none_found: "Inga notify-tjänster hittades",
@@ -28662,51 +28662,55 @@ function sz({ hass: e, t, locale: n }) {
 	}, String(e))) });
 }
 function cz({ hass: e, t, opts: n, setOpts: r }) {
-	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), u = () => {
-		c && e.connection.sendMessagePromise({
-			type: "malarenergi/reauth_cancel",
-			flow_id: c.flow
-		}).catch(() => void 0), l(null);
+	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), u = (0, S.useRef)(null);
+	u.current = c;
+	let d = (t) => e.connection.sendMessagePromise({
+		type: "malarenergi/reauth_cancel",
+		flow_id: t
+	}).catch(() => void 0), f = () => {
+		c && d(c.flow), l(null);
 	};
-	(0, S.useEffect)(() => {
+	(0, S.useEffect)(() => () => {
+		u.current && d(u.current.flow);
+	}, []), (0, S.useEffect)(() => {
 		if (!c) return;
 		let n = async (n) => {
-			if (n.origin === location.origin && n.data?.malarenergi === "bankid-complete") {
-				s(t.relogin_checking);
-				for (let n = 0; n < 40; n++) {
-					await new Promise((e) => setTimeout(e, 1e3));
-					let n = await e.connection.sendMessagePromise({
-						type: "malarenergi/reauth_status",
-						flow_id: c.flow
-					}).catch(() => null);
-					if (n?.done) {
-						l(null), s(n.ok ? t.relogin_done : t.relogin_failed);
-						return;
-					}
+			if (n.origin !== location.origin || n.data?.malarenergi !== "bankid-complete") return;
+			s(t.relogin_checking);
+			let r = c.flow, i = () => u.current?.flow === r;
+			for (let n = 0; n < 40 && i(); n++) {
+				if (await new Promise((e) => setTimeout(e, 1e3)), !i()) return;
+				let n = await e.connection.sendMessagePromise({
+					type: "malarenergi/reauth_status",
+					flow_id: r
+				}).catch(() => null);
+				if (n?.done && i()) {
+					l(null), s(n.ok ? t.relogin_done : t.relogin_failed);
+					return;
 				}
-				l(null), s(t.relogin_failed);
 			}
+			i() && (l(null), s(t.relogin_failed));
 		};
 		return window.addEventListener("message", n), () => window.removeEventListener("message", n);
 	}, [c]), (0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((e) => a(e.notify_services));
 	}, []);
-	let d = async (n) => {
+	let p = async (n) => {
 		r((await e.connection.sendMessagePromise({
 			type: "malarenergi/settings/set",
 			options: n
 		})).options), s(t.saved), setTimeout(() => s(null), 1500);
-	}, f = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
+	}, m = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "setting",
 		children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t[e] }), /* @__PURE__ */ (0, $.jsxs)("label", {
 			className: "switch",
 			children: [/* @__PURE__ */ (0, $.jsx)("input", {
 				type: "checkbox",
 				checked: !!n[e],
-				onChange: (t) => d({ [e]: t.target.checked })
+				onChange: (t) => p({ [e]: t.target.checked })
 			}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 		})]
-	}, e), p = n.notify_targets ?? [];
+	}, e), h = n.notify_targets ?? [];
 	return /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "settings-grid",
 		children: [
@@ -28714,14 +28718,14 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 				className: "modal",
 				role: "dialog",
 				"aria-modal": "true",
-				onClick: u,
+				onClick: f,
 				children: /* @__PURE__ */ (0, $.jsxs)("div", {
 					className: "modal-box",
 					onClick: (e) => e.stopPropagation(),
 					children: [/* @__PURE__ */ (0, $.jsx)("button", {
 						className: "btn ghost modal-x",
 						"aria-label": t.close,
-						onClick: u,
+						onClick: f,
 						children: "✕"
 					}), /* @__PURE__ */ (0, $.jsx)("iframe", {
 						src: c.url,
@@ -28749,7 +28753,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							role: "radio",
 							"aria-checked": i,
 							className: `lang ${i ? "on" : ""} ${r === "auto" ? "auto" : ""}`,
-							onClick: () => d({ language: r }),
+							onClick: () => p({ language: r }),
 							children: [
 								/* @__PURE__ */ (0, $.jsx)("span", {
 									className: "flag",
@@ -28786,12 +28790,12 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							className: "switch",
 							children: [/* @__PURE__ */ (0, $.jsx)("input", {
 								type: "checkbox",
-								checked: p.includes(e),
-								onChange: (t) => d({ notify_targets: t.target.checked ? [...p, e] : p.filter((t) => t !== e) })
+								checked: h.includes(e),
+								onChange: (t) => p({ notify_targets: t.target.checked ? [...h, e] : h.filter((t) => t !== e) })
 							}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 						})]
 					}, e)),
-					p.length === 0 && /* @__PURE__ */ (0, $.jsx)("div", {
+					h.length === 0 && /* @__PURE__ */ (0, $.jsx)("div", {
 						className: "muted",
 						style: { marginTop: 6 },
 						children: t.no_targets
@@ -28806,7 +28810,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						"notify_overdue",
 						"notify_han_change",
 						"notify_auth"
-					].map(f)
+					].map(m)
 				]
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28832,7 +28836,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t.invoices_per_page }), /* @__PURE__ */ (0, $.jsx)("select", {
 							className: "sel",
 							value: n.invoices_per_page ?? 12,
-							onChange: (e) => d({ invoices_per_page: Number(e.target.value) }),
+							onChange: (e) => p({ invoices_per_page: Number(e.target.value) }),
 							children: [
 								6,
 								12,
