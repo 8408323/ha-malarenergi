@@ -210,3 +210,21 @@ def test_unknown_amount_only_row_on_production_invoice_is_production():
         production_invoice=True,
     )
     assert line["category"] == "production_other" and line["amount"] == -100.0
+
+
+def test_positive_unknown_correction_on_production_invoice_stays_production():
+    lines = parse.invoice_lines(
+        [
+            {
+                "productType": "Prod SpotTim",
+                "utilityType": {"name": "ELEXT"},
+                "consumptionMonth": -200,
+                "costVariableMonth": -100.0,
+            },
+            {"productType": "Okänd korrigering", "utilityType": {"name": "ELEXT"}, "otherMonth": 10.0},
+        ],
+        1.25,
+        production_invoice=True,
+    )
+    assert [x["category"] for x in lines] == ["production_spot", "production_other"]
+    assert sum(x["amount"] for x in lines) == -90.0  # net payout, no VAT added to the correction

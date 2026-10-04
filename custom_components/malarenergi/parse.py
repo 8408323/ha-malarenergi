@@ -117,8 +117,9 @@ def invoice_lines(details: list[dict], vat: float, production_invoice: bool = Fa
         cat = line_category(d.get("productType"))
         util = _name(d.get("utilityType"))
         # negative energy and a non-positive amount (a 0 kr settlement too): a payout
-        # on an invoice that is a production payout as a whole, an unknown non-positive row is part of it
-        credit = amount <= 0 and ((d.get("consumptionMonth") or 0) < 0 or production_invoice)
+        # on an invoice that is a production payout as a whole, any unknown row (payout or correction) is
+        # part of it; elsewhere only a row with negative energy and a non-positive amount is a payout
+        credit = production_invoice or (amount <= 0 and (d.get("consumptionMonth") or 0) < 0)
         if not cat.startswith("production_") and (util == "ELPROD" or (util == "ELEXT" and credit)):
             cat = "production_other"  # unknown product on a production row: still a VAT-free payout
         out.append(
