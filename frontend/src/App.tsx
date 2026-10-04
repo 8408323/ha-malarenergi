@@ -422,14 +422,28 @@ function Contracts({ hass, t, locale }: Ctx) {
 function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o: Options) => void }) {
   const [services, setServices] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
-  const [login, setLogin] = useState<string | null>(null);  // BankID page shown in a dialog over the panel
+  // BankID page shown in a dialog over the panel; flow = the reauth flow behind it
+  const [login, setLogin] = useState<{ url: string; flow: string } | null>(null);
+  const closeLogin = () => {  // closing aborts the flow, so its BankID attempt stops polling
+    if (login) hass.connection.sendMessagePromise({ type: "malarenergi/reauth_cancel", flow_id: login.flow }).catch(() => undefined);
+    setLogin(null);
+  };
   useEffect(() => {
-    const on = (e: MessageEvent) => {
-      if (e.origin === location.origin && e.data?.malarenergi === "bankid-complete") { setLogin(null); setMsg(t.relogin_done); }
+    if (!login) return;
+    const on = async (e: MessageEvent) => {
+      if (e.origin !== location.origin || e.data?.malarenergi !== "bankid-complete") return;
+      setMsg(t.relogin_checking);
+      // BankID done: wait for the flow itself (account check + reload) before claiming success
+      for (let i = 0; i < 40; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth_status", flow_id: login.flow }).catch(() => null);
+        if (r?.done) { setLogin(null); setMsg(r.ok ? t.relogin_done : t.relogin_failed); return; }
+      }
+      setLogin(null); setMsg(t.relogin_failed);
     };
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);
-  }, []);
+  }, [login]);
   useEffect(() => { hass.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((r: any) => setServices(r.notify_services)); }, []);
   const save = async (patch: Options) => {
     const r = await hass.connection.sendMessagePromise({ type: "malarenergi/settings/set", options: patch });
@@ -443,10 +457,10 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
   return (
     <div className="settings-grid">
       {login && (
-        <div className="modal" role="dialog" aria-modal="true" onClick={() => setLogin(null)}>
+        <div className="modal" role="dialog" aria-modal="true" onClick={closeLogin}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <button className="btn ghost modal-x" aria-label={t.close} onClick={() => setLogin(null)}>✕</button>
-            <iframe src={login} title="BankID" />
+            <button className="btn ghost modal-x" aria-label={t.close} onClick={closeLogin}>✕</button>
+            <iframe src={login.url} title="BankID" />
           </div>
         </div>
       )}
@@ -485,7 +499,7 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
         <div className="setting"><span>{t.relogin}<Info text={t.relogin_info} /></span>
           <button className="btn" onClick={async () => {
             const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth" });
-            if (r?.url) setLogin(r.url); else setMsg(t.relogin_started);
+            if (r?.url && r?.flow_id) setLogin({ url: r.url, flow: r.flow_id }); else setMsg(t.relogin_started);
           }}>BankID</button></div>
         <div className="setting"><span>{t.invoices_per_page}</span>
           <select className="sel" value={opts.invoices_per_page ?? 12} onChange={(e) => save({ invoices_per_page: Number(e.target.value) })}>

@@ -214,7 +214,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.runtime_data = coord
     _register_services(hass)
     if not hass.data.get(f"{DOMAIN}_ws"):
-        for cmd in (ws_data, ws_series, ws_contracts, ws_settings_get, ws_settings_set, ws_reauth):
+        for cmd in (
+            ws_data,
+            ws_series,
+            ws_contracts,
+            ws_settings_get,
+            ws_settings_set,
+            ws_reauth,
+            ws_reauth_status,
+            ws_reauth_cancel,
+        ):
             websocket_api.async_register_command(hass, cmd)
         hass.data[f"{DOMAIN}_ws"] = True
     from .panel import async_register_panel
@@ -373,6 +382,37 @@ def ws_settings_set(hass, connection, msg):
         clean.pop("language")
     hass.config_entries.async_update_entry(coord.config_entry, options={**coord.options, **clean})
     connection.send_result(msg["id"], {"options": {**coord.options, **clean}})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth_status", vol.Required("flow_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_reauth_status(hass, connection, msg):
+    """done once the reauth flow has finished; ok if the entry then has working credentials."""
+    from homeassistant.data_entry_flow import UnknownFlow
+
+    try:
+        hass.config_entries.flow.async_get(msg["flow_id"])
+        connection.send_result(msg["id"], {"done": False})
+        return
+    except UnknownFlow:
+        pass
+    coord = _coord(hass)
+    connection.send_result(msg["id"], {"done": True, "ok": bool(coord and coord.last_update_success)})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth_cancel", vol.Required("flow_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_reauth_cancel(hass, connection, msg):
+    """Abort the reauth flow (its BankID attempt stops polling Mälarenergi)."""
+    from homeassistant.data_entry_flow import UnknownFlow
+
+    try:
+        hass.config_entries.flow.async_abort(msg["flow_id"])
+    except UnknownFlow:
+        pass
+    connection.send_result(msg["id"], {"ok": True})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth"})

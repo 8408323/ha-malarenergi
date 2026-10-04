@@ -27264,6 +27264,8 @@ var PR = AR({
 })), RR = _(), zR = {
 	close: "Close",
 	relogin_done: "Logged in with BankID.",
+	relogin_checking: "BankID done, checking the account…",
+	relogin_failed: "The login did not complete. Try again.",
 	zoom_hint: "Drag across the chart to zoom; the slider below adjusts the same window. Double-click to reset.",
 	table_zoom: "Zoomed",
 	table_full: "Whole period",
@@ -27372,6 +27374,8 @@ var PR = AR({
 		...zR,
 		close: "Stäng",
 		relogin_done: "Inloggad med BankID.",
+		relogin_checking: "BankID klart, kontrollerar kontot…",
+		relogin_failed: "Inloggningen blev inte klar. Försök igen.",
 		zoom_hint: "Dra över diagrammet för att zooma; reglaget under justerar samma fönster. Dubbelklicka för att återställa.",
 		table_zoom: "Inzoomat",
 		table_full: "Hela perioden",
@@ -28658,31 +28662,51 @@ function sz({ hass: e, t, locale: n }) {
 	}, String(e))) });
 }
 function cz({ hass: e, t, opts: n, setOpts: r }) {
-	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null);
+	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), u = () => {
+		c && e.connection.sendMessagePromise({
+			type: "malarenergi/reauth_cancel",
+			flow_id: c.flow
+		}).catch(() => void 0), l(null);
+	};
 	(0, S.useEffect)(() => {
-		let e = (e) => {
-			e.origin === location.origin && e.data?.malarenergi === "bankid-complete" && (l(null), s(t.relogin_done));
+		if (!c) return;
+		let n = async (n) => {
+			if (n.origin === location.origin && n.data?.malarenergi === "bankid-complete") {
+				s(t.relogin_checking);
+				for (let n = 0; n < 40; n++) {
+					await new Promise((e) => setTimeout(e, 1e3));
+					let n = await e.connection.sendMessagePromise({
+						type: "malarenergi/reauth_status",
+						flow_id: c.flow
+					}).catch(() => null);
+					if (n?.done) {
+						l(null), s(n.ok ? t.relogin_done : t.relogin_failed);
+						return;
+					}
+				}
+				l(null), s(t.relogin_failed);
+			}
 		};
-		return window.addEventListener("message", e), () => window.removeEventListener("message", e);
-	}, []), (0, S.useEffect)(() => {
+		return window.addEventListener("message", n), () => window.removeEventListener("message", n);
+	}, [c]), (0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((e) => a(e.notify_services));
 	}, []);
-	let u = async (n) => {
+	let d = async (n) => {
 		r((await e.connection.sendMessagePromise({
 			type: "malarenergi/settings/set",
 			options: n
 		})).options), s(t.saved), setTimeout(() => s(null), 1500);
-	}, d = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
+	}, f = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "setting",
 		children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t[e] }), /* @__PURE__ */ (0, $.jsxs)("label", {
 			className: "switch",
 			children: [/* @__PURE__ */ (0, $.jsx)("input", {
 				type: "checkbox",
 				checked: !!n[e],
-				onChange: (t) => u({ [e]: t.target.checked })
+				onChange: (t) => d({ [e]: t.target.checked })
 			}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 		})]
-	}, e), f = n.notify_targets ?? [];
+	}, e), p = n.notify_targets ?? [];
 	return /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "settings-grid",
 		children: [
@@ -28690,17 +28714,17 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 				className: "modal",
 				role: "dialog",
 				"aria-modal": "true",
-				onClick: () => l(null),
+				onClick: u,
 				children: /* @__PURE__ */ (0, $.jsxs)("div", {
 					className: "modal-box",
 					onClick: (e) => e.stopPropagation(),
 					children: [/* @__PURE__ */ (0, $.jsx)("button", {
 						className: "btn ghost modal-x",
 						"aria-label": t.close,
-						onClick: () => l(null),
+						onClick: u,
 						children: "✕"
 					}), /* @__PURE__ */ (0, $.jsx)("iframe", {
-						src: c,
+						src: c.url,
 						title: "BankID"
 					})]
 				})
@@ -28725,7 +28749,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							role: "radio",
 							"aria-checked": i,
 							className: `lang ${i ? "on" : ""} ${r === "auto" ? "auto" : ""}`,
-							onClick: () => u({ language: r }),
+							onClick: () => d({ language: r }),
 							children: [
 								/* @__PURE__ */ (0, $.jsx)("span", {
 									className: "flag",
@@ -28762,12 +28786,12 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							className: "switch",
 							children: [/* @__PURE__ */ (0, $.jsx)("input", {
 								type: "checkbox",
-								checked: f.includes(e),
-								onChange: (t) => u({ notify_targets: t.target.checked ? [...f, e] : f.filter((t) => t !== e) })
+								checked: p.includes(e),
+								onChange: (t) => d({ notify_targets: t.target.checked ? [...p, e] : p.filter((t) => t !== e) })
 							}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 						})]
 					}, e)),
-					f.length === 0 && /* @__PURE__ */ (0, $.jsx)("div", {
+					p.length === 0 && /* @__PURE__ */ (0, $.jsx)("div", {
 						className: "muted",
 						style: { marginTop: 6 },
 						children: t.no_targets
@@ -28782,7 +28806,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						"notify_overdue",
 						"notify_han_change",
 						"notify_auth"
-					].map(d)
+					].map(f)
 				]
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28795,7 +28819,10 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 							className: "btn",
 							onClick: async () => {
 								let n = await e.connection.sendMessagePromise({ type: "malarenergi/reauth" });
-								n?.url ? l(n.url) : s(t.relogin_started);
+								n?.url && n?.flow_id ? l({
+									url: n.url,
+									flow: n.flow_id
+								}) : s(t.relogin_started);
 							},
 							children: "BankID"
 						})]
@@ -28805,7 +28832,7 @@ function cz({ hass: e, t, opts: n, setOpts: r }) {
 						children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t.invoices_per_page }), /* @__PURE__ */ (0, $.jsx)("select", {
 							className: "sel",
 							value: n.invoices_per_page ?? 12,
-							onChange: (e) => u({ invoices_per_page: Number(e.target.value) }),
+							onChange: (e) => d({ invoices_per_page: Number(e.target.value) }),
 							children: [
 								6,
 								12,

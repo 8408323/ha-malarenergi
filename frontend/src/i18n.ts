@@ -1,6 +1,6 @@
 // Default follows the Home Assistant user's language; overridable in the panel's Settings tab.
 const en = {
-  close: "Close", relogin_done: "Logged in with BankID.",
+  close: "Close", relogin_done: "Logged in with BankID.", relogin_checking: "BankID done, checking the account…", relogin_failed: "The login did not complete. Try again.",
   zoom_hint: "Drag across the chart to zoom; the slider below adjusts the same window. Double-click to reset.", table_zoom: "Zoomed", table_full: "Whole period",
   title: "Mälarenergi", tab_overview: "Overview", tab_history: "History", tab_invoices: "Invoices", tab_contracts: "Contracts", tab_settings: "Settings",
   month: "This month", consumption: "Consumption", production: "Production", cost: "Cost", compensation: "Compensation",
@@ -34,7 +34,7 @@ type Dict = typeof en;
 
 const sv: Dict = {
   ...en,
-  close: "Stäng", relogin_done: "Inloggad med BankID.",
+  close: "Stäng", relogin_done: "Inloggad med BankID.", relogin_checking: "BankID klart, kontrollerar kontot…", relogin_failed: "Inloggningen blev inte klar. Försök igen.",
   zoom_hint: "Dra över diagrammet för att zooma; reglaget under justerar samma fönster. Dubbelklicka för att återställa.", table_zoom: "Inzoomat", table_full: "Hela perioden", tab_overview: "Översikt", tab_history: "Historik", tab_invoices: "Fakturor", tab_contracts: "Avtal", tab_settings: "Inställningar",
   month: "Denna månad", consumption: "Förbrukning", production: "Produktion", cost: "Kostnad", compensation: "Ersättning",
   peak: "Effekttopp", net: "Netto", daily: "Senaste 30 dagarna", invoices: "Fakturor", period: "Period", amount: "Belopp", due: "Förfaller",
