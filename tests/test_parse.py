@@ -155,3 +155,18 @@ def test_invoice_lines_categorised_with_vat():
     cats = {line["category"]: line["amount"] for line in lines}
     assert cats["grid_fixed"] == 397.5 and cats["energy_tax"] == 3.15 and cats["supply_markup"] == 0.25
     assert cats["other"] == 349.0 and lines[2]["kwh"] == 7
+
+
+def test_invoice_lines_vat_and_kwh_per_line():
+    # a consumption invoice that also carries a production credit (negative kWh, VAT-free)
+    lines = parse.invoice_lines(
+        [
+            {"productType": "El Rörl Avg", "consumptionMonth": 100, "costVariableMonth": 20.0},
+            {"productType": "Prod SpotTim", "consumptionMonth": -200, "costVariableMonth": -50.0},
+        ],
+        1.25,
+    )
+    grid, prod = lines
+    assert grid["amount"] == 25.0 and grid["kwh"] == 100
+    assert prod["amount"] == -50.0  # no VAT on production payouts
+    assert prod["kwh"] == 200  # shown as a positive quantity, like the invoice summary

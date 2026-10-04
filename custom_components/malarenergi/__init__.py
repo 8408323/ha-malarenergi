@@ -130,7 +130,8 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def options(self) -> dict:
         return {**DEFAULT_OPTIONS, **(self.config_entry.options or {})}
 
-    async def notify(self, kind: str, title: str, message: str) -> None:
+    async def notify(self, kind: str, title: str, message: str, key: str | None = None) -> None:
+        """key: set for event-style alerts (one per invoice) so fallback notifications don't overwrite each other."""
         opts = self.options
         if not opts.get(kind):
             return
@@ -138,7 +139,8 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for target in targets:
             await self.hass.services.async_call("notify", target, {"title": title, "message": message})
         if not targets:  # enabled but nowhere to send: show it in HA's notification panel instead of dropping it
-            persistent_notification.async_create(self.hass, message, title, f"{DOMAIN}_{kind}")
+            nid = f"{DOMAIN}_{self.config_entry.entry_id}_{kind}" + (f"_{key}" if key else "")
+            persistent_notification.async_create(self.hass, message, title, nid)
 
     async def _announce(self, invoices: list[dict]) -> None:
         """Fire malarenergi_new_invoice once per invoice id; first run seeds silently."""
@@ -158,6 +160,7 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         "notify_new_invoice",
                         "Mälarenergi",
                         f"{kind} {inv.get('period_start', '')[:7]}: {inv.get('amount')} kr, förfaller {inv.get('due_date')}.",
+                        key=str(inv["invoice_id"]),
                     )
         await self._store.async_save({"seen": sorted(self._seen)})
 

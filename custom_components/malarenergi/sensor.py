@@ -64,7 +64,11 @@ def _line_sum(data: dict, kind: str, cats: tuple[str, ...]) -> float | None:
 def _line_rate(data: dict, cat: str) -> float | None:
     """SEK/kWh incl. VAT for a per-kWh line category on the latest consumption invoice."""
     lines = [line for line in (_latest_of(data, "consumption") or {}).get("lines") or [] if line["category"] == cat]
-    kwh = sum(line["kwh"] for line in lines)
+    # same rule as the panel: kWh add up within one product (split periods), not across products
+    by_name: dict[str, float] = {}
+    for line in lines:
+        by_name[line["name"]] = by_name.get(line["name"], 0) + line["kwh"]
+    kwh = max(by_name.values(), default=0)
     return round(sum(line["amount"] for line in lines) / kwh, 4) if kwh else None
 
 

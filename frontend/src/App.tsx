@@ -216,6 +216,20 @@ function History({ hass, t, locale, narrow }: Ctx) {
 }
 
 /* ---------------- Invoices ---------------- */
+// amounts add up per category, kWh do not: several charges in one category (spot markup, certificates,
+// fossil-free mix…) are each billed on the same consumption. Rows of the same product (a period split by a
+// tariff change) do add up, so: sum per product name, then take the largest product.
+function groupLines(lines: { category: string; name: string; kwh: number; amount: number }[]) {
+  const g: Record<string, { amount: number; kwh: number; byName: Record<string, number> }> = {};
+  for (const l of lines) {
+    const a = (g[l.category] ??= { amount: 0, kwh: 0, byName: {} });
+    a.amount += l.amount;
+    a.byName[l.name] = (a.byName[l.name] ?? 0) + l.kwh;
+    a.kwh = Math.max(...Object.values(a.byName));
+  }
+  return g;
+}
+
 function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Invoice[]; perPage0: number }) {
   const [perPage, setPerPage] = useState<number>(() => Number(localStorage.getItem("me_per_page")) || perPage0);
   const [page, setPage] = useState(0);
@@ -262,8 +276,7 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
                 {open === i.invoice_id && (
                   <tr className="lines-row"><td colSpan={10}>
                     <div className="lines">
-                      {Object.entries((i.lines ?? []).reduce((acc: Record<string, { amount: number; kwh: number }>, l) => {
-                        const a = (acc[l.category] ??= { amount: 0, kwh: 0 }); a.amount += l.amount; a.kwh += l.kwh; return acc; }, {}))
+                      {Object.entries(groupLines(i.lines ?? []))
                         .sort((a, b) => Math.abs(b[1].amount) - Math.abs(a[1].amount))
                         .map(([cat, v]) => (
                           <div className="line" key={cat}>
