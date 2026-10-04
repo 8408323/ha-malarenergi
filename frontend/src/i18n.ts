@@ -22,6 +22,10 @@ const en = {
   relogin_info: "Starts a new BankID login. It shows up as a notification under Settings → Devices & services.",
   relogin_started: "Login started — open Settings → Devices & services in Home Assistant.", saved: "Saved", none_found: "No notify services found",
   invoices_per_page: "Invoices per page",
+  c_grid_fixed: "Grid fixed fee (fuse)", c_grid_transfer: "Grid transfer", c_power_fee: "Power fee", c_energy_tax: "Energy tax",
+  c_spot_energy: "Electricity (spot)", c_supply_markup: "Supplier markup", c_supply_fixed: "Supplier fixed fee", c_broadband: "Broadband",
+  c_production_spot: "Sold electricity (spot)", c_production_bonus: "Production bonus", c_production_grid: "Grid benefit", c_other: "Other",
+  show_lines: "Show invoice lines",
 };
 type Dict = typeof en;
 
@@ -48,6 +52,10 @@ const sv: Dict = {
   relogin_info: "Startar en ny BankID-inloggning. Den syns som en notis under Inställningar → Enheter och tjänster.",
   relogin_started: "Inloggning startad — öppna Inställningar → Enheter och tjänster i Home Assistant.", saved: "Sparat", none_found: "Inga notify-tjänster hittades",
   invoices_per_page: "Fakturor per sida",
+  c_grid_fixed: "Elnät fast avgift (säkring)", c_grid_transfer: "Elöverföring", c_power_fee: "Effektavgift", c_energy_tax: "Energiskatt",
+  c_spot_energy: "El (spotpris)", c_supply_markup: "Elhandel påslag", c_supply_fixed: "Elhandel fast avgift", c_broadband: "Bredband",
+  c_production_spot: "Såld el (spotpris)", c_production_bonus: "Produktionsersättning", c_production_grid: "Nätnytta", c_other: "Övrigt",
+  show_lines: "Visa fakturarader",
 };
 
 const nb: Dict = {

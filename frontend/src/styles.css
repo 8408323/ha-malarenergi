@@ -160,3 +160,11 @@ td, th { white-space: nowrap; }
 .sel { background: var(--me-bg); color: var(--me-text); border: 1px solid var(--me-line); border-radius: 10px; padding: 6px 10px; font: inherit; }
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--me-accent); color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 500; box-shadow: 0 8px 24px -8px rgba(0,0,0,.4); z-index: 50; }
 .recharts-brush-texts text { fill: var(--me-muted); font-size: 10px; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: color-mix(in srgb, var(--me-accent) 5%, transparent); }
+.chev { display: inline-block; width: 14px; color: var(--me-muted); transition: transform .15s; }
+.chev.open { transform: rotate(90deg); }
+.lines-row td { background: var(--me-bg); padding: 10px 16px; }
+.lines { display: grid; gap: 6px; max-width: 520px; }
+.line { display: grid; grid-template-columns: 1fr auto 110px; gap: 12px; align-items: center; font-size: 13px; }
+.line b { text-align: right; font-variant-numeric: tabular-nums; }

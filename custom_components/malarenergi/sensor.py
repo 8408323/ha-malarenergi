@@ -50,6 +50,21 @@ def _latest_invoice(data: dict) -> dict | None:
     return inv[0] if inv else None
 
 
+def _latest_of(data: dict, kind: str) -> dict | None:
+    return next((i for i in data.get("invoices") or [] if i.get("kind") == kind), None)
+
+
+def _line_sum(data: dict, kind: str, cats: tuple[str, ...]) -> float | None:
+    inv = _latest_of(data, kind)
+    if not inv:
+        return None
+    return round(sum(line["amount"] for line in inv.get("lines") or [] if line["category"] in cats), 2)
+
+
+def _line_sensor(key: str, cat: str) -> "MeSensor":
+    return MeSensor(key=key, **SEK, value=lambda d: _line_sum(d, "consumption", (cat,)))
+
+
 @dataclass(frozen=True, kw_only=True)
 class MeSensor(SensorEntityDescription):
     value: Callable[[dict], Any]
@@ -109,6 +124,35 @@ SENSORS: tuple[MeSensor, ...] = (
             **{k: v for k, v in (_latest_invoice(d) or {}).items()},
             "invoices": (d.get("invoices") or [])[:24],
         },
+    ),
+    MeSensor(
+        key="invoice_consumption_total",
+        **SEK,
+        value=lambda d: (_latest_of(d, "consumption") or {}).get("amount"),
+        attrs=lambda d: {
+            k: (_latest_of(d, "consumption") or {}).get(k)
+            for k in ("period_start", "period_end", "due_date", "status", "lines")
+        },
+    ),
+    MeSensor(
+        key="invoice_production_total",
+        **SEK,
+        value=lambda d: -((_latest_of(d, "production") or {}).get("amount") or 0) or None,
+        attrs=lambda d: {k: (_latest_of(d, "production") or {}).get(k) for k in ("period_start", "kwh", "lines")},
+    ),
+    *(
+        _line_sensor(f"invoice_{cat}", cat)
+        for cat in (
+            "grid_fixed",
+            "grid_transfer",
+            "energy_tax",
+            "power_fee",
+            "spot_energy",
+            "supply_markup",
+            "supply_fixed",
+            "broadband",
+            "other",
+        )
     ),
     MeSensor(
         key="unpaid_invoices",

@@ -27196,7 +27196,20 @@ var _R = pR({
 	relogin_started: "Login started — open Settings → Devices & services in Home Assistant.",
 	saved: "Saved",
 	none_found: "No notify services found",
-	invoices_per_page: "Invoices per page"
+	invoices_per_page: "Invoices per page",
+	c_grid_fixed: "Grid fixed fee (fuse)",
+	c_grid_transfer: "Grid transfer",
+	c_power_fee: "Power fee",
+	c_energy_tax: "Energy tax",
+	c_spot_energy: "Electricity (spot)",
+	c_supply_markup: "Supplier markup",
+	c_supply_fixed: "Supplier fixed fee",
+	c_broadband: "Broadband",
+	c_production_spot: "Sold electricity (spot)",
+	c_production_bonus: "Production bonus",
+	c_production_grid: "Grid benefit",
+	c_other: "Other",
+	show_lines: "Show invoice lines"
 }, CR = {
 	en: SR,
 	sv: {
@@ -27280,7 +27293,20 @@ var _R = pR({
 		relogin_started: "Inloggning startad — öppna Inställningar → Enheter och tjänster i Home Assistant.",
 		saved: "Sparat",
 		none_found: "Inga notify-tjänster hittades",
-		invoices_per_page: "Fakturor per sida"
+		invoices_per_page: "Fakturor per sida",
+		c_grid_fixed: "Elnät fast avgift (säkring)",
+		c_grid_transfer: "Elöverföring",
+		c_power_fee: "Effektavgift",
+		c_energy_tax: "Energiskatt",
+		c_spot_energy: "El (spotpris)",
+		c_supply_markup: "Elhandel påslag",
+		c_supply_fixed: "Elhandel fast avgift",
+		c_broadband: "Bredband",
+		c_production_spot: "Såld el (spotpris)",
+		c_production_bonus: "Produktionsersättning",
+		c_production_grid: "Nätnytta",
+		c_other: "Övrigt",
+		show_lines: "Visa fakturarader"
 	},
 	nb: {
 		...SR,
@@ -28007,13 +28033,13 @@ function RR({ hass: e, t, locale: n, narrow: r }) {
 	] });
 }
 function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
-	let [a, o] = (0, S.useState)(() => Number(localStorage.getItem("me_per_page")) || i), [s, c] = (0, S.useState)(0), [l, u] = (0, S.useState)(null), d = a ? Math.max(1, Math.ceil(r.length / a)) : 1, f = (e) => (/* @__PURE__ */ new Date(`${e}-15`)).toLocaleDateString(n, {
+	let [a, o] = (0, S.useState)(() => Number(localStorage.getItem("me_per_page")) || i), [s, c] = (0, S.useState)(0), [l, u] = (0, S.useState)(null), [d, f] = (0, S.useState)(null), p = a ? Math.max(1, Math.ceil(r.length / a)) : 1, m = (e) => (/* @__PURE__ */ new Date(`${e}-15`)).toLocaleDateString(n, {
 		month: "short",
 		year: "numeric"
-	}), p = (e) => e ? new Date(e).toLocaleDateString(n, {
+	}), h = (e) => e ? new Date(e).toLocaleDateString(n, {
 		day: "numeric",
 		month: "short"
-	}) : "–", m = async (t) => {
+	}) : "–", g = async (t) => {
 		if (!l) {
 			u(t);
 			try {
@@ -28023,23 +28049,23 @@ function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 				u(null);
 			}
 		}
-	}, h = (/* @__PURE__ */ new Date()).getFullYear(), g = (e) => r.filter((t) => t.kind === e && t.period_start.startsWith(String(h))).reduce((e, t) => e + (t.amount ?? 0), 0);
+	}, _ = (/* @__PURE__ */ new Date()).getFullYear(), v = (e) => r.filter((t) => t.kind === e && t.period_start.startsWith(String(_))).reduce((e, t) => e + (t.amount ?? 0), 0);
 	return /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "kpis",
 		children: [
 			/* @__PURE__ */ (0, $.jsx)(PR, {
-				label: `${t.consumption} · ${h}`,
-				value: kR(g("consumption"), 0, "kr")
+				label: `${t.consumption} · ${_}`,
+				value: kR(v("consumption"), 0, "kr")
 			}),
 			/* @__PURE__ */ (0, $.jsx)(PR, {
-				label: `${t.production} · ${h}`,
-				value: kR(-g("production"), 0, "kr"),
+				label: `${t.production} · ${_}`,
+				value: kR(-v("production"), 0, "kr"),
 				tone: "pos"
 			}),
 			/* @__PURE__ */ (0, $.jsx)(PR, {
-				label: `${t.net} · ${h}`,
-				value: kR(g("consumption") + g("production"), 0, "kr"),
-				tone: g("consumption") + g("production") <= 0 ? "pos" : "neg"
+				label: `${t.net} · ${_}`,
+				value: kR(v("consumption") + v("production"), 0, "kr"),
+				tone: v("consumption") + v("production") <= 0 ? "pos" : "neg"
 			})
 		]
 	}), /* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28074,44 +28100,82 @@ function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 					/* @__PURE__ */ (0, $.jsx)("th", { children: t.due }),
 					/* @__PURE__ */ (0, $.jsx)("th", { children: t.status }),
 					/* @__PURE__ */ (0, $.jsx)("th", {})
-				] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: r.slice(s * a, a ? (s + 1) * a : void 0).map((e) => /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
-					/* @__PURE__ */ (0, $.jsx)("td", { children: f(e.period_start.slice(0, 7)) }),
-					/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", { className: `dot ${e.kind}` }), /* @__PURE__ */ (0, $.jsx)("span", {
-						className: "wide",
-						children: e.kind === "production" ? t.production : t.consumption
-					})] }),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: `r ${e.amount < 0 ? "pos" : ""}`,
-						children: kR(e.amount, 0, "kr")
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: "r wide",
-						children: kR(e.kwh, 0)
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: "r wide",
-						children: kR(e.fixed, 0)
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: "r wide",
-						children: e.power_fee ? kR(e.power_fee, 0) : "–"
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: "r wide",
-						children: e.other ? kR(e.other, 0) : "–"
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", { children: p(e.due_date) }),
-					/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
-						className: `badge ${e.closed ? "ok" : "warn"}`,
-						children: e.amount < 0 ? t.credit : e.closed ? t.paid : t.open
-					}) }),
-					/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("button", {
-						className: "btn",
-						disabled: l === e.invoice_id,
-						onClick: () => m(e.invoice_id),
-						children: l === e.invoice_id ? t.downloading : t.pdf
-					}) })
-				] }, e.invoice_id)) })] })
+				] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: r.slice(s * a, a ? (s + 1) * a : void 0).map((e) => /* @__PURE__ */ (0, $.jsxs)(S.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("tr", {
+					className: "clickable",
+					onClick: () => f(d === e.invoice_id ? null : e.invoice_id),
+					title: t.show_lines,
+					children: [
+						/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", {
+							className: `chev ${d === e.invoice_id ? "open" : ""}`,
+							children: "›"
+						}), m(e.period_start.slice(0, 7))] }),
+						/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", { className: `dot ${e.kind}` }), /* @__PURE__ */ (0, $.jsx)("span", {
+							className: "wide",
+							children: e.kind === "production" ? t.production : t.consumption
+						})] }),
+						/* @__PURE__ */ (0, $.jsx)("td", {
+							className: `r ${e.amount < 0 ? "pos" : ""}`,
+							children: kR(e.amount, 0, "kr")
+						}),
+						/* @__PURE__ */ (0, $.jsx)("td", {
+							className: "r wide",
+							children: kR(e.kwh, 0)
+						}),
+						/* @__PURE__ */ (0, $.jsx)("td", {
+							className: "r wide",
+							children: kR(e.fixed, 0)
+						}),
+						/* @__PURE__ */ (0, $.jsx)("td", {
+							className: "r wide",
+							children: e.power_fee ? kR(e.power_fee, 0) : "–"
+						}),
+						/* @__PURE__ */ (0, $.jsx)("td", {
+							className: "r wide",
+							children: e.other ? kR(e.other, 0) : "–"
+						}),
+						/* @__PURE__ */ (0, $.jsx)("td", { children: h(e.due_date) }),
+						/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
+							className: `badge ${e.closed ? "ok" : "warn"}`,
+							children: e.amount < 0 ? t.credit : e.closed ? t.paid : t.open
+						}) }),
+						/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("button", {
+							className: "btn",
+							disabled: l === e.invoice_id,
+							onClick: (t) => {
+								t.stopPropagation(), g(e.invoice_id);
+							},
+							children: l === e.invoice_id ? t.downloading : t.pdf
+						}) })
+					]
+				}), d === e.invoice_id && /* @__PURE__ */ (0, $.jsx)("tr", {
+					className: "lines-row",
+					children: /* @__PURE__ */ (0, $.jsx)("td", {
+						colSpan: 10,
+						children: /* @__PURE__ */ (0, $.jsx)("div", {
+							className: "lines",
+							children: Object.entries((e.lines ?? []).reduce((e, t) => {
+								let n = e[t.category] ??= {
+									amount: 0,
+									kwh: 0
+								};
+								return n.amount += t.amount, n.kwh += t.kwh, e;
+							}, {})).sort((e, t) => Math.abs(t[1].amount) - Math.abs(e[1].amount)).map(([e, n]) => /* @__PURE__ */ (0, $.jsxs)("div", {
+								className: "line",
+								children: [
+									/* @__PURE__ */ (0, $.jsx)("span", { children: t[`c_${e}`] ?? e }),
+									/* @__PURE__ */ (0, $.jsx)("span", {
+										className: "muted",
+										children: n.kwh ? `${kR(n.kwh, 0)} kWh` : ""
+									}),
+									/* @__PURE__ */ (0, $.jsx)("b", {
+										className: n.amount < 0 ? "pos" : "",
+										children: kR(n.amount, 2, "kr")
+									})
+								]
+							}, e))
+						})
+					})
+				})] }, e.invoice_id)) })] })
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("div", {
 				className: "pager",
@@ -28133,7 +28197,7 @@ function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 						value: 0,
 						children: t.all
 					})]
-				})] }), d > 1 && /* @__PURE__ */ (0, $.jsxs)("span", {
+				})] }), p > 1 && /* @__PURE__ */ (0, $.jsxs)("span", {
 					className: "pages",
 					children: [
 						/* @__PURE__ */ (0, $.jsx)("button", {
@@ -28147,11 +28211,11 @@ function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 							" ",
 							t.of,
 							" ",
-							d
+							p
 						] }),
 						/* @__PURE__ */ (0, $.jsx)("button", {
 							className: "btn",
-							disabled: s >= d - 1,
+							disabled: s >= p - 1,
 							onClick: () => c(s + 1),
 							children: "›"
 						})
@@ -28348,7 +28412,7 @@ function VR({ hass: e, t, opts: n, setOpts: r }) {
 }
 //#endregion
 //#region src/styles.css?inline
-var HR = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--card-background-color,#fff);--me-text:var(--primary-text-color,#1d2330);--me-muted:var(--secondary-text-color,#6b7484);--me-line:color-mix(in srgb, var(--me-muted) 18%, transparent);--me-accent:var(--primary-color,#03a9f4);--me-pos:#2ec27e;--me-neg:#e5484d;--me-radius:16px;display:block}*{box-sizing:border-box}.page{max-width:1480px;min-height:100vh;color:var(--me-text);font:14px/1.45 var(--paper-font-body1_-_font-family,Inter, Roboto, system-ui, sans-serif);background:var(--me-bg);margin:0 auto;padding:20px 28px 56px}.page.narrow{padding:10px 10px 40px}header{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;display:flex}.brand{align-items:center;gap:8px;display:flex}h1{letter-spacing:-.02em;margin:0;font-size:26px;font-weight:600}h2{align-items:center;gap:6px;margin:0;font-size:15px;font-weight:600;display:flex}.menu{color:inherit;cursor:pointer;background:0 0;border:0;font-size:22px}.tabs,.seg{background:var(--me-card);border:1px solid var(--me-line);border-radius:999px;gap:2px;max-width:100%;padding:4px;display:inline-flex;overflow-x:auto}.tabs button,.seg button{color:var(--me-muted);font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:7px 14px;font-weight:500;transition:background .15s,color .15s}.tabs button:hover,.seg button:hover{color:var(--me-text)}.tabs button.on,.seg button.on{background:var(--me-accent);color:var(--text-primary-color,#fff)}.card{background:var(--me-card);border-radius:var(--me-radius);border:1px solid var(--me-line);margin-bottom:16px;padding:18px;box-shadow:0 1px 2px #0000000a,0 8px 24px -12px #0000001f}.card.error{color:var(--me-neg)}.card-head{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;display:flex}.grid-overview{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:16px;display:grid}.narrow .grid-overview,.narrow .two{grid-template-columns:1fr}@media (width<=1000px){.grid-overview,.two{grid-template-columns:1fr}}.side .card{margin-bottom:16px}.two{grid-template-columns:1fr 1fr;gap:16px;display:grid}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px;display:grid}.kpis>.stat{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.kpis.compact{margin-bottom:4px}.kpis.compact>.stat{padding:8px 12px}.stats-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}.settings-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:start;gap:16px;display:grid}.settings-grid .card{margin-bottom:0}.label{color:var(--me-muted);align-items:center;gap:4px;font-size:12px;font-weight:500;display:flex}.value{letter-spacing:-.02em;margin:2px 0;font-size:26px;font-weight:600}.value:first-letter{text-transform:uppercase}.pos{color:var(--me-pos)}.neg{color:var(--me-neg)}.muted{color:var(--me-muted);font-size:12.5px}.big{letter-spacing:-.02em;margin-bottom:10px;font-size:30px;font-weight:600}.big small{color:var(--me-muted);font-size:15px;font-weight:500}.row-between{flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:8px;display:flex}.badge{background:color-mix(in srgb, var(--me-accent) 15%, transparent);color:var(--me-accent);border-radius:999px;align-items:center;gap:4px;padding:3px 4px 3px 10px;font-size:12px;font-weight:500;display:inline-flex}.plan-chip{background:color-mix(in srgb, var(--me-accent) 8%, transparent);border-radius:12px;align-items:center;gap:8px;margin:14px 0 4px;padding:10px 12px;font-size:13.5px;display:flex}.legend{color:var(--me-muted);flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:12px;display:flex}.dot{border-radius:50%;flex:none;width:9px;height:9px;margin-right:6px;display:inline-block}table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;font-size:13.5px}th{text-align:left;color:var(--me-muted);font-size:12px;font-weight:500}th,td{border-bottom:1px solid var(--me-line);padding:8px 6px}tr:last-child td{border-bottom:0}.money td:not(:first-child),.money th:not(:first-child){text-align:right}.money.compact{margin-top:12px}.meter{background:var(--me-line);border-radius:999px;height:10px;overflow:hidden}.meter>div{border-radius:999px;height:100%;transition:width .4s}.info{display:inline-flex;position:relative}.info-btn{border:1px solid var(--me-muted);width:17px;height:17px;color:var(--me-muted);cursor:pointer;opacity:.7;background:0 0;border-radius:50%;place-items:center;padding:0;font:italic 600 10px/1 Georgia,serif;display:inline-grid}.info-btn:hover{opacity:1;color:var(--me-accent);border-color:var(--me-accent)}.pop{z-index:20;background:var(--me-card);width:min(300px,80vw);color:var(--me-text);border:1px solid var(--me-line);text-transform:none;letter-spacing:0;border-radius:12px;padding:12px 14px;font-size:12.5px;font-weight:400;line-height:1.5;position:absolute;top:24px;left:50%;transform:translate(-50%);box-shadow:0 12px 32px -8px #00000059}.setting{border-bottom:1px solid var(--me-line);justify-content:space-between;align-items:center;gap:12px;padding:9px 0;display:flex}.setting:last-child{border-bottom:0}.num{align-items:center;gap:6px;display:inline-flex}.num em{color:var(--me-muted);min-width:52px;font-size:12px;font-style:normal}.num input{width:96px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);text-align:right;border-radius:10px;padding:6px 10px}.num input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.switch{flex:none;width:40px;height:22px;position:relative}.switch input{opacity:0;width:0;height:0}.switch span{background:var(--me-line);cursor:pointer;border-radius:999px;transition:all .2s;position:absolute;inset:0}.switch span:before{content:\"\";background:#fff;border-radius:50%;width:16px;height:16px;transition:all .2s;position:absolute;top:3px;left:3px;box-shadow:0 1px 3px #0000004d}.switch input:checked+span{background:var(--me-accent)}.switch input:checked+span:before{transform:translate(18px)}.flow-card{padding:8px}.flow{width:100%;height:auto;display:block}.flow-line{fill:none;stroke:var(--me-muted);stroke-width:3px;stroke-linecap:round}.house-shape{fill:color-mix(in srgb, var(--me-accent) 5%, transparent);stroke:var(--me-line);stroke-width:2px;stroke-linejoin:round}.node-bg{fill:var(--me-card);stroke-width:2px;stroke-opacity:.35}.node-val{text-anchor:middle;fill:var(--me-text);font-size:15px;font-weight:600}.node-sub{text-anchor:middle;fill:var(--me-muted);font-size:10.5px}.node-label{text-anchor:middle;fill:var(--me-muted);font-size:12.5px;font-weight:500}.recharts-cartesian-axis-tick-value{fill:var(--me-muted)}.recharts-legend-item-text{color:var(--me-muted)!important}.settings-grid .seg{border-radius:14px;flex-wrap:wrap}.range{width:100%;accent-color:var(--me-accent);margin:10px 0 14px}.be{grid-template-columns:1fr 1fr;gap:16px;display:grid}.phases{gap:10px;display:grid}.phases .row-between{margin:0 0 4px}.stack{border-top:1px solid var(--me-line);gap:6px;margin-top:14px;padding-top:12px;display:grid}.row{align-items:center;gap:8px;display:flex}.btn{border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;cursor:pointer;border-radius:10px;padding:6px 12px}.btn.primary{background:var(--me-accent);color:var(--text-primary-color,#fff);border-color:#0000}.btn:disabled{opacity:.45;cursor:default}.btn.ghost{color:var(--me-muted);background:0 0;border:0}table.edit input{width:100%;min-width:80px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);border-radius:8px;padding:6px 8px}table.edit input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.tabs,.seg{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.seg::-webkit-scrollbar{display:none}.narrow .node-val{font-size:22px}.narrow .node-sub{font-size:15px}.narrow .node-label{font-size:17px}.narrow .flow-card{padding:4px}.narrow .kpis{gap:10px}.narrow .value{font-size:22px}.narrow header{margin-bottom:12px}.narrow .tabs{width:100%}.chips{flex-wrap:wrap;gap:8px;display:flex}.chip{border:1px solid var(--me-line);color:var(--me-muted);border-radius:999px;padding:4px 10px;font-size:12px}.chip.ok{color:var(--me-pos);border-color:color-mix(in srgb, var(--me-pos) 40%, transparent)}.kpi{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.table-wrap{overflow-x:auto}td.r,th.r{text-align:right}.dot.production{background:#f5b301}.dot.consumption{background:#3daee9}.badge.ok{background:color-mix(in srgb, var(--me-pos) 15%, transparent);color:var(--me-pos);padding:3px 8px}.badge.warn{color:#e5a50a;background:#e5a50a2e;padding:3px 8px}h2{margin-bottom:12px}td,th{white-space:nowrap}.page{container-type:inline-size}@container (width<=760px){.wide{display:none}}.pager{color:var(--me-muted);flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:13px;display:flex}.pager label{align-items:center;gap:8px;display:inline-flex}.pager select{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:8px;padding:4px 8px}.pages{align-items:center;gap:10px;display:inline-flex}.brand{flex-wrap:wrap;align-items:center;gap:14px;display:flex}.toolbar{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;display:flex}.range-label{text-align:center;text-transform:capitalize;min-width:150px}.seg.wrap{border-radius:14px;flex-wrap:wrap}.foot{margin-top:8px}.contracts{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;display:grid}.contract{border:1px solid var(--me-line);background:var(--me-bg);border-radius:14px;gap:4px;padding:14px;display:grid}.contract.old{opacity:.6}.c-name{font-size:16px;font-weight:600}.sel{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:10px;padding:6px 10px}.toast{background:var(--me-accent);color:#fff;z-index:50;border-radius:999px;padding:10px 18px;font-weight:500;position:fixed;bottom:24px;left:50%;transform:translate(-50%);box-shadow:0 8px 24px -8px #0006}.recharts-brush-texts text{fill:var(--me-muted);font-size:10px}", UR = class extends HTMLElement {
+var HR = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--card-background-color,#fff);--me-text:var(--primary-text-color,#1d2330);--me-muted:var(--secondary-text-color,#6b7484);--me-line:color-mix(in srgb, var(--me-muted) 18%, transparent);--me-accent:var(--primary-color,#03a9f4);--me-pos:#2ec27e;--me-neg:#e5484d;--me-radius:16px;display:block}*{box-sizing:border-box}.page{max-width:1480px;min-height:100vh;color:var(--me-text);font:14px/1.45 var(--paper-font-body1_-_font-family,Inter, Roboto, system-ui, sans-serif);background:var(--me-bg);margin:0 auto;padding:20px 28px 56px}.page.narrow{padding:10px 10px 40px}header{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;display:flex}.brand{align-items:center;gap:8px;display:flex}h1{letter-spacing:-.02em;margin:0;font-size:26px;font-weight:600}h2{align-items:center;gap:6px;margin:0;font-size:15px;font-weight:600;display:flex}.menu{color:inherit;cursor:pointer;background:0 0;border:0;font-size:22px}.tabs,.seg{background:var(--me-card);border:1px solid var(--me-line);border-radius:999px;gap:2px;max-width:100%;padding:4px;display:inline-flex;overflow-x:auto}.tabs button,.seg button{color:var(--me-muted);font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:7px 14px;font-weight:500;transition:background .15s,color .15s}.tabs button:hover,.seg button:hover{color:var(--me-text)}.tabs button.on,.seg button.on{background:var(--me-accent);color:var(--text-primary-color,#fff)}.card{background:var(--me-card);border-radius:var(--me-radius);border:1px solid var(--me-line);margin-bottom:16px;padding:18px;box-shadow:0 1px 2px #0000000a,0 8px 24px -12px #0000001f}.card.error{color:var(--me-neg)}.card-head{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;display:flex}.grid-overview{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:16px;display:grid}.narrow .grid-overview,.narrow .two{grid-template-columns:1fr}@media (width<=1000px){.grid-overview,.two{grid-template-columns:1fr}}.side .card{margin-bottom:16px}.two{grid-template-columns:1fr 1fr;gap:16px;display:grid}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px;display:grid}.kpis>.stat{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.kpis.compact{margin-bottom:4px}.kpis.compact>.stat{padding:8px 12px}.stats-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}.settings-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:start;gap:16px;display:grid}.settings-grid .card{margin-bottom:0}.label{color:var(--me-muted);align-items:center;gap:4px;font-size:12px;font-weight:500;display:flex}.value{letter-spacing:-.02em;margin:2px 0;font-size:26px;font-weight:600}.value:first-letter{text-transform:uppercase}.pos{color:var(--me-pos)}.neg{color:var(--me-neg)}.muted{color:var(--me-muted);font-size:12.5px}.big{letter-spacing:-.02em;margin-bottom:10px;font-size:30px;font-weight:600}.big small{color:var(--me-muted);font-size:15px;font-weight:500}.row-between{flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:8px;display:flex}.badge{background:color-mix(in srgb, var(--me-accent) 15%, transparent);color:var(--me-accent);border-radius:999px;align-items:center;gap:4px;padding:3px 4px 3px 10px;font-size:12px;font-weight:500;display:inline-flex}.plan-chip{background:color-mix(in srgb, var(--me-accent) 8%, transparent);border-radius:12px;align-items:center;gap:8px;margin:14px 0 4px;padding:10px 12px;font-size:13.5px;display:flex}.legend{color:var(--me-muted);flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:12px;display:flex}.dot{border-radius:50%;flex:none;width:9px;height:9px;margin-right:6px;display:inline-block}table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;font-size:13.5px}th{text-align:left;color:var(--me-muted);font-size:12px;font-weight:500}th,td{border-bottom:1px solid var(--me-line);padding:8px 6px}tr:last-child td{border-bottom:0}.money td:not(:first-child),.money th:not(:first-child){text-align:right}.money.compact{margin-top:12px}.meter{background:var(--me-line);border-radius:999px;height:10px;overflow:hidden}.meter>div{border-radius:999px;height:100%;transition:width .4s}.info{display:inline-flex;position:relative}.info-btn{border:1px solid var(--me-muted);width:17px;height:17px;color:var(--me-muted);cursor:pointer;opacity:.7;background:0 0;border-radius:50%;place-items:center;padding:0;font:italic 600 10px/1 Georgia,serif;display:inline-grid}.info-btn:hover{opacity:1;color:var(--me-accent);border-color:var(--me-accent)}.pop{z-index:20;background:var(--me-card);width:min(300px,80vw);color:var(--me-text);border:1px solid var(--me-line);text-transform:none;letter-spacing:0;border-radius:12px;padding:12px 14px;font-size:12.5px;font-weight:400;line-height:1.5;position:absolute;top:24px;left:50%;transform:translate(-50%);box-shadow:0 12px 32px -8px #00000059}.setting{border-bottom:1px solid var(--me-line);justify-content:space-between;align-items:center;gap:12px;padding:9px 0;display:flex}.setting:last-child{border-bottom:0}.num{align-items:center;gap:6px;display:inline-flex}.num em{color:var(--me-muted);min-width:52px;font-size:12px;font-style:normal}.num input{width:96px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);text-align:right;border-radius:10px;padding:6px 10px}.num input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.switch{flex:none;width:40px;height:22px;position:relative}.switch input{opacity:0;width:0;height:0}.switch span{background:var(--me-line);cursor:pointer;border-radius:999px;transition:all .2s;position:absolute;inset:0}.switch span:before{content:\"\";background:#fff;border-radius:50%;width:16px;height:16px;transition:all .2s;position:absolute;top:3px;left:3px;box-shadow:0 1px 3px #0000004d}.switch input:checked+span{background:var(--me-accent)}.switch input:checked+span:before{transform:translate(18px)}.flow-card{padding:8px}.flow{width:100%;height:auto;display:block}.flow-line{fill:none;stroke:var(--me-muted);stroke-width:3px;stroke-linecap:round}.house-shape{fill:color-mix(in srgb, var(--me-accent) 5%, transparent);stroke:var(--me-line);stroke-width:2px;stroke-linejoin:round}.node-bg{fill:var(--me-card);stroke-width:2px;stroke-opacity:.35}.node-val{text-anchor:middle;fill:var(--me-text);font-size:15px;font-weight:600}.node-sub{text-anchor:middle;fill:var(--me-muted);font-size:10.5px}.node-label{text-anchor:middle;fill:var(--me-muted);font-size:12.5px;font-weight:500}.recharts-cartesian-axis-tick-value{fill:var(--me-muted)}.recharts-legend-item-text{color:var(--me-muted)!important}.settings-grid .seg{border-radius:14px;flex-wrap:wrap}.range{width:100%;accent-color:var(--me-accent);margin:10px 0 14px}.be{grid-template-columns:1fr 1fr;gap:16px;display:grid}.phases{gap:10px;display:grid}.phases .row-between{margin:0 0 4px}.stack{border-top:1px solid var(--me-line);gap:6px;margin-top:14px;padding-top:12px;display:grid}.row{align-items:center;gap:8px;display:flex}.btn{border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;cursor:pointer;border-radius:10px;padding:6px 12px}.btn.primary{background:var(--me-accent);color:var(--text-primary-color,#fff);border-color:#0000}.btn:disabled{opacity:.45;cursor:default}.btn.ghost{color:var(--me-muted);background:0 0;border:0}table.edit input{width:100%;min-width:80px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);border-radius:8px;padding:6px 8px}table.edit input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.tabs,.seg{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.seg::-webkit-scrollbar{display:none}.narrow .node-val{font-size:22px}.narrow .node-sub{font-size:15px}.narrow .node-label{font-size:17px}.narrow .flow-card{padding:4px}.narrow .kpis{gap:10px}.narrow .value{font-size:22px}.narrow header{margin-bottom:12px}.narrow .tabs{width:100%}.chips{flex-wrap:wrap;gap:8px;display:flex}.chip{border:1px solid var(--me-line);color:var(--me-muted);border-radius:999px;padding:4px 10px;font-size:12px}.chip.ok{color:var(--me-pos);border-color:color-mix(in srgb, var(--me-pos) 40%, transparent)}.kpi{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.table-wrap{overflow-x:auto}td.r,th.r{text-align:right}.dot.production{background:#f5b301}.dot.consumption{background:#3daee9}.badge.ok{background:color-mix(in srgb, var(--me-pos) 15%, transparent);color:var(--me-pos);padding:3px 8px}.badge.warn{color:#e5a50a;background:#e5a50a2e;padding:3px 8px}h2{margin-bottom:12px}td,th{white-space:nowrap}.page{container-type:inline-size}@container (width<=760px){.wide{display:none}}.pager{color:var(--me-muted);flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:13px;display:flex}.pager label{align-items:center;gap:8px;display:inline-flex}.pager select{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:8px;padding:4px 8px}.pages{align-items:center;gap:10px;display:inline-flex}.brand{flex-wrap:wrap;align-items:center;gap:14px;display:flex}.toolbar{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;display:flex}.range-label{text-align:center;text-transform:capitalize;min-width:150px}.seg.wrap{border-radius:14px;flex-wrap:wrap}.foot{margin-top:8px}.contracts{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;display:grid}.contract{border:1px solid var(--me-line);background:var(--me-bg);border-radius:14px;gap:4px;padding:14px;display:grid}.contract.old{opacity:.6}.c-name{font-size:16px;font-weight:600}.sel{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:10px;padding:6px 10px}.toast{background:var(--me-accent);color:#fff;z-index:50;border-radius:999px;padding:10px 18px;font-weight:500;position:fixed;bottom:24px;left:50%;transform:translate(-50%);box-shadow:0 8px 24px -8px #0006}.recharts-brush-texts text{fill:var(--me-muted);font-size:10px}tr.clickable{cursor:pointer}tr.clickable:hover td{background:color-mix(in srgb, var(--me-accent) 5%, transparent)}.chev{width:14px;color:var(--me-muted);transition:transform .15s;display:inline-block}.chev.open{transform:rotate(90deg)}.lines-row td{background:var(--me-bg);padding:10px 16px}.lines{gap:6px;max-width:520px;display:grid}.line{grid-template-columns:1fr auto 110px;align-items:center;gap:12px;font-size:13px;display:grid}.line b{text-align:right;font-variant-numeric:tabular-nums}", UR = class extends HTMLElement {
 	root;
 	_hass;
 	_narrow = !1;

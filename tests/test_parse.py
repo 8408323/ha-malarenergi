@@ -139,3 +139,19 @@ def test_invoice_kind_kwh_and_power_fee():
     assert by["p"]["kind"] == "production" and by["p"]["kwh"] == 2080 and by["p"]["fixed"] == 0
     assert by["c"]["kind"] == "consumption" and by["c"]["kwh"] == 1170
     assert by["c"]["power_fee"] == 125 and by["c"]["fixed"] == 385 and by["c"]["other"] == 349
+
+
+def test_invoice_lines_categorised_with_vat():
+    lines = parse.invoice_lines(
+        [
+            {"productType": "El Fast Avg", "costFixedMonth": 318},
+            {"productType": "Energiskatt Nat_Std", "taxMonth": 2.52},
+            {"productType": "Spot Tim Ext", "consumptionMonth": 7, "costVariableMonth": 5.57},
+            {"productType": "Spotpå Mån Ext PS", "costVariableMonth": 0.2},
+            {"productType": None, "otherMonth": 279.2},
+        ],
+        1.25,
+    )
+    cats = {line["category"]: line["amount"] for line in lines}
+    assert cats["grid_fixed"] == 397.5 and cats["energy_tax"] == 3.15 and cats["supply_markup"] == 0.25
+    assert cats["other"] == 349.0 and lines[2]["kwh"] == 7

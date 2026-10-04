@@ -80,6 +80,47 @@ def peak(payload: Any) -> dict | None:
     return d[0] if d and isinstance(d[0], dict) else None
 
 
+# (category, regex on productType) — first match wins
+LINE_CATEGORIES: tuple[tuple[str, str], ...] = (
+    ("grid_fixed", r"^El Fast Avg"),  # elnät: säkringsabonnemang (fixed per month)
+    ("grid_transfer", r"^El Rörl Avg"),  # elnät: överföring per kWh
+    ("power_fee", r"^El kW"),  # elnät: effektavgift
+    ("energy_tax", r"^Energiskatt"),
+    ("spot_energy", r"^Spot ?Tim Ext"),  # elhandel: spotpris per kWh
+    ("supply_markup", r"^(Spotpå|Fossilfri|Rörliga kostnader|Elcertifikat)"),
+    ("supply_fixed", r"^Fast avg Elh"),  # elhandel: fast avgift
+    ("broadband", r"^BB "),
+    ("production_spot", r"^Prod SpotTim"),  # ersättning: spotpris för såld el
+    ("production_bonus", r"^Ersätt Prod"),  # ersättning: påslag/nätnytta
+    ("production_grid", r"^ELPROD"),
+)
+
+
+def line_category(product_type: str | None) -> str:
+    import re
+
+    for cat, rx in LINE_CATEGORIES:
+        if product_type and re.search(rx, product_type):
+            return cat
+    return "other"
+
+
+def invoice_lines(details: list[dict], vat: float) -> list[dict]:
+    """Invoice detail rows -> [{category, name, kwh, amount}] with amount incl. VAT where applicable."""
+    out = []
+    for d in details:
+        amount = sum(d.get(k) or 0 for k in ("costVariableMonth", "costFixedMonth", "taxMonth", "otherMonth"))
+        out.append(
+            {
+                "category": line_category(d.get("productType")),
+                "name": d.get("productType") or "Övrigt",
+                "kwh": round(d.get("consumptionMonth") or 0, 2),
+                "amount": round(amount * vat, 2),
+            }
+        )
+    return out
+
+
 def invoices(payload: Any) -> list[dict]:
     """Compact invoice list, newest first. Utility per invoice = set of detail utility types."""
     out = []
@@ -120,6 +161,7 @@ def invoices(payload: Any) -> list[dict]:
                     "status": _name(i.get("paymentStatus")),
                     "closed": bool(i.get("closedDate")),
                     "utilities": sorted({_name(d.get("utilityType")) for d in details} - {""}),
+                    "lines": invoice_lines(details, vat),
                 }
             )
     return sorted(out, key=lambda x: (x["issue_date"], x["invoice_id"] or ""), reverse=True)

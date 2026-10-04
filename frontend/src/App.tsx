@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { LANG_NAMES, T, pick } from "./i18n";
 
@@ -6,6 +6,7 @@ type Series = Record<string, [string, number][]>;
 type Invoice = {
   invoice_id: string; kind: string; issue_date: string; due_date: string; period_start: string; period_end: string;
   amount: number; status: string; closed: boolean; kwh: number; fixed: number; power_fee: number; other: number;
+  lines?: { category: string; name: string; kwh: number; amount: number }[];
 };
 type Data = {
   CONSUMPTION?: { daily: Series; peak?: { peakPowerConsumption?: number; dateTime?: string } | null };
@@ -219,6 +220,7 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
   const [perPage, setPerPage] = useState<number>(() => Number(localStorage.getItem("me_per_page")) || perPage0);
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
   const pages = perPage ? Math.max(1, Math.ceil(invoices.length / perPage)) : 1;
   const monthName = (ym: string) => new Date(`${ym}-15`).toLocaleDateString(locale, { month: "short", year: "numeric" });
   const shortDate = (s: string) => (s ? new Date(s).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "–");
@@ -245,8 +247,9 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
               <th>{t.due}</th><th>{t.status}</th><th /></tr></thead>
             <tbody>
               {invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => (
-                <tr key={i.invoice_id}>
-                  <td>{monthName(i.period_start.slice(0, 7))}</td>
+                <Fragment key={i.invoice_id}>
+                <tr className="clickable" onClick={() => setOpen(open === i.invoice_id ? null : i.invoice_id)} title={t.show_lines}>
+                  <td><span className={`chev ${open === i.invoice_id ? "open" : ""}`}>›</span>{monthName(i.period_start.slice(0, 7))}</td>
                   <td><span className={`dot ${i.kind}`} /><span className="wide">{i.kind === "production" ? t.production : t.consumption}</span></td>
                   <td className={`r ${i.amount < 0 ? "pos" : ""}`}>{fmt(i.amount, 0, "kr")}</td>
                   <td className="r wide">{fmt(i.kwh, 0)}</td>
@@ -254,8 +257,25 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
                   <td className="r wide">{i.other ? fmt(i.other, 0) : "–"}</td>
                   <td>{shortDate(i.due_date)}</td>
                   <td><span className={`badge ${i.closed ? "ok" : "warn"}`}>{i.amount < 0 ? t.credit : i.closed ? t.paid : t.open}</span></td>
-                  <td><button className="btn" disabled={busy === i.invoice_id} onClick={() => download(i.invoice_id)}>{busy === i.invoice_id ? t.downloading : t.pdf}</button></td>
+                  <td><button className="btn" disabled={busy === i.invoice_id} onClick={(e) => { e.stopPropagation(); download(i.invoice_id); }}>{busy === i.invoice_id ? t.downloading : t.pdf}</button></td>
                 </tr>
+                {open === i.invoice_id && (
+                  <tr className="lines-row"><td colSpan={10}>
+                    <div className="lines">
+                      {Object.entries((i.lines ?? []).reduce((acc: Record<string, { amount: number; kwh: number }>, l) => {
+                        const a = (acc[l.category] ??= { amount: 0, kwh: 0 }); a.amount += l.amount; a.kwh += l.kwh; return acc; }, {}))
+                        .sort((a, b) => Math.abs(b[1].amount) - Math.abs(a[1].amount))
+                        .map(([cat, v]) => (
+                          <div className="line" key={cat}>
+                            <span>{(t as any)[`c_${cat}`] ?? cat}</span>
+                            <span className="muted">{v.kwh ? `${fmt(v.kwh, 0)} kWh` : ""}</span>
+                            <b className={v.amount < 0 ? "pos" : ""}>{fmt(v.amount, 2, "kr")}</b>
+                          </div>
+                        ))}
+                    </div>
+                  </td></tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>

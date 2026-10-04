@@ -73,6 +73,39 @@
       },
       "unread_messages": {
         "name": "Unread messages"
+      },
+      "invoice_consumption_total": {
+        "name": "Latest consumption invoice"
+      },
+      "invoice_production_total": {
+        "name": "Latest production payout"
+      },
+      "invoice_grid_fixed": {
+        "name": "Invoice: grid fixed fee (fuse)"
+      },
+      "invoice_grid_transfer": {
+        "name": "Invoice: grid transfer"
+      },
+      "invoice_energy_tax": {
+        "name": "Invoice: energy tax"
+      },
+      "invoice_power_fee": {
+        "name": "Invoice: power fee"
+      },
+      "invoice_spot_energy": {
+        "name": "Invoice: electricity (spot)"
+      },
+      "invoice_supply_markup": {
+        "name": "Invoice: supplier markup"
+      },
+      "invoice_supply_fixed": {
+        "name": "Invoice: supplier fixed fee"
+      },
+      "invoice_broadband": {
+        "name": "Invoice: broadband"
+      },
+      "invoice_other": {
+        "name": "Invoice: other"
       }
     },
     "switch": {
