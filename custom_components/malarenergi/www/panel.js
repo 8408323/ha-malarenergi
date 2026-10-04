@@ -27295,7 +27295,7 @@ var PR = AR({
 	updated: "Updated",
 	energy: "energy",
 	grid: "grid",
-	net_info: "Cost of bought power minus compensation for sold power this month, from Mälarenergi's own meter values (incl. VAT, excl. fixed fees).",
+	net_info: "Compensation for sold power minus cost of bought power this month (+ green = you earned more than you paid), from Mälarenergi's own meter values (incl. VAT, excl. fixed fees).",
 	peak_info: "The month's highest hourly grid power according to the meter.",
 	daily_info: "Mälarenergi's meter values. Bars = kWh, lines = cost and compensation in SEK.",
 	wallet_info: "Shown from your wallet: + (green) is money paid to you, − is money you pay. Amounts incl. VAT; production payouts are VAT-free.",
@@ -27398,7 +27398,7 @@ var PR = AR({
 		updated: "Uppdaterad",
 		energy: "el",
 		grid: "nät",
-		net_info: "Kostnad för köpt el minus ersättning för såld el, denna månad, enligt Mälarenergis egna mätvärden (inkl. moms, utan fasta avgifter).",
+		net_info: "Ersättning för såld el minus kostnad för köpt el, denna månad (+ grönt = du fick mer än du betalade), enligt Mälarenergis egna mätvärden (inkl. moms, utan fasta avgifter).",
 		peak_info: "Månadens högsta timeffekt från nätet enligt elmätaren.",
 		daily_info: "Mälarenergis mätvärden. Staplar = kWh, linjer = kostnad respektive ersättning i kr.",
 		wallet_info: "Visas från din plånbok: + (grönt) är pengar till dig, − är pengar du betalar. Belopp inkl. moms; ersättning för produktion är momsfri.",
@@ -27970,7 +27970,7 @@ function $R({ t: e, locale: t, narrow: n, d: r }) {
 			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${e.net} · ${e.month}`,
 				info: e.net_info,
-				value: KR(l, GR(l), "kr"),
+				value: iz(-l, GR(l)),
 				tone: l <= 0 ? "pos" : "neg",
 				sub: `${e.energy} ${KR(s(r.CONSUMPTION?.daily?.costEL), 0)} · ${e.grid} ${KR(s(r.CONSUMPTION?.daily?.costELEXT), 0)}`
 			}),
@@ -28311,8 +28311,8 @@ function nz({ hass: e, t, locale: n, narrow: r }) {
 				/* @__PURE__ */ (0, $.jsx)(ZR, {
 					label: `${t.net} · ${t.total}`,
 					info: t.net_info,
-					value: KR(_("cost") - _("comp"), 0, "kr"),
-					tone: _("cost") - _("comp") <= 0 ? "pos" : "neg"
+					value: iz(_("comp") - _("cost")),
+					tone: _("comp") - _("cost") >= 0 ? "pos" : "neg"
 				})
 			]
 		}),

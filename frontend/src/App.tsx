@@ -119,7 +119,7 @@ function Overview({ t, locale, narrow, d }: Ctx & { d: Data }) {
       <div className="kpis">
         <Kpi label={`${t.consumption} · ${t.month}`} value={fmt(sum("cons"), auto(sum("cons")), "kWh")} sub={`${t.cost} ${fmt(sum("cost"), auto(sum("cost")), "kr")}`} />
         <Kpi label={`${t.production} · ${t.month}`} value={fmt(sum("prod"), auto(sum("prod")), "kWh")} sub={`${t.compensation} ${fmt(sum("comp"), auto(sum("comp")), "kr")}`} />
-        <Kpi label={`${t.net} · ${t.month}`} info={t.net_info} value={fmt(net, auto(net), "kr")} tone={net <= 0 ? "pos" : "neg"}
+        <Kpi label={`${t.net} · ${t.month}`} info={t.net_info} value={money(-net, auto(net))} tone={net <= 0 ? "pos" : "neg"}
           sub={`${t.energy} ${fmt(sumKey(d.CONSUMPTION?.daily?.costEL), 0)} · ${t.grid} ${fmt(sumKey(d.CONSUMPTION?.daily?.costELEXT), 0)}`} />
         <Kpi label={t.peak} info={t.peak_info} value={fmt(peak?.peakPowerConsumption, (peak?.peakPowerConsumption ?? 1) < 1 ? 2 : 1, "kW")}
           sub={peak?.dateTime ? new Date(peak.dateTime).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""} />
@@ -255,7 +255,7 @@ function History({ hass, t, locale, narrow }: Ctx) {
       <div className="kpis">
         <Kpi label={`${t.consumption} · ${t.total}`} value={fmt(tot("cons"), auto(tot("cons")), "kWh")} sub={`${t.cost} ${fmt(tot("cost"), 0, "kr")}`} />
         <Kpi label={`${t.production} · ${t.total}`} value={fmt(tot("prod"), auto(tot("prod")), "kWh")} sub={`${t.compensation} ${fmt(tot("comp"), 0, "kr")}`} />
-        <Kpi label={`${t.net} · ${t.total}`} info={t.net_info} value={fmt(tot("cost") - tot("comp"), 0, "kr")} tone={tot("cost") - tot("comp") <= 0 ? "pos" : "neg"} />
+        <Kpi label={`${t.net} · ${t.total}`} info={t.net_info} value={money(tot("comp") - tot("cost"))} tone={tot("comp") - tot("cost") >= 0 ? "pos" : "neg"} />
       </div>
       <section className="card">
         <h2>{label}<Info text={t.history_info} /></h2>
