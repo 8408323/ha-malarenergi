@@ -214,6 +214,7 @@ function History({ hass, t, locale, narrow }: Ctx) {
     return { s, e };
   }, [res, offset]);
   useEffect(() => {
+    let live = true;  // a slower response for the previous range must not land in this one
     setRows(null); setError(null); setZoom(null);
     hass.connection.sendMessagePromise({ type: "malarenergi/series", resolution: res, start: range.s.toISOString(), end: range.e.toISOString() })
       .then((r: any) => {
@@ -227,8 +228,11 @@ function History({ hass, t, locale, narrow }: Ctx) {
           const kk = key(x); const o = m.get(kk) ?? m.set(kk, { k: kk, t: x }).get(kk); o[k] = (o[k] ?? 0) + v; });
         add(r.CONSUMPTION?.consumption, "cons"); add(r.CONSUMPTION?.cost, "cost");
         add(r.PRODUCTION?.production, "prod"); add(r.PRODUCTION?.compensation, "comp");
+        if (!live) return;
         setRows([...m.values()].sort((a, b) => a.k.localeCompare(b.k)));
-      }).catch((e: any) => setError(e?.message ?? String(e)));
+        setZoom(null);
+      }).catch((e: any) => { if (live) setError(e?.message ?? String(e)); });
+    return () => { live = false; };
   }, [res, range.s.getTime()]);
   const label = res === "hour" ? range.s.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "long", year: "numeric" })
     : res === "day" ? range.s.toLocaleDateString(locale, { month: "long", year: "numeric" }) : String(range.s.getFullYear());
@@ -263,7 +267,7 @@ function History({ hass, t, locale, narrow }: Ctx) {
           <EnergyChart rows={rows} t={t} height={narrow ? 260 : 340} tick={tick} brush zoom={zoom} setZoom={setZoom} />}
         {rows && rows.length > 1 && <div className="muted hint">{t.zoom_hint}</div>}
       </section>
-      {rows && rows.length > 0 && zoom &&
+      {rows && rows.length > 0 && zoom && zoom.b < rows.length &&
         <SumTable rows={rows.slice(zoom.a, zoom.b + 1)} t={t} label={rowLabel} title={`${t.table_zoom}: ${rowLabel(rows[zoom.a].k)} – ${rowLabel(rows[zoom.b].k)}`} />}
       {rows && rows.length > 0 && <SumTable rows={rows} t={t} label={rowLabel} title={`${t.table_full}: ${label}`} />}
     </>

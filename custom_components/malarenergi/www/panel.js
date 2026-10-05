@@ -28223,24 +28223,29 @@ function nz({ hass: e, t, locale: n, narrow: r }) {
 		};
 	}, [i, o]);
 	(0, S.useEffect)(() => {
-		l(null), d(null), p(null), e.connection.sendMessagePromise({
+		let t = !0;
+		return l(null), d(null), p(null), e.connection.sendMessagePromise({
 			type: "malarenergi/series",
 			resolution: i,
 			start: m.s.toISOString(),
 			end: m.e.toISOString()
 		}).then((e) => {
-			let t = /* @__PURE__ */ new Map(), n = (e) => {
+			let n = /* @__PURE__ */ new Map(), r = (e) => {
 				let t = new Date(e);
 				return i === "hour" ? t.toISOString().slice(0, 13) : i === "day" ? qR(e) : qR(new Date(t.getTime() + 1728e5).toISOString()).slice(0, 7);
-			}, r = (e, r) => (e ?? []).forEach(([e, i]) => {
-				let a = n(e), o = t.get(a) ?? t.set(a, {
+			}, a = (e, t) => (e ?? []).forEach(([e, i]) => {
+				let a = r(e), o = n.get(a) ?? n.set(a, {
 					k: a,
 					t: e
 				}).get(a);
-				o[r] = (o[r] ?? 0) + i;
+				o[t] = (o[t] ?? 0) + i;
 			});
-			r(e.CONSUMPTION?.consumption, "cons"), r(e.CONSUMPTION?.cost, "cost"), r(e.PRODUCTION?.production, "prod"), r(e.PRODUCTION?.compensation, "comp"), l([...t.values()].sort((e, t) => e.k.localeCompare(t.k)));
-		}).catch((e) => d(e?.message ?? String(e)));
+			a(e.CONSUMPTION?.consumption, "cons"), a(e.CONSUMPTION?.cost, "cost"), a(e.PRODUCTION?.production, "prod"), a(e.PRODUCTION?.compensation, "comp"), t && (l([...n.values()].sort((e, t) => e.k.localeCompare(t.k))), p(null));
+		}).catch((e) => {
+			t && d(e?.message ?? String(e));
+		}), () => {
+			t = !1;
+		};
 	}, [i, m.s.getTime()]);
 	let h = i === "hour" ? m.s.toLocaleDateString(n, {
 		weekday: "short",
@@ -28354,7 +28359,7 @@ function nz({ hass: e, t, locale: n, narrow: r }) {
 				})
 			]
 		}),
-		c && c.length > 0 && f && /* @__PURE__ */ (0, $.jsx)(tz, {
+		c && c.length > 0 && f && f.b < c.length && /* @__PURE__ */ (0, $.jsx)(tz, {
 			rows: c.slice(f.a, f.b + 1),
 			t,
 			label: v,

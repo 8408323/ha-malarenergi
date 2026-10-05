@@ -260,3 +260,24 @@ def test_unknown_row_without_utility_on_production_invoice_is_production():
 
 def test_rows_without_money_are_not_turned_into_zero_lines():
     assert parse.invoice_lines([{"productType": "El Rörl Avg", "consumptionMonth": 100}], 1.25) == []
+
+
+def test_zero_elprod_invoice_is_production():
+    inv = parse.invoices(
+        {
+            "data": [
+                {
+                    "items": [
+                        {
+                            "invoiceId": "1",
+                            "invoicedAmount": 0,
+                            "issueDate": "2026-09-05",
+                            "billingPeriodStartDate": "2026-08-01",
+                            "invoiceDetails": [{"productType": "Prod SpotTim", "utilityType": {"name": "ELPROD"}}],
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+    assert inv[0]["kind"] == "production"

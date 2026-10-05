@@ -146,7 +146,9 @@ def invoices(payload: Any) -> list[dict]:
             details = i.get("invoiceDetails") or []
             utils = {_name(d.get("utilityType")) for d in details} - {""}
             amount = i.get("invoicedAmount") or 0
-            kind = "production" if utils <= {"ELPROD", "ELEXT"} and amount < 0 else "consumption"
+            # production: only production utilities and money paid out (or a 0 kr settlement on ELPROD)
+            prod_utils = bool(utils) and utils <= {"ELPROD", "ELEXT"}
+            kind = "production" if prod_utils and (amount < 0 or (amount == 0 and "ELPROD" in utils)) else "consumption"
             spot_kwh = sum(
                 abs(d.get("consumptionMonth") or 0)
                 for d in details
