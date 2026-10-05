@@ -95,6 +95,7 @@ async def shoot(port: int, debug_port: int) -> None:
                 if tab in PREP:
                     await evaluate(PREP[tab])
                 await asyncio.sleep(1.2)  # chart animations
+                await evaluate("window.scrollTo(0, 0)")  # always from the top of the page
                 shot = await call("Page.captureScreenshot", format="png")
                 out = ROOT / "docs" / "images" / f"panel_{tab}.png"
                 out.write_bytes(base64.b64decode(shot["data"]))
