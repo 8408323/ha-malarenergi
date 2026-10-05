@@ -43,9 +43,9 @@ The sidebar dashboard, shown with **made-up demo data** (no real account): see
 
 | Overview | History |
 |---|---|
-| ![Overview: this month's KPIs, last 30 days and live PowerHub power per phase](docs/images/panel_overview.png) | ![History: a year per month, with zoom and period totals](docs/images/panel_history.png) |
+| ![Overview: this month's KPIs, last 30 days and live PowerHub power per phase](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_overview.png) | ![History: a year per month, with zoom and period totals](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_history.png) |
 | **Invoices** | **Settings** |
-| ![Invoices: year totals, line items of an invoice and PDF download](docs/images/panel_invoices.png) | ![Settings: language, notifications, account and PowerHub](docs/images/panel_settings.png) |
+| ![Invoices: year totals, line items of an invoice and PDF download](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_invoices.png) | ![Settings: language, notifications, account and PowerHub](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_settings.png) |
 
 ## Configuration
 
