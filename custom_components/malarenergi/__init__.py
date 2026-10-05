@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -130,6 +131,8 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if prev.get("han") and out.get("han") != prev.get("han"):
                 st = ", ".join(v.lower() for v in out["han"].values())
                 await self.notify("notify_han_change", "Mälarenergi HAN-port", f"HAN-porten är nu: {st}.")
+        # logged in and fetching again: a fallback "login expired" alert is stale now
+        persistent_notification.async_dismiss(self.hass, f"{DOMAIN}_{self.config_entry.entry_id}_notify_auth")
         return out
 
     @property
@@ -269,7 +272,8 @@ class InvoicePdfView(HomeAssistantView):
     requires_auth = True
 
     async def get(self, request: web.Request, invoice_id: str) -> web.Response:
-        if not invoice_id.isdigit():
+        # one opaque path segment (digits today; tolerate alphanumeric/UUID-style ids)
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", invoice_id):
             return web.Response(status=400)
         try:
             body = await _fetch_pdf(request.app[KEY_HASS], invoice_id)

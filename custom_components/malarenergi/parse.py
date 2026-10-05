@@ -112,8 +112,11 @@ def invoice_lines(details: list[dict], vat: float, production_invoice: bool = Fa
     consumption charges and production credits. kWh is a positive quantity (production rows are negative).
     """
     out = []
+    keys = ("costVariableMonth", "costFixedMonth", "taxMonth", "otherMonth")
     for d in details:
-        amount = sum(d.get(k) or 0 for k in ("costVariableMonth", "costFixedMonth", "taxMonth", "otherMonth"))
+        if all(d.get(k) is None for k in keys):
+            continue  # no monetary detail: don't invent a 0 kr line (an empty list makes callers use invoicedAmount)
+        amount = sum(d.get(k) or 0 for k in keys)
         cat = line_category(d.get("productType"))
         util = _name(d.get("utilityType"))
         # negative energy and a non-positive amount (a 0 kr settlement too): a payout

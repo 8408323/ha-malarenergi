@@ -256,3 +256,7 @@ def test_recognised_consumption_line_on_net_credit_invoice_keeps_category():
 def test_unknown_row_without_utility_on_production_invoice_is_production():
     (line,) = parse.invoice_lines([{"productType": "Ny", "costVariableMonth": -30.0}], 1.25, production_invoice=True)
     assert line["category"] == "production_other" and line["amount"] == -30.0
+
+
+def test_rows_without_money_are_not_turned_into_zero_lines():
+    assert parse.invoice_lines([{"productType": "El Rörl Avg", "consumptionMonth": 100}], 1.25) == []
