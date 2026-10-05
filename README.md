@@ -4,7 +4,7 @@ Home Assistant custom integration for [Mälarenergi](https://www.malarenergi.se)
 electricity grid owner and supplier for Västerås and the Mälardalen area. Logs in to
 **Mitt Mälarenergi** with BankID and brings your account into Home Assistant.
 
-> **Status**: 0.2 — BankID login with automatic token refresh, sensors, invoices with PDF download,
+> **Status**: 0.4 — BankID login with automatic token refresh, sensors, invoices with line items and PDF download,
 > HAN port control and a sidebar dashboard. Tested against a real private customer account.
 
 Not an official API. Reverse-engineered from the public Mitt Mälarenergi web app — see
@@ -61,7 +61,8 @@ Your personal number is never entered or stored — BankID handles identificatio
 - **Dashboard** in the sidebar (React) with five tabs:
   - *Overview*: this month's consumption, production, net cost and power peak, last 30 days chart
   - *History*: any day (per hour), month (per day) or year (per month), step back in time, zoom, period totals
-  - *Invoices*: paginated list, year-to-date totals, fees per invoice, one-click PDF download
+  - *Invoices*: paginated list, year-to-date totals, click a row for its line items (grid fee, transfer,
+    energy tax, spot, supplier fees, broadband, …), one-click PDF download
   - *Contracts*: active and ended contracts (grid, supply, production, broadband) with fuse size and grid area
   - *Settings*: language (English, Svenska, Norsk, Dansk, Suomi, Íslenska — default follows Home Assistant),
     notification targets and events, BankID re-login, invoices per page
@@ -69,6 +70,10 @@ Your personal number is never entered or stored — BankID handles identificatio
 - Sensors: consumption and production (yesterday / this month), cost (energy + grid) and production
   compensation this month, monthly power peak, latest invoice (24-invoice history attribute), unpaid
   and overdue invoices, fuse size, unread messages, connection status
+- Invoice sensors (latest invoice, in SEK incl. VAT): consumption total, production payout, and one sensor
+  per line type — fixed grid fee (fuse), grid transfer, energy tax, power fee, spot energy, supplier
+  markup, supplier fixed fee, broadband, other — plus the **grid transfer price** (SEK/kWh), so a tariff
+  change shows up in HA and can feed your own price templates
 - Each invoice is classified (consumption / production) with metered kWh, fixed fees, power fee and
   other one-off charges, so you can check it against your own metering
 - **HAN port** status sensor and on/off switch. Turning it off disconnects local meter readers

@@ -50,6 +50,82 @@ def _latest_invoice(data: dict) -> dict | None:
     return inv[0] if inv else None
 
 
+def _part(data: dict, production: bool) -> tuple[dict | None, float | None]:
+    """Newest invoice with a consumption (or production) part and that part's amount.
+
+    Itemised invoices count their matching lines; an invoice without usable lines falls back to its
+    whole invoicedAmount when its kind matches (the payout comes back positive, money paid to you).
+    """
+    for i in data.get("invoices") or []:
+        lines = i.get("lines") or []
+        if lines:
+            part = [line["amount"] for line in lines if (line["category"] in PRODUCTION) == production]
+            if part:
+                return i, round(-sum(part) if production else sum(part), 2) + 0.0
+        elif i.get("kind") == ("production" if production else "consumption") and i.get("amount") is not None:
+            return i, round(-i["amount"] if production else i["amount"], 2) + 0.0
+    return None, None
+
+
+def _latest_with(data: dict, cats: tuple[str, ...]) -> dict | None:
+    """Newest invoice that has a line in `cats` (a broadband-only or mixed invoice must not hide it)."""
+    return next(
+        (i for i in data.get("invoices") or [] if any(line["category"] in cats for line in i.get("lines") or [])),
+        None,
+    )
+
+
+def _line_sum(data: dict, cats: tuple[str, ...]) -> float | None:
+    inv = _latest_with(data, cats)
+    if not inv:
+        return None
+    return round(sum(line["amount"] for line in inv.get("lines") or [] if line["category"] in cats), 2)
+
+
+PRODUCTION = ("production_spot", "production_bonus", "production_grid", "production_other")
+
+
+def _line_rate(data: dict, cat: str) -> float | None:
+    """SEK/kWh incl. VAT for a per-kWh line category on the latest consumption invoice."""
+    lines = [line for line in (_latest_with(data, (cat,)) or {}).get("lines") or [] if line["category"] == cat]
+    # same rule as the panel: kWh add up within one product (split periods), not across products
+    by_name: dict[str, float] = {}
+    for line in lines:
+        by_name[line["name"]] = by_name.get(line["name"], 0) + line["kwh"]
+    kwh = max(by_name.values(), default=0)
+    return round(sum(line["amount"] for line in lines) / kwh, 4) if kwh else None
+
+
+def _consumption_total(data: dict) -> float | None:
+    return _part(data, production=False)[1]
+
+
+def _consumption_attrs(data: dict) -> dict:
+    inv = _part(data, production=False)[0] or {}
+    attrs = {k: inv.get(k) for k in ("period_start", "period_end", "due_date", "status")}
+    attrs["lines"] = [line for line in inv.get("lines") or [] if line["category"] not in PRODUCTION]
+    return attrs
+
+
+def _production_attrs(data: dict) -> dict:
+    """Period, kWh and lines of the production part only (a mixed invoice also carries consumption)."""
+    inv = _part(data, production=True)[0] or {}
+    lines = [line for line in inv.get("lines") or [] if line["category"] in PRODUCTION]
+    by_name: dict[str, float] = {}
+    for line in lines:
+        by_name[line["name"]] = by_name.get(line["name"], 0) + line["kwh"]
+    return {"period_start": inv.get("period_start"), "kwh": max(by_name.values(), default=None), "lines": lines}
+
+
+def _line_sensor(key: str, cat: str) -> "MeSensor":
+    return MeSensor(
+        key=key,
+        **SEK,
+        value=lambda d: _line_sum(d, (cat,)),
+        attrs=lambda d: {"period_start": (_latest_with(d, (cat,)) or {}).get("period_start")},
+    )
+
+
 @dataclass(frozen=True, kw_only=True)
 class MeSensor(SensorEntityDescription):
     value: Callable[[dict], Any]
@@ -111,6 +187,42 @@ SENSORS: tuple[MeSensor, ...] = (
         },
     ),
     MeSensor(
+        key="invoice_consumption_total",
+        **SEK,
+        # from the consumption lines, symmetrical with the payout sensor: a production credit on the same
+        # invoice must not shrink it (or hide the invoice when the net turns negative)
+        value=lambda d: _consumption_total(d),
+        attrs=lambda d: _consumption_attrs(d),
+    ),
+    MeSensor(
+        key="invoice_production_total",
+        **SEK,
+        # from production lines, so a payout netted into a consumption invoice still counts
+        value=lambda d: _part(d, production=True)[1],  # lines, else the whole payout invoice; 0 kr stays 0
+        attrs=lambda d: _production_attrs(d),
+    ),
+    *(
+        _line_sensor(f"invoice_{cat}", cat)
+        for cat in (
+            "grid_fixed",
+            "grid_transfer",
+            "energy_tax",
+            "power_fee",
+            "spot_energy",
+            "supply_markup",
+            "supply_fixed",
+            "broadband",
+            "other",
+        )
+    ),
+    MeSensor(
+        key="grid_transfer_price",
+        native_unit_of_measurement="SEK/kWh",
+        icon="mdi:transmission-tower",
+        value=lambda d: _line_rate(d, "grid_transfer"),
+        attrs=lambda d: {"period_start": (_latest_with(d, ("grid_transfer",)) or {}).get("period_start")},
+    ),
+    MeSensor(
         key="unpaid_invoices",
         icon="mdi:file-alert",
         state_class=SensorStateClass.MEASUREMENT,
@@ -152,6 +264,9 @@ def _device(entry) -> DeviceInfo:
 
 class MeEntity(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
+    # the invoice history (with line items) is for live use (panel, other integrations), not for the
+    # recorder: it exceeds the 16 KB attribute limit and would bloat the database
+    _unrecorded_attributes = frozenset({"invoices", "lines"})
     entity_description: MeSensor
 
     def __init__(self, coord, entry, desc: MeSensor):

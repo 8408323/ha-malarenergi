@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { LANG_NAMES, T, pick } from "./i18n";
 
 type Series = Record<string, [string, number][]>;
 type Invoice = {
   invoice_id: string; kind: string; issue_date: string; due_date: string; period_start: string; period_end: string;
-  amount: number; status: string; closed: boolean; kwh: number; fixed: number; power_fee: number; other: number;
+  amount: number; status: string; closed: boolean; kwh: number; fixed: number; power_fee: number; other: number; utilities?: string[];
+  lines?: { category: string; name: string; kwh: number; amount: number }[];
 };
 type Data = {
   CONSUMPTION?: { daily: Series; peak?: { peakPowerConsumption?: number; dateTime?: string } | null };
@@ -118,7 +119,7 @@ function Overview({ t, locale, narrow, d }: Ctx & { d: Data }) {
       <div className="kpis">
         <Kpi label={`${t.consumption} · ${t.month}`} value={fmt(sum("cons"), auto(sum("cons")), "kWh")} sub={`${t.cost} ${fmt(sum("cost"), auto(sum("cost")), "kr")}`} />
         <Kpi label={`${t.production} · ${t.month}`} value={fmt(sum("prod"), auto(sum("prod")), "kWh")} sub={`${t.compensation} ${fmt(sum("comp"), auto(sum("comp")), "kr")}`} />
-        <Kpi label={`${t.net} · ${t.month}`} info={t.net_info} value={fmt(net, auto(net), "kr")} tone={net <= 0 ? "pos" : "neg"}
+        <Kpi label={`${t.net} · ${t.month}`} info={t.net_info} value={money(-net, auto(net))} tone={net <= 0 ? "pos" : "neg"}
           sub={`${t.energy} ${fmt(sumKey(d.CONSUMPTION?.daily?.costEL), 0)} · ${t.grid} ${fmt(sumKey(d.CONSUMPTION?.daily?.costELEXT), 0)}`} />
         <Kpi label={t.peak} info={t.peak_info} value={fmt(peak?.peakPowerConsumption, (peak?.peakPowerConsumption ?? 1) < 1 ? 2 : 1, "kW")}
           sub={peak?.dateTime ? new Date(peak.dateTime).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""} />
@@ -131,10 +132,28 @@ function Overview({ t, locale, narrow, d }: Ctx & { d: Data }) {
   );
 }
 
-function EnergyChart({ rows, t, height, tick, brush }: { rows: any[]; t: T; height: number; tick: (k: any) => string; brush?: boolean }) {
+type Zoom = { a: number; b: number } | null;
+
+function EnergyChart({ rows, t, height, tick, brush, zoom, setZoom }: {
+  rows: any[]; t: T; height: number; tick: (k: any) => string; brush?: boolean; zoom?: Zoom; setZoom?: (z: Zoom) => void;
+}) {
+  // drag across the plot to zoom (the Brush below shows and adjusts the same window); double-click resets
+  const [drag, setDrag] = useState<{ a: string; b: string } | null>(null);
+  const idx = (k: string) => rows.findIndex((r) => r.k === k);
+  const end = () => {
+    if (drag && setZoom) {
+      const [a, b] = [idx(drag.a), idx(drag.b)].sort((x, y) => x - y);
+      if (b > a) setZoom({ a, b });
+    }
+    setDrag(null);
+  };
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <ComposedChart data={rows} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+      <ComposedChart data={rows} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}
+        onMouseDown={(e: any) => setZoom && e?.activeLabel && setDrag({ a: e.activeLabel, b: e.activeLabel })}
+        onMouseMove={(e: any) => drag && e?.activeLabel && setDrag({ ...drag, b: e.activeLabel })}
+        onMouseUp={end} onMouseLeave={() => setDrag(null)} onDoubleClick={() => setZoom?.(null)}
+        style={{ cursor: setZoom ? "crosshair" : undefined, userSelect: "none" }}>
         <CartesianGrid stroke="var(--me-line)" vertical={false} />
         <XAxis dataKey="k" tickFormatter={tick} minTickGap={24} {...axis} />
         <YAxis yAxisId="e" width={44} {...axis} />
@@ -145,9 +164,37 @@ function EnergyChart({ rows, t, height, tick, brush }: { rows: any[]; t: T; heig
         <Bar yAxisId="e" dataKey="prod" name={`${t.production} (kWh)`} fill="#f5b301" radius={[3, 3, 0, 0]} isAnimationActive={false} />
         <Line yAxisId="m" dataKey="cost" name={`${t.cost} (kr)`} stroke="#e5484d" dot={false} strokeWidth={2} isAnimationActive={false} />
         <Line yAxisId="m" dataKey="comp" name={`${t.compensation} (kr)`} stroke="#2ec27e" dot={false} strokeWidth={2} isAnimationActive={false} />
-        {brush && rows.length > 8 && <Brush dataKey="k" height={22} stroke="var(--me-accent)" fill="var(--me-card)" tickFormatter={tick} travellerWidth={8} />}
+        {drag && <ReferenceArea yAxisId="e" x1={drag.a} x2={drag.b} fill="var(--me-accent)" fillOpacity={0.15} stroke="var(--me-accent)" strokeOpacity={0.5} />}
+        {brush && rows.length > 1 && <Brush dataKey="k" height={22} stroke="var(--me-accent)" fill="var(--me-card)" tickFormatter={tick} travellerWidth={8}
+          startIndex={zoom?.a ?? 0} endIndex={zoom?.b ?? rows.length - 1}
+          onChange={(r: any) => setZoom?.(r.startIndex === 0 && r.endIndex === rows.length - 1 ? null : { a: r.startIndex, b: r.endIndex })} />}
       </ComposedChart>
     </ResponsiveContainer>
+  );
+}
+
+function SumTable({ rows, t, label, title }: { rows: any[]; t: T; label: (k: any) => string; title: string }) {
+  const sum = (k: string) => rows.reduce((s, r) => s + (r[k] ?? 0), 0);
+  const cols: [string, string, number][] = [["cons", `${t.consumption} (kWh)`, 1], ["prod", `${t.production} (kWh)`, 1],
+    ["cost", `${t.cost} (kr)`, 0], ["comp", `${t.compensation} (kr)`, 0]];
+  const net = (r: any) => (r.comp ?? 0) - (r.cost ?? 0);
+  return (
+    <section className="card">
+      <h2>{title}</h2>
+      <div className="table-wrap">
+        <table className="sum">
+          <thead><tr><th>{t.period}</th>{cols.map(([k, n]) => <th key={k} className="r">{n}</th>)}<th className="r">{t.net} (kr)<Info text={t.wallet_info} /></th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.k}><td>{label(r.k)}</td>{cols.map(([k, , d]) => <td key={k} className="r">{fmt(r[k], d)}</td>)}
+                <td className={`r ${net(r) >= 0 ? "pos" : "neg"}`}>{money(net(r))}</td></tr>
+            ))}
+          </tbody>
+          <tfoot><tr><th>{t.total}</th>{cols.map(([k, , d]) => <th key={k} className="r">{fmt(sum(k), d)}</th>)}
+            <th className={`r ${sum("comp") - sum("cost") >= 0 ? "pos" : "neg"}`}>{money(sum("comp") - sum("cost"))}</th></tr></tfoot>
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -158,6 +205,7 @@ function History({ hass, t, locale, narrow }: Ctx) {
   const [offset, setOffset] = useState(0); // 0 = current day/month/year, -1 = previous …
   const [rows, setRows] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<Zoom>(null);
   const range = useMemo(() => {
     const n = new Date(); let s: Date, e: Date;
     if (res === "hour") { s = new Date(n.getFullYear(), n.getMonth(), n.getDate() + offset); e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 1); }
@@ -166,7 +214,8 @@ function History({ hass, t, locale, narrow }: Ctx) {
     return { s, e };
   }, [res, offset]);
   useEffect(() => {
-    setRows(null); setError(null);
+    let live = true;  // a slower response for the previous range must not land in this one
+    setRows(null); setError(null); setZoom(null);
     hass.connection.sendMessagePromise({ type: "malarenergi/series", resolution: res, start: range.s.toISOString(), end: range.e.toISOString() })
       .then((r: any) => {
         const m = new Map<string, any>();
@@ -179,14 +228,21 @@ function History({ hass, t, locale, narrow }: Ctx) {
           const kk = key(x); const o = m.get(kk) ?? m.set(kk, { k: kk, t: x }).get(kk); o[k] = (o[k] ?? 0) + v; });
         add(r.CONSUMPTION?.consumption, "cons"); add(r.CONSUMPTION?.cost, "cost");
         add(r.PRODUCTION?.production, "prod"); add(r.PRODUCTION?.compensation, "comp");
+        if (!live) return;
         setRows([...m.values()].sort((a, b) => a.k.localeCompare(b.k)));
-      }).catch((e: any) => setError(e?.message ?? String(e)));
+        setZoom(null);
+      }).catch((e: any) => { if (live) setError(e?.message ?? String(e)); });
+    return () => { live = false; };
   }, [res, range.s.getTime()]);
   const label = res === "hour" ? range.s.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "long", year: "numeric" })
     : res === "day" ? range.s.toLocaleDateString(locale, { month: "long", year: "numeric" }) : String(range.s.getFullYear());
   const tick = (k: any) => res === "hour" ? new Date(rows?.find((r) => r.k === k)?.t ?? k).toLocaleTimeString(locale, { hour: "2-digit" })
     : res === "day" ? String(k).slice(8) : new Date(String(k) + "-15").toLocaleDateString(locale, { month: "short" });
   const tot = (k: string) => (rows ?? []).reduce((s, r) => s + (r[k] ?? 0), 0);
+  // full label for table rows (the axis tick is abbreviated)
+  const rowLabel = (k: any) => res === "hour" ? new Date(rows?.find((r) => r.k === k)?.t ?? k).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
+    : res === "day" ? new Date(String(k)).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })
+    : new Date(String(k) + "-15").toLocaleDateString(locale, { month: "long", year: "numeric" });
   return (
     <>
       <div className="toolbar">
@@ -203,60 +259,125 @@ function History({ hass, t, locale, narrow }: Ctx) {
       <div className="kpis">
         <Kpi label={`${t.consumption} · ${t.total}`} value={fmt(tot("cons"), auto(tot("cons")), "kWh")} sub={`${t.cost} ${fmt(tot("cost"), 0, "kr")}`} />
         <Kpi label={`${t.production} · ${t.total}`} value={fmt(tot("prod"), auto(tot("prod")), "kWh")} sub={`${t.compensation} ${fmt(tot("comp"), 0, "kr")}`} />
-        <Kpi label={`${t.net} · ${t.total}`} info={t.net_info} value={fmt(tot("cost") - tot("comp"), 0, "kr")} tone={tot("cost") - tot("comp") <= 0 ? "pos" : "neg"} />
+        <Kpi label={`${t.net} · ${t.total}`} info={t.net_info} value={money(tot("comp") - tot("cost"))} tone={tot("comp") - tot("cost") >= 0 ? "pos" : "neg"} />
       </div>
       <section className="card">
         <h2>{label}<Info text={t.history_info} /></h2>
         {error ? <div className="muted">{error}</div> : !rows ? <div className="muted">{t.loading}</div> : !rows.length ? <div className="muted">{t.none}</div> :
-          <EnergyChart rows={rows} t={t} height={narrow ? 260 : 340} tick={tick} brush />}
+          <EnergyChart rows={rows} t={t} height={narrow ? 260 : 340} tick={tick} brush zoom={zoom} setZoom={setZoom} />}
+        {rows && rows.length > 1 && <div className="muted hint">{t.zoom_hint}</div>}
       </section>
+      {rows && rows.length > 0 && zoom && zoom.b < rows.length &&
+        <SumTable rows={rows.slice(zoom.a, zoom.b + 1)} t={t} label={rowLabel} title={`${t.table_zoom}: ${rowLabel(rows[zoom.a].k)} – ${rowLabel(rows[zoom.b].k)}`} />}
+      {rows && rows.length > 0 && <SumTable rows={rows} t={t} label={rowLabel} title={`${t.table_full}: ${label}`} />}
     </>
   );
 }
 
 /* ---------------- Invoices ---------------- */
+const FLAGS: Record<string, string> = { en: "🇬🇧", sv: "🇸🇪", nb: "🇳🇴", da: "🇩🇰", fi: "🇫🇮", is: "🇮🇸" };
+
+// wallet view: + is money paid to you, − is money you pay (the API's sign is the opposite)
+const money = (v: number | null | undefined, d = 0) =>
+  v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${fmt(Math.abs(v), d, "kr")}`;
+
+// amounts add up per category, kWh do not: several charges in one category (spot markup, certificates,
+// fossil-free mix…) are each billed on the same consumption. Rows of the same product (a period split by a
+// tariff change) do add up, so: sum per product name, then take the largest product.
+function groupLines(lines: { category: string; name: string; kwh: number; amount: number }[]) {
+  const g: Record<string, { amount: number; kwh: number; byName: Record<string, number> }> = {};
+  for (const l of lines) {
+    const a = (g[l.category] ??= { amount: 0, kwh: 0, byName: {} });
+    a.amount += l.amount;
+    a.byName[l.name] = (a.byName[l.name] ?? 0) + l.kwh;
+    a.kwh = Math.max(...Object.values(a.byName));
+  }
+  return g;
+}
+
 function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Invoice[]; perPage0: number }) {
   const [perPage, setPerPage] = useState<number>(() => Number(localStorage.getItem("me_per_page")) || perPage0);
   const [page, setPage] = useState(0);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const [signed, setSigned] = useState<Record<string, string>>({});
   const pages = perPage ? Math.max(1, Math.ceil(invoices.length / perPage)) : 1;
   const monthName = (ym: string) => new Date(`${ym}-15`).toLocaleDateString(locale, { month: "short", year: "numeric" });
   const shortDate = (s: string) => (s ? new Date(s).toLocaleDateString(locale, { day: "numeric", month: "short" }) : "–");
-  const download = async (id: string) => {
-    if (busy) return; setBusy(id);
-    try { const r = await hass.callService("malarenergi", "download_invoice", { invoice_id: id }, undefined, false, true); if (r?.response?.url) window.open(r.response.url, "_blank"); }
-    finally { setBusy(null); }
-  };
+  // PDF links are signed in advance (HA's auth/sign_path, valid 1 h, renewed every 30 min) so a tap opens a
+  // plain link: phones and the HA app block window.open() after an await
+  const visible = invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => i.invoice_id).filter(Boolean);
+  useEffect(() => {
+    let live = true;  // a slower response for the previous page must not overwrite this page's links
+    const sign = () => Promise.all(visible.map((id) => hass.connection.sendMessagePromise({
+      type: "auth/sign_path", path: `/api/malarenergi/invoice/${id}`, expires: 3600 }).then((r: any) => [id, r.path] as const)))
+      .then((pairs) => { if (live) setSigned(Object.fromEntries(pairs)); }).catch(() => undefined);
+    sign();
+    const t = setInterval(sign, 30 * 60 * 1000);
+    return () => { live = false; clearInterval(t); };
+  }, [visible.join(",")]);
   const year = new Date().getFullYear();
-  const ytd = (kind: string) => invoices.filter((i) => i.kind === kind && i.period_start.startsWith(String(year))).reduce((s, i) => s + (i.amount ?? 0), 0);
+  // from the categorised lines, so a mixed invoice counts its consumption and production parts separately
+  // (invoices without lines fall back to the whole amount by kind)
+  const isProd = (c: string) => c.startsWith("production_");
+  const ytd = (kind: string) => invoices.filter((i) => i.period_start.startsWith(String(year))).reduce((s, i) => {
+    if (!i.lines?.length) return s + (i.kind === kind ? i.amount ?? 0 : 0);
+    return s + i.lines.filter((l) => isProd(l.category) === (kind === "production")).reduce((a, l) => a + l.amount, 0);
+  }, 0);
   return (
     <>
       <div className="kpis">
-        <Kpi label={`${t.consumption} · ${year}`} value={fmt(ytd("consumption"), 0, "kr")} />
-        <Kpi label={`${t.production} · ${year}`} value={fmt(-ytd("production"), 0, "kr")} tone="pos" />
-        <Kpi label={`${t.net} · ${year}`} value={fmt(ytd("consumption") + ytd("production"), 0, "kr")} tone={ytd("consumption") + ytd("production") <= 0 ? "pos" : "neg"} />
+        <Kpi label={`${t.consumption} · ${year}`} info={t.wallet_info} value={money(-ytd("consumption"))} />
+        <Kpi label={`${t.production} · ${year}`} info={t.wallet_info} value={money(-ytd("production"))}
+          tone={-ytd("production") >= 0 ? "pos" : "neg"} />
+        <Kpi label={`${t.net} · ${year}`} info={t.wallet_net_info} value={money(-(ytd("consumption") + ytd("production")))}
+          tone={ytd("consumption") + ytd("production") <= 0 ? "pos" : "neg"} />
       </div>
       <section className="card">
-        <h2>{t.invoices}<Info text={t.inv_info} /></h2>
+        <h2>{t.invoices}<Info text={`${t.inv_info} ${t.wallet_info}`} /></h2>
         <div className="table-wrap">
           <table>
             <thead><tr><th>{t.period}</th><th /><th className="r">{t.amount}</th><th className="r wide">kWh</th>
               <th className="r wide">{t.fixed}</th><th className="r wide">{t.power_fee}</th><th className="r wide">{t.other}</th>
               <th>{t.due}</th><th>{t.status}</th><th /></tr></thead>
             <tbody>
-              {invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => (
-                <tr key={i.invoice_id}>
-                  <td>{monthName(i.period_start.slice(0, 7))}</td>
+              {invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => {
+                // expansion key: an invoice without an id must not equal the "nothing open" null
+                // stable across refreshes and paging: built from the invoice's own fields, not its position
+                const key = i.invoice_id ?? JSON.stringify([i.period_start, i.period_end, i.kind, i.issue_date, i.due_date,
+                  i.amount, i.utilities, (i.lines ?? []).map((l) => [l.name, l.amount])]);
+                return (
+                <Fragment key={key}>
+                <tr className="clickable" onClick={() => setOpen(open === key ? null : key)} title={t.show_lines}>
+                  <td><span className={`chev ${open === key ? "open" : ""}`}>›</span>{monthName(i.period_start.slice(0, 7))}</td>
                   <td><span className={`dot ${i.kind}`} /><span className="wide">{i.kind === "production" ? t.production : t.consumption}</span></td>
-                  <td className={`r ${i.amount < 0 ? "pos" : ""}`}>{fmt(i.amount, 0, "kr")}</td>
+                  <td className={`r ${i.amount < 0 ? "pos" : ""}`}>{money(i.amount == null ? null : -i.amount)}</td>
                   <td className="r wide">{fmt(i.kwh, 0)}</td>
-                  <td className="r wide">{fmt(i.fixed, 0)}</td><td className="r wide">{i.power_fee ? fmt(i.power_fee, 0) : "–"}</td>
-                  <td className="r wide">{i.other ? fmt(i.other, 0) : "–"}</td>
+                  <td className="r wide">{i.fixed ? money(-i.fixed) : "–"}</td><td className="r wide">{i.power_fee ? money(-i.power_fee) : "–"}</td>
+                  <td className="r wide">{i.other ? money(-i.other) : "–"}</td>
                   <td>{shortDate(i.due_date)}</td>
                   <td><span className={`badge ${i.closed ? "ok" : "warn"}`}>{i.amount < 0 ? t.credit : i.closed ? t.paid : t.open}</span></td>
-                  <td><button className="btn" disabled={busy === i.invoice_id} onClick={() => download(i.invoice_id)}>{busy === i.invoice_id ? t.downloading : t.pdf}</button></td>
+                  <td>{signed[i.invoice_id]
+                    ? <a className="btn" href={signed[i.invoice_id]} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()}>{t.pdf}</a>
+                    : <button className="btn" disabled>{t.pdf}</button>}</td>
                 </tr>
-              ))}
+                {open === key && (
+                  <tr className="lines-row"><td colSpan={10}>
+                    <div className="lines">
+                      {Object.entries(groupLines(i.lines ?? []))
+                        .sort((a, b) => Math.abs(b[1].amount) - Math.abs(a[1].amount))
+                        .map(([cat, v]) => (
+                          <div className="line" key={cat}>
+                            <span>{(t as any)[`c_${cat}`] ?? cat}</span>
+                            <span className="muted">{v.kwh ? `${fmt(v.kwh, 0)} kWh` : ""}</span>
+                            <b className={v.amount < 0 ? "pos" : ""}>{money(-v.amount, 2)}</b>
+                          </div>
+                        ))}
+                    </div>
+                  </td></tr>
+                )}
+                </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -313,6 +434,40 @@ function Contracts({ hass, t, locale }: Ctx) {
 function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o: Options) => void }) {
   const [services, setServices] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
+  // BankID page shown in a dialog over the panel; flow = the reauth flow behind it
+  const [login, setLogin] = useState<{ url: string; flow: string } | null>(null);
+  const [starting, setStarting] = useState(false);
+  const loginRef = useRef<{ url: string; flow: string } | null>(null);  // for the unmount cleanup and the poll
+  loginRef.current = login;
+  const cancelFlow = (flow: string) =>
+    hass.connection.sendMessagePromise({ type: "malarenergi/reauth_cancel", flow_id: flow }).catch(() => undefined);
+  const closeLogin = () => {  // closing aborts the flow, so its BankID attempt stops polling
+    if (login) cancelFlow(login.flow);
+    setLogin(null);
+    setMsg((m) => (m === t.relogin_checking ? null : m));
+  };
+  // leaving the panel with the dialog open must abort the flow too
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; if (loginRef.current) cancelFlow(loginRef.current.flow); }, []);
+  useEffect(() => {
+    if (!login) return;
+    const on = async (e: MessageEvent) => {
+      if (e.origin !== location.origin || e.data?.malarenergi !== "bankid-complete") return;
+      setMsg(t.relogin_checking);
+      // BankID done: wait for the flow itself (account check + reload) before claiming success
+      // stop as soon as the dialog is closed or replaced (closing aborts the flow; that's not a success)
+      const mine = login.flow, live = () => loginRef.current?.flow === mine;
+      for (let i = 0; i < 40 && live(); i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        if (!live()) return;
+        const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth_status", flow_id: mine }).catch(() => null);
+        if (r?.done && live()) { setLogin(null); setMsg(r.ok ? t.relogin_done : t.relogin_failed); return; }
+      }
+      if (live()) { cancelFlow(mine); setLogin(null); setMsg(t.relogin_failed); }  // don't leave the failed flow behind
+    };
+    window.addEventListener("message", on);
+    return () => window.removeEventListener("message", on);
+  }, [login]);
   useEffect(() => { hass.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((r: any) => setServices(r.notify_services)); }, []);
   const save = async (patch: Options) => {
     const r = await hass.connection.sendMessagePromise({ type: "malarenergi/settings/set", options: patch });
@@ -325,13 +480,30 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
   const targets: string[] = opts.notify_targets ?? [];
   return (
     <div className="settings-grid">
+      {login && (
+        <div className="modal" role="dialog" aria-modal="true" onClick={closeLogin}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="btn ghost modal-x" aria-label={t.close} onClick={closeLogin}>✕</button>
+            <iframe src={login.url} title="BankID" />
+          </div>
+        </div>
+      )}
       <section className="card">
         <h2>{t.settings_lang}</h2>
-        <div className="seg wrap">
-          {["auto", "en", "sv", "nb", "da", "fi", "is"].map((c) => (
-            <button key={c} className={(opts.language ?? "auto") === c ? "on" : ""} onClick={() => save({ language: c })}>
-              {c === "auto" ? t.lang_auto : LANG_NAMES[c]}</button>
-          ))}
+        <div className="langs" role="radiogroup" aria-label={t.settings_lang}>
+          {["auto", "en", "sv", "nb", "da", "fi", "is"].map((c) => {
+            const on = (opts.language ?? "auto") === c;
+            const haCode = pick(hass.locale?.language ?? hass.language, "auto").code;
+            return (
+              <button key={c} role="radio" aria-checked={on} className={`lang ${on ? "on" : ""} ${c === "auto" ? "auto" : ""}`}
+                onClick={() => save({ language: c })}>
+                <span className="flag">{c === "auto" ? "🏠" : FLAGS[c]}</span>
+                <span className="lname">{c === "auto" ? t.lang_auto : LANG_NAMES[c]}
+                  {c === "auto" && <small>{LANG_NAMES[haCode] ?? haCode}</small>}</span>
+                {on && <span className="check">✓</span>}
+              </button>
+            );
+          })}
         </div>
       </section>
       <section className="card">
@@ -342,13 +514,22 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
             <label className="switch"><input type="checkbox" checked={targets.includes(s)}
               onChange={(e) => save({ notify_targets: e.target.checked ? [...targets, s] : targets.filter((x) => x !== s) })} /><span /></label></div>
         ))}
+        {/* also when every saved target has since disappeared: the backend then falls back the same way */}
+        {!targets.some((x) => services.includes(x)) && <div className="muted" style={{ marginTop: 6 }}>{t.no_targets}</div>}
         <div className="label" style={{ margin: "12px 0 6px" }}>{t.settings_notify}</div>
         {["notify_new_invoice", "notify_overdue", "notify_han_change", "notify_auth"].map(toggle)}
       </section>
       <section className="card">
         <h2>{t.settings_account}</h2>
         <div className="setting"><span>{t.relogin}<Info text={t.relogin_info} /></span>
-          <button className="btn" onClick={async () => { await hass.connection.sendMessagePromise({ type: "malarenergi/reauth" }); setMsg(t.relogin_started); }}>BankID</button></div>
+          <button className="btn" disabled={starting || !!login} onClick={async () => {
+            setStarting(true);  // one flow per click: a double-click would start an uncancellable second flow
+            try {
+              const r: any = await hass.connection.sendMessagePromise({ type: "malarenergi/reauth" });
+              if (!mounted.current) { if (r?.flow_id) cancelFlow(r.flow_id); return; }  // left the panel meanwhile
+              if (r?.url && r?.flow_id) setLogin({ url: r.url, flow: r.flow_id }); else setMsg(t.relogin_started);
+            } finally { if (mounted.current) setStarting(false); }
+          }}>BankID</button></div>
         <div className="setting"><span>{t.invoices_per_page}</span>
           <select className="sel" value={opts.invoices_per_page ?? 12} onChange={(e) => save({ invoices_per_page: Number(e.target.value) })}>
             {[6, 12, 24, 48].map((n) => <option key={n} value={n}>{n}</option>)}</select></div>

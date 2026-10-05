@@ -73,6 +73,42 @@
       },
       "unread_messages": {
         "name": "Olästa meddelanden"
+      },
+      "invoice_consumption_total": {
+        "name": "Senaste förbrukningsfaktura"
+      },
+      "invoice_production_total": {
+        "name": "Senaste produktionsersättning"
+      },
+      "invoice_grid_fixed": {
+        "name": "Faktura: elnät fast avgift (säkring)"
+      },
+      "invoice_grid_transfer": {
+        "name": "Faktura: elöverföring"
+      },
+      "invoice_energy_tax": {
+        "name": "Faktura: energiskatt"
+      },
+      "invoice_power_fee": {
+        "name": "Faktura: effektavgift"
+      },
+      "invoice_spot_energy": {
+        "name": "Faktura: el (spotpris)"
+      },
+      "invoice_supply_markup": {
+        "name": "Faktura: elhandel påslag"
+      },
+      "invoice_supply_fixed": {
+        "name": "Faktura: elhandel fast avgift"
+      },
+      "invoice_broadband": {
+        "name": "Faktura: bredband"
+      },
+      "invoice_other": {
+        "name": "Faktura: övrigt"
+      },
+      "grid_transfer_price": {
+        "name": "Grid transfer price"
       }
     },
     "switch": {

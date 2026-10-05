@@ -139,3 +139,167 @@ def test_invoice_kind_kwh_and_power_fee():
     assert by["p"]["kind"] == "production" and by["p"]["kwh"] == 2080 and by["p"]["fixed"] == 0
     assert by["c"]["kind"] == "consumption" and by["c"]["kwh"] == 1170
     assert by["c"]["power_fee"] == 125 and by["c"]["fixed"] == 385 and by["c"]["other"] == 349
+
+
+def test_invoice_lines_categorised_with_vat():
+    lines = parse.invoice_lines(
+        [
+            {"productType": "El Fast Avg", "costFixedMonth": 318},
+            {"productType": "Energiskatt Nat_Std", "taxMonth": 2.52},
+            {"productType": "Spot Tim Ext", "consumptionMonth": 7, "costVariableMonth": 5.57},
+            {"productType": "Spotpå Mån Ext PS", "costVariableMonth": 0.2},
+            {"productType": None, "otherMonth": 279.2},
+        ],
+        1.25,
+    )
+    cats = {line["category"]: line["amount"] for line in lines}
+    assert cats["grid_fixed"] == 397.5 and cats["energy_tax"] == 3.15 and cats["supply_markup"] == 0.25
+    assert cats["other"] == 349.0 and lines[2]["kwh"] == 7
+
+
+def test_invoice_lines_vat_and_kwh_per_line():
+    # a consumption invoice that also carries a production credit (negative kWh, VAT-free)
+    lines = parse.invoice_lines(
+        [
+            {"productType": "El Rörl Avg", "consumptionMonth": 100, "costVariableMonth": 20.0},
+            {"productType": "Prod SpotTim", "consumptionMonth": -200, "costVariableMonth": -50.0},
+        ],
+        1.25,
+    )
+    grid, prod = lines
+    assert grid["amount"] == 25.0 and grid["kwh"] == 100
+    assert prod["amount"] == -50.0  # no VAT on production payouts
+    assert prod["kwh"] == 200  # shown as a positive quantity, like the invoice summary
+
+
+def test_elprod_row_with_unknown_product_is_production():
+    (line,) = parse.invoice_lines(
+        [
+            {
+                "productType": "Ny ersättning",
+                "utilityType": {"name": "ELPROD"},
+                "consumptionMonth": -10,
+                "costVariableMonth": -5.0,
+            }
+        ],
+        1.25,
+    )
+    assert line["category"] == "production_other" and line["amount"] == -5.0
+
+
+def test_elext_credit_with_unknown_product_is_production():
+    (line,) = parse.invoice_lines(
+        [{"productType": "Ny", "utilityType": {"name": "ELEXT"}, "consumptionMonth": -50, "costVariableMonth": -20.0}],
+        1.25,
+    )
+    assert line["category"] == "production_other" and line["amount"] == -20.0
+
+
+def test_unknown_elext_zero_settlement_is_production_and_payout_is_zero():
+    lines = parse.invoice_lines(
+        [{"productType": "Ny", "utilityType": {"name": "ELEXT"}, "consumptionMonth": -50, "costVariableMonth": 0.0}],
+        1.25,
+    )
+    assert lines[0]["category"] == "production_other" and lines[0]["amount"] == 0.0
+
+
+def test_unknown_amount_only_row_on_production_invoice_is_production():
+    (line,) = parse.invoice_lines(
+        [{"productType": "Ny bonus", "utilityType": {"name": "ELEXT"}, "costFixedMonth": -100.0}],
+        1.25,
+        production_invoice=True,
+    )
+    assert line["category"] == "production_other" and line["amount"] == -100.0
+
+
+def test_positive_unknown_correction_on_production_invoice_stays_production():
+    lines = parse.invoice_lines(
+        [
+            {
+                "productType": "Prod SpotTim",
+                "utilityType": {"name": "ELEXT"},
+                "consumptionMonth": -200,
+                "costVariableMonth": -100.0,
+            },
+            {"productType": "Okänd korrigering", "utilityType": {"name": "ELEXT"}, "otherMonth": 10.0},
+        ],
+        1.25,
+        production_invoice=True,
+    )
+    assert [x["category"] for x in lines] == ["production_spot", "production_other"]
+    assert sum(x["amount"] for x in lines) == -90.0  # net payout, no VAT added to the correction
+
+
+def test_recognised_consumption_line_on_net_credit_invoice_keeps_category():
+    lines = parse.invoice_lines(
+        [
+            {
+                "productType": "Spot Tim Ext",
+                "utilityType": {"name": "ELEXT"},
+                "consumptionMonth": 50,
+                "costVariableMonth": 30.0,
+            },
+            {
+                "productType": "Prod SpotTim",
+                "utilityType": {"name": "ELEXT"},
+                "consumptionMonth": -500,
+                "costVariableMonth": -200.0,
+            },
+        ],
+        1.25,
+        production_invoice=True,
+    )
+    assert [x["category"] for x in lines] == ["spot_energy", "production_spot"]
+    assert lines[0]["amount"] == 37.5  # consumption keeps its VAT
+
+
+def test_unknown_row_without_utility_on_production_invoice_is_production():
+    (line,) = parse.invoice_lines([{"productType": "Ny", "costVariableMonth": -30.0}], 1.25, production_invoice=True)
+    assert line["category"] == "production_other" and line["amount"] == -30.0
+
+
+def test_rows_without_money_are_not_turned_into_zero_lines():
+    assert parse.invoice_lines([{"productType": "El Rörl Avg", "consumptionMonth": 100}], 1.25) == []
+
+
+def test_zero_elprod_invoice_is_production():
+    inv = parse.invoices(
+        {
+            "data": [
+                {
+                    "items": [
+                        {
+                            "invoiceId": "1",
+                            "invoicedAmount": 0,
+                            "issueDate": "2026-09-05",
+                            "billingPeriodStartDate": "2026-08-01",
+                            "invoiceDetails": [{"productType": "Prod SpotTim", "utilityType": {"name": "ELPROD"}}],
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+    assert inv[0]["kind"] == "production"
+
+
+def test_negative_invoice_without_utility_metadata_is_production():
+    inv = parse.invoices(
+        {
+            "data": [
+                {
+                    "items": [
+                        {
+                            "invoiceId": "2",
+                            "invoicedAmount": -150.0,
+                            "issueDate": "2026-09-05",
+                            "billingPeriodStartDate": "2026-08-01",
+                            "invoiceDetails": [{"productType": "Ny ersättning", "costVariableMonth": -150.0}],
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+    assert inv[0]["kind"] == "production"
+    assert inv[0]["lines"][0]["category"] == "production_other" and inv[0]["lines"][0]["amount"] == -150.0

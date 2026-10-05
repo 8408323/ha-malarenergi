@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.components import websocket_api
+from aiohttp import web
+from homeassistant.components import persistent_notification, websocket_api
+from homeassistant.components.http import KEY_HASS, HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
@@ -121,22 +124,32 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if prev:
             if (out.get("overdue") or 0) > (prev.get("overdue") or 0):
                 await self.notify("notify_overdue", "Mälarenergi", f"{out['overdue']} förfallen faktura/fakturor.")
+            elif not out.get("overdue") and prev.get("overdue"):  # paid: drop a fallback alert that's now stale
+                persistent_notification.async_dismiss(
+                    self.hass, f"{DOMAIN}_{self.config_entry.entry_id}_notify_overdue"
+                )
             if prev.get("han") and out.get("han") != prev.get("han"):
                 st = ", ".join(v.lower() for v in out["han"].values())
                 await self.notify("notify_han_change", "Mälarenergi HAN-port", f"HAN-porten är nu: {st}.")
+        # logged in and fetching again: a fallback "login expired" alert is stale now
+        persistent_notification.async_dismiss(self.hass, f"{DOMAIN}_{self.config_entry.entry_id}_notify_auth")
         return out
 
     @property
     def options(self) -> dict:
         return {**DEFAULT_OPTIONS, **(self.config_entry.options or {})}
 
-    async def notify(self, kind: str, title: str, message: str) -> None:
+    async def notify(self, kind: str, title: str, message: str, key: str | None = None) -> None:
+        """key: set for event-style alerts (one per invoice) so fallback notifications don't overwrite each other."""
         opts = self.options
         if not opts.get(kind):
             return
-        for target in opts.get("notify_targets") or []:
-            if self.hass.services.has_service("notify", target):
-                await self.hass.services.async_call("notify", target, {"title": title, "message": message})
+        targets = [t for t in opts.get("notify_targets") or [] if self.hass.services.has_service("notify", t)]
+        for target in targets:
+            await self.hass.services.async_call("notify", target, {"title": title, "message": message})
+        if not targets:  # enabled but nowhere to send: show it in HA's notification panel instead of dropping it
+            nid = f"{DOMAIN}_{self.config_entry.entry_id}_{kind}" + (f"_{key}" if key else "")
+            persistent_notification.async_create(self.hass, message, title, nid)
 
     async def _announce(self, invoices: list[dict]) -> None:
         """Fire malarenergi_new_invoice once per invoice id; first run seeds silently."""
@@ -156,6 +169,7 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         "notify_new_invoice",
                         "Mälarenergi",
                         f"{kind} {inv.get('period_start', '')[:7]}: {inv.get('amount')} kr, förfaller {inv.get('due_date')}.",
+                        key=str(inv["invoice_id"]),
                     )
         await self._store.async_save({"seen": sorted(self._seen)})
 
@@ -207,7 +221,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.runtime_data = coord
     _register_services(hass)
     if not hass.data.get(f"{DOMAIN}_ws"):
-        for cmd in (ws_data, ws_series, ws_contracts, ws_settings_get, ws_settings_set, ws_reauth):
+        for cmd in (
+            ws_data,
+            ws_series,
+            ws_contracts,
+            ws_settings_get,
+            ws_settings_set,
+            ws_reauth,
+            ws_reauth_status,
+            ws_reauth_cancel,
+        ):
             websocket_api.async_register_command(hass, cmd)
         hass.data[f"{DOMAIN}_ws"] = True
     from .panel import async_register_panel
@@ -221,25 +244,63 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
+async def _fetch_pdf(hass: HomeAssistant, inv_id: str) -> bytes:
+    entries = [e for e in hass.config_entries.async_entries(DOMAIN) if getattr(e, "runtime_data", None)]
+    if not entries:
+        raise HomeAssistantError("Mälarenergi is not set up")
+    coord: MalarenergiCoordinator = entries[0].runtime_data
+    try:
+        body, ctype = await coord.client.request(
+            "GET", f"/api/v2/customers/{coord.client.customer_id}/invoices/{inv_id}/document", raw=True
+        )
+    except MalarenergiError as err:
+        raise HomeAssistantError(f"Could not download invoice: {err}") from err
+    if not body.startswith(b"%PDF"):
+        raise HomeAssistantError(f"Unexpected document type {ctype}")
+    return body
+
+
+class InvoicePdfView(HomeAssistantView):
+    """Streams one invoice PDF to an authenticated user (or a URL signed with auth/sign_path).
+
+    The panel signs these URLs in advance, so a tap opens a plain link: phones and the HA app block
+    window.open() calls that come after an await.
+    """
+
+    url = "/api/malarenergi/invoice/{invoice_id}"
+    name = "api:malarenergi:invoice"
+    requires_auth = True
+
+    async def get(self, request: web.Request, invoice_id: str) -> web.Response:
+        # one opaque path segment (digits today; tolerate alphanumeric/UUID-style ids)
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", invoice_id):
+            return web.Response(status=400)
+        try:
+            body = await _fetch_pdf(request.app[KEY_HASS], invoice_id)
+        except HomeAssistantError as err:
+            return web.Response(status=502, text=str(err))
+        return web.Response(
+            body=body,
+            content_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="malarenergi-{invoice_id}.pdf"',
+                "Cache-Control": "no-store",
+            },
+        )
+
+
 def _register_services(hass: HomeAssistant) -> None:
     if hass.services.has_service(DOMAIN, "download_invoice"):
         return
+    hass.http.register_view(InvoicePdfView())
 
     async def download(call: ServiceCall) -> dict:
-        """Save one invoice PDF under a random name in www/ (served unauthenticated), deleted after 10 min."""
-        entries = [e for e in hass.config_entries.async_entries(DOMAIN) if getattr(e, "runtime_data", None)]
-        if not entries:
-            raise HomeAssistantError("Mälarenergi is not set up")
-        coord: MalarenergiCoordinator = entries[0].runtime_data
+        """Save one invoice PDF under a random name in www/ (served unauthenticated), deleted after 10 min.
+
+        For automations/scripts; the panel uses the authenticated InvoicePdfView instead.
+        """
         inv_id = call.data["invoice_id"]
-        try:
-            body, ctype = await coord.client.request(
-                "GET", f"/api/v2/customers/{coord.client.customer_id}/invoices/{inv_id}/document", raw=True
-            )
-        except MalarenergiError as err:
-            raise HomeAssistantError(f"Could not download invoice: {err}") from err
-        if not body.startswith(b"%PDF"):
-            raise HomeAssistantError(f"Unexpected document type {ctype}")
+        body = await _fetch_pdf(hass, inv_id)
         folder = Path(hass.config.path("www", DOMAIN))
         name = f"{secrets.token_urlsafe(16)}.pdf"
 
@@ -331,11 +392,49 @@ def ws_settings_set(hass, connection, msg):
     connection.send_result(msg["id"], {"options": {**coord.options, **clean}})
 
 
-@websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth"})
+@websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth_status", vol.Required("flow_id"): str})
 @websocket_api.require_admin
 @callback
-def ws_reauth(hass, connection, msg):
-    """Start HA's reauth flow (BankID) on demand; it appears under Settings → Devices & services."""
+def ws_reauth_status(hass, connection, msg):
+    """done once the reauth flow has finished; ok if the entry then has working credentials."""
+    from homeassistant.data_entry_flow import UnknownFlow
+
+    try:
+        hass.config_entries.flow.async_get(msg["flow_id"])
+        connection.send_result(msg["id"], {"done": False})
+        return
+    except UnknownFlow:
+        pass
     coord = _coord(hass)
-    coord.config_entry.async_start_reauth(hass)
-    connection.send_result(msg["id"], {"started": True})
+    connection.send_result(msg["id"], {"done": True, "ok": bool(coord and coord.last_update_success)})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth_cancel", vol.Required("flow_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_reauth_cancel(hass, connection, msg):
+    """Abort the reauth flow (its BankID attempt stops polling Mälarenergi)."""
+    from homeassistant.data_entry_flow import UnknownFlow
+
+    try:
+        hass.config_entries.flow.async_abort(msg["flow_id"])
+    except UnknownFlow:
+        pass
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_reauth(hass, connection, msg):
+    """Start a reauth flow and drive it to its BankID step; returns the login page URL so the panel can
+    show it in place (no detour via Settings → Devices & services)."""
+    from homeassistant.config_entries import SOURCE_REAUTH
+
+    entry = _coord(hass).config_entry
+    res = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}, data=dict(entry.data)
+    )
+    if res.get("step_id") == "reauth_confirm":
+        res = await hass.config_entries.flow.async_configure(res["flow_id"], {})
+    connection.send_result(msg["id"], {"started": True, "flow_id": res.get("flow_id"), "url": res.get("url")})

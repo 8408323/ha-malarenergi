@@ -10,7 +10,9 @@ class MalarenergiPanel extends HTMLElement {
   set narrow(n: boolean) { this._narrow = n; this.render(); }
   connectedCallback() {
     if (this.root) return;
-    const shadow = this.attachShadow({ mode: "open" });
+    // a re-attached element keeps its shadow root; attachShadow() would throw a second time
+    const shadow = this.shadowRoot ?? this.attachShadow({ mode: "open" });
+    shadow.replaceChildren();
     const style = document.createElement("style");
     style.textContent = css;
     const mount = document.createElement("div");

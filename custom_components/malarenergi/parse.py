@@ -80,6 +80,64 @@ def peak(payload: Any) -> dict | None:
     return d[0] if d and isinstance(d[0], dict) else None
 
 
+# (category, regex on productType) — first match wins
+LINE_CATEGORIES: tuple[tuple[str, str], ...] = (
+    ("grid_fixed", r"^El Fast Avg"),  # elnät: säkringsabonnemang (fixed per month)
+    ("grid_transfer", r"^El Rörl Avg"),  # elnät: överföring per kWh
+    ("power_fee", r"^El kW"),  # elnät: effektavgift
+    ("energy_tax", r"^Energiskatt"),
+    ("spot_energy", r"^Spot ?Tim Ext"),  # elhandel: spotpris per kWh
+    ("supply_markup", r"^(Spotpå|Fossilfri|Rörliga kostnader|Elcertifikat)"),
+    ("supply_fixed", r"^Fast avg Elh"),  # elhandel: fast avgift
+    ("broadband", r"^BB "),
+    ("production_spot", r"^Prod SpotTim"),  # ersättning: spotpris för såld el
+    ("production_bonus", r"^Ersätt Prod"),  # ersättning: påslag/nätnytta
+    ("production_grid", r"^ELPROD"),
+)
+
+
+def line_category(product_type: str | None) -> str:
+    import re
+
+    for cat, rx in LINE_CATEGORIES:
+        if product_type and re.search(rx, product_type):
+            return cat
+    return "other"
+
+
+def invoice_lines(details: list[dict], vat: float, production_invoice: bool = False) -> list[dict]:
+    """Invoice detail rows -> [{category, name, kwh, amount}], amount incl. VAT where applicable.
+
+    VAT is decided per line (production payouts are VAT-free), not per invoice: one invoice can mix
+    consumption charges and production credits. kWh is a positive quantity (production rows are negative).
+    """
+    out = []
+    keys = ("costVariableMonth", "costFixedMonth", "taxMonth", "otherMonth")
+    for d in details:
+        if all(d.get(k) is None for k in keys):
+            continue  # no monetary detail: don't invent a 0 kr line (an empty list makes callers use invoicedAmount)
+        amount = sum(d.get(k) or 0 for k in keys)
+        cat = line_category(d.get("productType"))
+        util = _name(d.get("utilityType"))
+        # negative energy and a non-positive amount (a 0 kr settlement too): a payout
+        # on an invoice that is a production payout as a whole, any unknown row (payout or correction) is
+        # part of it; elsewhere only a row with negative energy and a non-positive amount is a payout
+        credit = production_invoice or (amount <= 0 and (d.get("consumptionMonth") or 0) < 0)
+        # only genuinely unknown rows: recognised consumption lines (e.g. Spot Tim Ext) keep their category
+        # production_invoice also covers rows without a utility type on a production invoice
+        if cat == "other" and (util == "ELPROD" or production_invoice or (util == "ELEXT" and credit)):
+            cat = "production_other"  # unknown product on a production row: still a VAT-free payout
+        out.append(
+            {
+                "category": cat,
+                "name": d.get("productType") or "Övrigt",
+                "kwh": round(abs(d.get("consumptionMonth") or 0), 2),
+                "amount": round(amount * (1.0 if cat.startswith("production_") else vat), 2),
+            }
+        )
+    return out
+
+
 def invoices(payload: Any) -> list[dict]:
     """Compact invoice list, newest first. Utility per invoice = set of detail utility types."""
     out = []
@@ -88,7 +146,9 @@ def invoices(payload: Any) -> list[dict]:
             details = i.get("invoiceDetails") or []
             utils = {_name(d.get("utilityType")) for d in details} - {""}
             amount = i.get("invoicedAmount") or 0
-            kind = "production" if utils <= {"ELPROD", "ELEXT"} and amount < 0 else "consumption"
+            # production: only production utilities and money paid out (or a 0 kr settlement on ELPROD)
+            prod_utils = utils <= {"ELPROD", "ELEXT"}  # an empty set too: no utility metadata, decided by amount
+            kind = "production" if prod_utils and (amount < 0 or (amount == 0 and "ELPROD" in utils)) else "consumption"
             spot_kwh = sum(
                 abs(d.get("consumptionMonth") or 0)
                 for d in details
@@ -120,6 +180,7 @@ def invoices(payload: Any) -> list[dict]:
                     "status": _name(i.get("paymentStatus")),
                     "closed": bool(i.get("closedDate")),
                     "utilities": sorted({_name(d.get("utilityType")) for d in details} - {""}),
+                    "lines": invoice_lines(details, 1.25, production_invoice=kind == "production"),
                 }
             )
     return sorted(out, key=lambda x: (x["issue_date"], x["invoice_id"] or ""), reverse=True)

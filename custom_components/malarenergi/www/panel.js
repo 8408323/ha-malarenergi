@@ -23279,13 +23279,22 @@ function Xj(e) {
 Xj.displayName = "Brush";
 //#endregion
 //#region node_modules/recharts/es6/util/CartesianUtils.js
-function Zj(e) {
+var Zj = (e, t) => {
+	var n = e.x, r = e.y, i = t.x, a = t.y;
+	return {
+		x: Math.min(n, i),
+		y: Math.min(r, a),
+		width: Math.abs(i - n),
+		height: Math.abs(a - r)
+	};
+};
+function Qj(e) {
 	return (e % 180 + 180) % 180;
 }
-var Qj = function(e) {
-	var t = e.width, n = e.height, r = Zj(arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : 0) * Math.PI / 180, i = Math.atan(n / t), a = r > i && r < Math.PI - i ? n / Math.sin(r) : t / Math.cos(r);
+var $j = function(e) {
+	var t = e.width, n = e.height, r = Qj(arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : 0) * Math.PI / 180, i = Math.atan(n / t), a = r > i && r < Math.PI - i ? n / Math.sin(r) : t / Math.cos(r);
 	return Math.abs(a);
-}, $j = $o({
+}, eM = $o({
 	name: "referenceElements",
 	initialState: {
 		dots: [],
@@ -23315,30 +23324,32 @@ var Qj = function(e) {
 			n !== -1 && e.lines.splice(n, 1);
 		}
 	}
-}), eM = $j.actions;
-eM.addDot, eM.removeDot, eM.addArea, eM.removeArea, eM.addLine, eM.removeLine;
-var tM = $j.reducer;
+}), tM = eM.actions;
+tM.addDot, tM.removeDot;
+var nM = tM.addArea, rM = tM.removeArea;
+tM.addLine, tM.removeLine;
+var iM = eM.reducer;
 //#endregion
 //#region node_modules/recharts/es6/container/ClipPathProvider.js
-function nM(e, t) {
-	return sM(e) || oM(e, t) || iM(e, t) || rM();
+function aM(e, t) {
+	return uM(e) || lM(e, t) || sM(e, t) || oM();
 }
-function rM() {
+function oM() {
 	throw TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
-function iM(e, t) {
+function sM(e, t) {
 	if (e) {
-		if (typeof e == "string") return aM(e, t);
+		if (typeof e == "string") return cM(e, t);
 		var n = {}.toString.call(e).slice(8, -1);
-		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? aM(e, t) : void 0;
+		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? cM(e, t) : void 0;
 	}
 }
-function aM(e, t) {
+function cM(e, t) {
 	(t == null || t > e.length) && (t = e.length);
 	for (var n = 0, r = Array(t); n < t; n++) r[n] = e[n];
 	return r;
 }
-function oM(e, t) {
+function lM(e, t) {
 	var n = e == null ? null : typeof Symbol < "u" && e[Symbol.iterator] || e["@@iterator"];
 	if (n != null) {
 		var r, i, a, o, s = [], c = !0, l = !1;
@@ -23359,36 +23370,172 @@ function oM(e, t) {
 		return s;
 	}
 }
-function sM(e) {
+function uM(e) {
 	if (Array.isArray(e)) return e;
 }
-var cM = /*#__PURE__*/ (0, S.createContext)(void 0), lM = (e) => {
-	var t = e.children, n = nM((0, S.useState)(`${Se("recharts")}-clip`), 1)[0], r = IA();
+var dM = /*#__PURE__*/ (0, S.createContext)(void 0), fM = (e) => {
+	var t = e.children, n = aM((0, S.useState)(`${Se("recharts")}-clip`), 1)[0], r = IA();
 	if (r == null) return null;
 	var i = r.x, a = r.y, o = r.width, s = r.height;
-	return /*#__PURE__*/ S.createElement(cM.Provider, { value: n }, /*#__PURE__*/ S.createElement("defs", null, /*#__PURE__*/ S.createElement("clipPath", { id: n }, /*#__PURE__*/ S.createElement("rect", {
+	return /*#__PURE__*/ S.createElement(dM.Provider, { value: n }, /*#__PURE__*/ S.createElement("defs", null, /*#__PURE__*/ S.createElement("clipPath", { id: n }, /*#__PURE__*/ S.createElement("rect", {
 		x: i,
 		y: a,
 		height: s,
 		width: o
 	}))), t);
+}, pM = () => (0, S.useContext)(dM), mM = class {
+	constructor(e) {
+		var t = e.x, n = e.y;
+		this.xAxisScale = t, this.yAxisScale = n;
+	}
+	map(e, t) {
+		var n = t.position;
+		return {
+			x: this.xAxisScale.map(e.x, { position: n }) ?? 0,
+			y: this.yAxisScale.map(e.y, { position: n }) ?? 0
+		};
+	}
+	mapWithFallback(e, t) {
+		var n = t.position, r = t.fallback, i = r === "rangeMin" ? this.yAxisScale.rangeMin() : r === "rangeMax" ? this.yAxisScale.rangeMax() : 0, a = r === "rangeMin" ? this.xAxisScale.rangeMin() : r === "rangeMax" ? this.xAxisScale.rangeMax() : 0;
+		return {
+			x: this.xAxisScale.map(e.x, { position: n }) ?? a,
+			y: this.yAxisScale.map(e.y, { position: n }) ?? i
+		};
+	}
+	isInRange(e) {
+		var t = e.x, n = e.y, r = t == null || this.xAxisScale.isInRange(t), i = n == null || this.yAxisScale.isInRange(n);
+		return r && i;
+	}
 };
 //#endregion
+//#region node_modules/recharts/es6/cartesian/ReferenceArea.js
+function hM(e, t) {
+	var n = Object.keys(e);
+	if (Object.getOwnPropertySymbols) {
+		var r = Object.getOwnPropertySymbols(e);
+		t && (r = r.filter(function(t) {
+			return Object.getOwnPropertyDescriptor(e, t).enumerable;
+		})), n.push.apply(n, r);
+	}
+	return n;
+}
+function gM(e) {
+	for (var t = 1; t < arguments.length; t++) {
+		var n = arguments[t] == null ? {} : arguments[t];
+		t % 2 ? hM(Object(n), !0).forEach(function(t) {
+			_M(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : hM(Object(n)).forEach(function(t) {
+			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
+		});
+	}
+	return e;
+}
+function _M(e, t, n) {
+	return (t = vM(t)) in e ? Object.defineProperty(e, t, {
+		value: n,
+		enumerable: !0,
+		configurable: !0,
+		writable: !0
+	}) : e[t] = n, e;
+}
+function vM(e) {
+	var t = yM(e, "string");
+	return typeof t == "symbol" ? t : t + "";
+}
+function yM(e, t) {
+	if (typeof e != "object" || !e) return e;
+	var n = e[Symbol.toPrimitive];
+	if (n !== void 0) {
+		var r = n.call(e, t || "default");
+		if (typeof r != "object") return r;
+		throw TypeError("@@toPrimitive must return a primitive value.");
+	}
+	return (t === "string" ? String : Number)(e);
+}
+function bM() {
+	return bM = Object.assign ? Object.assign.bind() : function(e) {
+		for (var t = 1; t < arguments.length; t++) {
+			var n = arguments[t];
+			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
+		}
+		return e;
+	}, bM.apply(null, arguments);
+}
+var xM = (e, t, n, r, i, a, o) => {
+	var s = o.x1, c = o.x2, l = o.y1, u = o.y2;
+	if (i == null || a == null) return null;
+	var d = new mM({
+		x: i,
+		y: a
+	}), f = {
+		x: e ? i.map(s, { position: "start" }) ?? null : i.rangeMin(),
+		y: n ? a.map(l, { position: "start" }) ?? null : a.rangeMin()
+	}, p = {
+		x: t ? i.map(c, { position: "end" }) ?? null : i.rangeMax(),
+		y: r ? a.map(u, { position: "end" }) ?? null : a.rangeMax()
+	};
+	return o.ifOverflow === "discard" && (!d.isInRange(f) || !d.isInRange(p)) ? null : Zj(f, p);
+}, SM = (e, t) => /*#__PURE__*/ S.isValidElement(e) ? /*#__PURE__*/ S.cloneElement(e, t) : typeof e == "function" ? e(t) : /*#__PURE__*/ S.createElement(fp, bM({}, t, { className: "recharts-reference-area-rect" }));
+function CM(e) {
+	var t = ui();
+	return (0, S.useEffect)(() => (t(nM(e)), () => {
+		t(rM(e));
+	})), null;
+}
+function wM(e) {
+	var t = e.x1, n = e.x2, r = e.y1, i = e.y2, a = e.className, o = e.shape, s = e.xAxisId, c = e.yAxisId, l = pM(), u = Wc(), d = z((e) => XS(e, "xAxis", s, u)), f = z((e) => XS(e, "yAxis", c, u));
+	if (d == null || f == null) return null;
+	var p = be(t), m = be(n), h = be(r), g = be(i);
+	if (!p && !m && !h && !g && !o) return null;
+	var _ = xM(p, m, h, g, d, f, e);
+	if (!_ && !o) return null;
+	var v = e.ifOverflow === "hidden" ? `url(#${l})` : void 0;
+	return /*#__PURE__*/ S.createElement(GT, { zIndex: e.zIndex }, /*#__PURE__*/ S.createElement(ae, { className: y("recharts-reference-area", a) }, SM(o, gM(gM({ clipPath: v }, O(e)), _)), _ != null && /*#__PURE__*/ S.createElement(_O, bM({}, _, {
+		lowerWidth: _.width,
+		upperWidth: _.width
+	}), /*#__PURE__*/ S.createElement(jO, { label: e.label }), e.children)));
+}
+var TM = {
+	ifOverflow: "discard",
+	xAxisId: 0,
+	yAxisId: 0,
+	radius: 0,
+	fill: "#ccc",
+	label: !1,
+	fillOpacity: .5,
+	stroke: "none",
+	strokeWidth: 1,
+	zIndex: Pm.area
+};
+function EM(e) {
+	var t = Pn(e, TM);
+	return /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(CM, {
+		yAxisId: t.yAxisId,
+		xAxisId: t.xAxisId,
+		ifOverflow: t.ifOverflow,
+		x1: t.x1,
+		x2: t.x2,
+		y1: t.y1,
+		y2: t.y2
+	}), /*#__PURE__*/ S.createElement(wM, t));
+}
+EM.displayName = "ReferenceArea";
+//#endregion
 //#region node_modules/es-toolkit/dist/function/noop.mjs
-function uM() {}
+function DM() {}
 //#endregion
 //#region node_modules/es-toolkit/dist/predicate/isPlainObject.mjs
-function dM(e) {
+function OM(e) {
 	if (!e || typeof e != "object") return !1;
 	let t = Object.getPrototypeOf(e);
 	return t !== null && t !== Object.prototype && Object.getPrototypeOf(t) !== null ? !1 : Object.prototype.toString.call(e) === "[object Object]";
 }
 //#endregion
 //#region node_modules/es-toolkit/dist/predicate/isEqualWith.mjs
-function fM(e, t, n) {
-	return pM(e, t, void 0, void 0, void 0, void 0, n);
+function kM(e, t, n) {
+	return AM(e, t, void 0, void 0, void 0, void 0, n);
 }
-function pM(e, t, n, r, i, a, o) {
+function AM(e, t, n, r, i, a, o) {
 	let s = o(e, t, n, r, i, a);
 	if (s !== void 0) return s;
 	if (typeof e == typeof t) switch (typeof e) {
@@ -23399,11 +23546,11 @@ function pM(e, t, n, r, i, a, o) {
 		case "undefined": return e === t;
 		case "number": return e === t || Object.is(e, t);
 		case "function": return e === t;
-		case "object": return mM(e, t, a, o);
+		case "object": return jM(e, t, a, o);
 	}
-	return mM(e, t, a, o);
+	return jM(e, t, a, o);
 }
-function mM(e, t, n, r) {
+function jM(e, t, n, r) {
 	if (Object.is(e, t)) return !0;
 	let i = nr(e), a = nr(t);
 	if (i === "[object Arguments]" && (i = hr), a === "[object Arguments]" && (a = hr), i !== a) return !1;
@@ -23424,13 +23571,13 @@ function mM(e, t, n, r) {
 		switch (i) {
 			case ur:
 				if (e.size !== t.size) return !1;
-				for (let [i, a] of e.entries()) if (!t.has(i) || !pM(a, t.get(i), i, e, t, n, r)) return !1;
+				for (let [i, a] of e.entries()) if (!t.has(i) || !AM(a, t.get(i), i, e, t, n, r)) return !1;
 				return !0;
 			case dr: {
 				if (e.size !== t.size) return !1;
 				let i = Array.from(e.values()), a = Array.from(t.values());
 				for (let o = 0; o < i.length; o++) {
-					let s = i[o], c = a.findIndex((i) => pM(s, i, void 0, e, t, n, r));
+					let s = i[o], c = a.findIndex((i) => AM(s, i, void 0, e, t, n, r));
 					if (c === -1) return !1;
 					a.splice(c, 1);
 				}
@@ -23449,20 +23596,20 @@ function mM(e, t, n, r) {
 			case Dr:
 			case Or:
 				if (Ar(e) !== Ar(t) || e.length !== t.length) return !1;
-				for (let i = 0; i < e.length; i++) if (!pM(e[i], t[i], i, e, t, n, r)) return !1;
+				for (let i = 0; i < e.length; i++) if (!AM(e[i], t[i], i, e, t, n, r)) return !1;
 				return !0;
-			case mr: return e.byteLength === t.byteLength && mM(new Uint8Array(e), new Uint8Array(t), n, r);
-			case _r: return e.byteLength !== t.byteLength || e.byteOffset !== t.byteOffset ? !1 : mM(new Uint8Array(e), new Uint8Array(t), n, r);
+			case mr: return e.byteLength === t.byteLength && jM(new Uint8Array(e), new Uint8Array(t), n, r);
+			case _r: return e.byteLength !== t.byteLength || e.byteOffset !== t.byteOffset ? !1 : jM(new Uint8Array(e), new Uint8Array(t), n, r);
 			case gr: return e.name === t.name && e.message === t.message;
 			case hr: {
-				if (!(mM(e.constructor, t.constructor, n, r) || dM(e) && dM(t))) return !1;
+				if (!(jM(e.constructor, t.constructor, n, r) || OM(e) && OM(t))) return !1;
 				let i = [...Object.keys(e), ...tr(e)], a = [...Object.keys(t), ...tr(t)];
 				if (i.length !== a.length) return !1;
 				for (let a = 0; a < i.length; a++) {
 					let o = i[a], s = e[o];
 					if (!Object.hasOwn(t, o)) return !1;
 					let c = t[o];
-					if (!pM(s, c, o, e, t, n, r)) return !1;
+					if (!AM(s, c, o, e, t, n, r)) return !1;
 				}
 				return !0;
 			}
@@ -23474,12 +23621,12 @@ function mM(e, t, n, r) {
 }
 //#endregion
 //#region node_modules/es-toolkit/dist/predicate/isEqual.mjs
-function hM(e, t) {
-	return fM(e, t, uM);
+function MM(e, t) {
+	return kM(e, t, DM);
 }
 //#endregion
 //#region node_modules/recharts/es6/util/getEveryNth.js
-function gM(e, t) {
+function NM(e, t) {
 	if (t < 1) return [];
 	if (t === 1) return e;
 	for (var n = [], r = 0; r < e.length; r += t) {
@@ -23490,13 +23637,13 @@ function gM(e, t) {
 }
 //#endregion
 //#region node_modules/recharts/es6/util/TickUtils.js
-function _M(e, t, n) {
-	return Qj({
+function PM(e, t, n) {
+	return $j({
 		width: e.width + t.width,
 		height: e.height + t.height
 	}, n);
 }
-function vM(e, t, n) {
+function FM(e, t, n) {
 	var r = n === "width", i = e.x, a = e.y, o = e.width, s = e.height;
 	return t === 1 ? {
 		start: r ? i : a,
@@ -23506,33 +23653,33 @@ function vM(e, t, n) {
 		end: r ? i : a
 	};
 }
-function yM(e, t, n, r, i) {
+function IM(e, t, n, r, i) {
 	if (e * t < e * r || e * t > e * i) return !1;
 	var a = n();
 	return e * (t - e * a / 2 - r) >= 0 && e * (t + e * a / 2 - i) <= 0;
 }
-function bM(e, t) {
-	return gM(e, t + 1);
+function LM(e, t) {
+	return NM(e, t + 1);
 }
 //#endregion
 //#region node_modules/recharts/es6/cartesian/getEquidistantTicks.js
-function xM(e, t, n, r, i) {
+function RM(e, t, n, r, i) {
 	for (var a = (r || []).slice(), o = t.start, s = t.end, c = 0, l = 1, u = o, d = function() {
 		var t = r?.[c];
-		if (t === void 0) return { v: gM(r, l) };
-		var a = c, d, f = () => (d === void 0 && (d = n(t, a)), d), p = t.coordinate, m = c === 0 || yM(e, p, f, u, s);
+		if (t === void 0) return { v: NM(r, l) };
+		var a = c, d, f = () => (d === void 0 && (d = n(t, a)), d), p = t.coordinate, m = c === 0 || IM(e, p, f, u, s);
 		m || (c = 0, u = o, l += 1), m && (u = p + e * (f() / 2 + i), c += l);
 	}, f; l <= a.length;) if (f = d(), f) return f.v;
 	return [];
 }
-function SM(e, t, n, r, i) {
+function zM(e, t, n, r, i) {
 	var a = (r || []).slice().length;
 	if (a === 0) return [];
 	for (var o = t.start, s = t.end, c = 1; c <= a; c++) {
 		for (var l = (a - 1) % c, u = o, d = !0, f = function() {
 			var t = r[m];
 			if (t == null) return 0;
-			var a = m, o, c = () => (o === void 0 && (o = n(t, a)), o), f = t.coordinate, p = m === l || yM(e, f, c, u, s);
+			var a = m, o, c = () => (o === void 0 && (o = n(t, a)), o), f = t.coordinate, p = m === l || IM(e, f, c, u, s);
 			if (!p) return d = !1, 1;
 			p && (u = f + e * (c() / 2 + i));
 		}, p, m = l; m < a && (p = f(), p === 0 || p !== 1); m += c);
@@ -23548,7 +23695,7 @@ function SM(e, t, n, r, i) {
 }
 //#endregion
 //#region node_modules/recharts/es6/cartesian/getTicks.js
-function CM(e, t) {
+function BM(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -23558,30 +23705,30 @@ function CM(e, t) {
 	}
 	return n;
 }
-function wM(e) {
+function VM(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? CM(Object(n), !0).forEach(function(t) {
-			TM(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : CM(Object(n)).forEach(function(t) {
+		t % 2 ? BM(Object(n), !0).forEach(function(t) {
+			HM(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : BM(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function TM(e, t, n) {
-	return (t = EM(t)) in e ? Object.defineProperty(e, t, {
+function HM(e, t, n) {
+	return (t = UM(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function EM(e) {
-	var t = DM(e, "string");
+function UM(e) {
+	var t = WM(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function DM(e, t) {
+function WM(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -23591,26 +23738,26 @@ function DM(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-function OM(e, t, n, r, i) {
+function GM(e, t, n, r, i) {
 	for (var a = (r || []).slice(), o = a.length, s = t.start, c = t.end, l = function(t) {
 		var r = a[t];
 		if (r == null) return 1;
 		var l = r, u, d = () => (u === void 0 && (u = n(r, t)), u);
 		if (t === o - 1) {
 			var f = e * (l.coordinate + e * d() / 2 - c);
-			a[t] = l = wM(wM({}, l), {}, { tickCoord: f > 0 ? l.coordinate - f * e : l.coordinate });
-		} else a[t] = l = wM(wM({}, l), {}, { tickCoord: l.coordinate });
-		l.tickCoord != null && yM(e, l.tickCoord, d, s, c) && (c = l.tickCoord - e * (d() / 2 + i), a[t] = wM(wM({}, l), {}, { isShow: !0 }));
+			a[t] = l = VM(VM({}, l), {}, { tickCoord: f > 0 ? l.coordinate - f * e : l.coordinate });
+		} else a[t] = l = VM(VM({}, l), {}, { tickCoord: l.coordinate });
+		l.tickCoord != null && IM(e, l.tickCoord, d, s, c) && (c = l.tickCoord - e * (d() / 2 + i), a[t] = VM(VM({}, l), {}, { isShow: !0 }));
 	}, u = o - 1; u >= 0; u--) if (l(u)) continue;
 	return a;
 }
-function kM(e, t, n, r, i, a) {
+function KM(e, t, n, r, i, a) {
 	var o = (r || []).slice(), s = o.length, c = t.start, l = t.end;
 	if (a) {
 		var u = r[s - 1];
 		if (u != null) {
 			var d = n(u, s - 1), f = e * (u.coordinate + e * d / 2 - l);
-			o[s - 1] = u = wM(wM({}, u), {}, { tickCoord: f > 0 ? u.coordinate - f * e : u.coordinate }), u.tickCoord != null && yM(e, u.tickCoord, () => d, c, l) && (l = u.tickCoord - e * (d / 2 + i), o[s - 1] = wM(wM({}, u), {}, { isShow: !0 }));
+			o[s - 1] = u = VM(VM({}, u), {}, { tickCoord: f > 0 ? u.coordinate - f * e : u.coordinate }), u.tickCoord != null && IM(e, u.tickCoord, () => d, c, l) && (l = u.tickCoord - e * (d / 2 + i), o[s - 1] = VM(VM({}, u), {}, { isShow: !0 }));
 		}
 	}
 	for (var p = a ? s - 1 : s, m = function(t) {
@@ -23619,16 +23766,16 @@ function kM(e, t, n, r, i, a) {
 		var a = r, s, u = () => (s === void 0 && (s = n(r, t)), s);
 		if (t === 0) {
 			var d = e * (a.coordinate - e * u() / 2 - c);
-			o[t] = a = wM(wM({}, a), {}, { tickCoord: d < 0 ? a.coordinate - d * e : a.coordinate });
-		} else o[t] = a = wM(wM({}, a), {}, { tickCoord: a.coordinate });
-		a.tickCoord != null && yM(e, a.tickCoord, u, c, l) && (c = a.tickCoord + e * (u() / 2 + i), o[t] = wM(wM({}, a), {}, { isShow: !0 }));
+			o[t] = a = VM(VM({}, a), {}, { tickCoord: d < 0 ? a.coordinate - d * e : a.coordinate });
+		} else o[t] = a = VM(VM({}, a), {}, { tickCoord: a.coordinate });
+		a.tickCoord != null && IM(e, a.tickCoord, u, c, l) && (c = a.tickCoord + e * (u() / 2 + i), o[t] = VM(VM({}, a), {}, { isShow: !0 }));
 	}, h = 0; h < p; h++) if (m(h)) continue;
 	return o;
 }
-function AM(e, t, n) {
+function qM(e, t, n) {
 	var r = e.tick, i = e.ticks, a = e.viewBox, o = e.minTickGap, s = e.orientation, c = e.interval, l = e.tickFormatter, u = e.unit, d = e.angle;
 	if (!i || !i.length || !r) return [];
-	if (I(c) || ad.isSsr) return bM(i, I(c) ? c : 0) ?? [];
+	if (I(c) || ad.isSsr) return LM(i, I(c) ? c : 0) ?? [];
 	var f = [], p = s === "top" || s === "bottom" ? "width" : "height", m = u && p === "width" ? cD(u, {
 		fontSize: t,
 		letterSpacing: n
@@ -23637,19 +23784,19 @@ function AM(e, t, n) {
 		height: 0
 	}, h = (e, r) => {
 		var i = typeof l == "function" ? l(e.value, r) : e.value;
-		return p === "width" ? _M(cD(i, {
+		return p === "width" ? PM(cD(i, {
 			fontSize: t,
 			letterSpacing: n
 		}), m, d) : cD(i, {
 			fontSize: t,
 			letterSpacing: n
 		})[p];
-	}, g = i[0], _ = i[1], v = i.length >= 2 && g != null && _ != null ? _e(_.coordinate - g.coordinate) : 1, y = vM(a, v, p);
-	return c === "equidistantPreserveStart" ? xM(v, y, h, i, o) : c === "equidistantPreserveEnd" ? SM(v, y, h, i, o) : (f = c === "preserveStart" || c === "preserveStartEnd" ? kM(v, y, h, i, o, c === "preserveStartEnd") : OM(v, y, h, i, o), f.filter((e) => e.isShow));
+	}, g = i[0], _ = i[1], v = i.length >= 2 && g != null && _ != null ? _e(_.coordinate - g.coordinate) : 1, y = FM(a, v, p);
+	return c === "equidistantPreserveStart" ? RM(v, y, h, i, o) : c === "equidistantPreserveEnd" ? zM(v, y, h, i, o) : (f = c === "preserveStart" || c === "preserveStartEnd" ? KM(v, y, h, i, o, c === "preserveStartEnd") : GM(v, y, h, i, o), f.filter((e) => e.isShow));
 }
 //#endregion
 //#region node_modules/recharts/es6/util/YAxisUtils.js
-var jM = (e) => {
+var JM = (e) => {
 	var t = e.ticks, n = e.label, r = e.labelGapWithTick, i = r === void 0 ? 5 : r, a = e.tickSize, o = a === void 0 ? 0 : a, s = e.tickMargin, c = s === void 0 ? 0 : s, l = 0;
 	if (t) {
 		Array.from(t).forEach((e) => {
@@ -23662,7 +23809,7 @@ var jM = (e) => {
 		return Math.round(f);
 	}
 	return 0;
-}, MM = (e) => {
+}, YM = (e) => {
 	var t = e.ticks, n = e.label, r = e.labelGapWithTick, i = r === void 0 ? 5 : r, a = e.tickSize, o = a === void 0 ? 0 : a, s = e.tickMargin, c = s === void 0 ? 0 : s, l = 0;
 	if (t) {
 		Array.from(t).forEach((e) => {
@@ -23675,7 +23822,7 @@ var jM = (e) => {
 		return Math.round(f);
 	}
 	return 0;
-}, NM = $o({
+}, XM = $o({
 	name: "renderedTicks",
 	initialState: {
 		xAxis: {},
@@ -23691,7 +23838,7 @@ var jM = (e) => {
 			delete e[r][i];
 		}
 	}
-}), PM = NM.actions, FM = PM.setRenderedTicks, IM = PM.removeRenderedTicks, LM = NM.reducer, RM = [
+}), ZM = XM.actions, QM = ZM.setRenderedTicks, $M = ZM.removeRenderedTicks, eN = XM.reducer, tN = [
 	"axisLine",
 	"width",
 	"height",
@@ -23701,25 +23848,25 @@ var jM = (e) => {
 	"axisType",
 	"axisId"
 ];
-function zM(e, t) {
-	return WM(e) || UM(e, t) || VM(e, t) || BM();
+function nN(e, t) {
+	return sN(e) || oN(e, t) || iN(e, t) || rN();
 }
-function BM() {
+function rN() {
 	throw TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
-function VM(e, t) {
+function iN(e, t) {
 	if (e) {
-		if (typeof e == "string") return HM(e, t);
+		if (typeof e == "string") return aN(e, t);
 		var n = {}.toString.call(e).slice(8, -1);
-		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? HM(e, t) : void 0;
+		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? aN(e, t) : void 0;
 	}
 }
-function HM(e, t) {
+function aN(e, t) {
 	(t == null || t > e.length) && (t = e.length);
 	for (var n = 0, r = Array(t); n < t; n++) r[n] = e[n];
 	return r;
 }
-function UM(e, t) {
+function oN(e, t) {
 	var n = e == null ? null : typeof Symbol < "u" && e[Symbol.iterator] || e["@@iterator"];
 	if (n != null) {
 		var r, i, a, o, s = [], c = !0, l = !1;
@@ -23740,19 +23887,19 @@ function UM(e, t) {
 		return s;
 	}
 }
-function WM(e) {
+function sN(e) {
 	if (Array.isArray(e)) return e;
 }
-function GM(e, t) {
+function cN(e, t) {
 	if (e == null) return {};
-	var n, r, i = KM(e, t);
+	var n, r, i = lN(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function KM(e, t) {
+function lN(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -23761,16 +23908,16 @@ function KM(e, t) {
 	}
 	return n;
 }
-function qM() {
-	return qM = Object.assign ? Object.assign.bind() : function(e) {
+function uN() {
+	return uN = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, qM.apply(null, arguments);
+	}, uN.apply(null, arguments);
 }
-function JM(e, t) {
+function dN(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -23780,30 +23927,30 @@ function JM(e, t) {
 	}
 	return n;
 }
-function YM(e) {
+function fN(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? JM(Object(n), !0).forEach(function(t) {
-			XM(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : JM(Object(n)).forEach(function(t) {
+		t % 2 ? dN(Object(n), !0).forEach(function(t) {
+			pN(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : dN(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function XM(e, t, n) {
-	return (t = ZM(t)) in e ? Object.defineProperty(e, t, {
+function pN(e, t, n) {
+	return (t = mN(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function ZM(e) {
-	var t = QM(e, "string");
+function mN(e) {
+	var t = hN(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function QM(e, t) {
+function hN(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -23813,7 +23960,7 @@ function QM(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-var $M = {
+var gN = {
 	x: 0,
 	y: 0,
 	width: 0,
@@ -23837,13 +23984,13 @@ var $M = {
 	interval: "preserveEnd",
 	zIndex: Pm.axis
 };
-function eN(e) {
+function _N(e) {
 	var t = e.x, n = e.y, r = e.width, i = e.height, a = e.orientation, o = e.mirror, s = e.axisLine, c = e.otherSvgProps;
 	if (!s) return null;
-	var l = YM(YM(YM({}, c), E(s)), {}, { fill: "none" });
+	var l = fN(fN(fN({}, c), E(s)), {}, { fill: "none" });
 	if (a === "top" || a === "bottom") {
 		var u = +(a === "top" && !o || a === "bottom" && o);
-		l = YM(YM({}, l), {}, {
+		l = fN(fN({}, l), {}, {
 			x1: t,
 			y1: n + u * i,
 			x2: t + r,
@@ -23851,16 +23998,16 @@ function eN(e) {
 		});
 	} else {
 		var d = +(a === "left" && !o || a === "right" && o);
-		l = YM(YM({}, l), {}, {
+		l = fN(fN({}, l), {}, {
 			x1: t + d * r,
 			y1: n,
 			x2: t + d * r,
 			y2: n + i
 		});
 	}
-	return /*#__PURE__*/ S.createElement("line", qM({}, l, { className: y("recharts-cartesian-axis-line", me(s, "className")) }));
+	return /*#__PURE__*/ S.createElement("line", uN({}, l, { className: y("recharts-cartesian-axis-line", me(s, "className")) }));
 }
-function tN(e, t, n, r, i, a, o, s, c) {
+function vN(e, t, n, r, i, a, o, s, c) {
 	var l, u, d, f, p, m, h = s ? -1 : 1, g = e.tickSize || o, _ = I(e.tickCoord) ? e.tickCoord : e.coordinate;
 	switch (a) {
 		case "top":
@@ -23887,14 +24034,14 @@ function tN(e, t, n, r, i, a, o, s, c) {
 		}
 	};
 }
-function nN(e, t) {
+function yN(e, t) {
 	switch (e) {
 		case "left": return t ? "start" : "end";
 		case "right": return t ? "end" : "start";
 		default: return "middle";
 	}
 }
-function rN(e, t) {
+function bN(e, t) {
 	switch (e) {
 		case "left":
 		case "right": return "middle";
@@ -23902,17 +24049,17 @@ function rN(e, t) {
 		default: return t ? "end" : "start";
 	}
 }
-function iN(e) {
+function xN(e) {
 	var t = e.option, n = e.tickProps, r = e.value, i, a = y(n.className, "recharts-cartesian-axis-tick-value");
-	if (/*#__PURE__*/ S.isValidElement(t)) i = /*#__PURE__*/ S.cloneElement(t, YM(YM({}, n), {}, { className: a }));
-	else if (typeof t == "function") i = t(YM(YM({}, n), {}, { className: a }));
+	if (/*#__PURE__*/ S.isValidElement(t)) i = /*#__PURE__*/ S.cloneElement(t, fN(fN({}, n), {}, { className: a }));
+	else if (typeof t == "function") i = t(fN(fN({}, n), {}, { className: a }));
 	else {
 		var o = "recharts-cartesian-axis-tick-value";
-		typeof t != "boolean" && (o = y(o, XO(t))), i = /*#__PURE__*/ S.createElement(aO, qM({}, n, { className: o }), r);
+		typeof t != "boolean" && (o = y(o, XO(t))), i = /*#__PURE__*/ S.createElement(aO, uN({}, n, { className: o }), r);
 	}
 	return i;
 }
-function aN(e) {
+function SN(e) {
 	var t = e.ticks, n = e.axisType, r = e.axisId, i = ui(), a = (0, S.useRef)(null);
 	return (0, S.useEffect)(() => {
 		if (r != null && n != null) {
@@ -23922,11 +24069,11 @@ function aN(e) {
 				offset: e.offset,
 				index: e.index
 			})), o = a.current;
-			o != null && o.axisId === r && o.axisType === n && hM(o.ticks, e) || (a.current = {
+			o != null && o.axisId === r && o.axisType === n && MM(o.ticks, e) || (a.current = {
 				ticks: e,
 				axisId: r,
 				axisType: n
-			}, i(FM({
+			}, i(QM({
 				ticks: e,
 				axisId: r,
 				axisType: n
@@ -23938,7 +24085,7 @@ function aN(e) {
 		r,
 		n
 	]), (0, S.useEffect)(() => r == null || n == null ? Ae : () => {
-		i(IM({
+		i($M({
 			axisId: r,
 			axisType: n
 		}));
@@ -23948,17 +24095,17 @@ function aN(e) {
 		n
 	]), null;
 }
-var oN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
-	var n = e.ticks, r = n === void 0 ? [] : n, i = e.tick, a = e.tickLine, o = e.stroke, s = e.tickFormatter, c = e.unit, l = e.padding, u = e.tickTextProps, d = e.orientation, f = e.mirror, p = e.x, m = e.y, h = e.width, g = e.height, _ = e.tickSize, v = e.tickMargin, b = e.fontSize, x = e.letterSpacing, C = e.getTicksConfig, w = e.events, T = e.axisType, O = e.axisId, k = AM(YM(YM({}, C), {}, { ticks: r }), b, x), A = E(C), j = D(i), M = JD(A.textAnchor) ? A.textAnchor : nN(d, f), N = rN(d, f), ee = {};
+var CN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	var n = e.ticks, r = n === void 0 ? [] : n, i = e.tick, a = e.tickLine, o = e.stroke, s = e.tickFormatter, c = e.unit, l = e.padding, u = e.tickTextProps, d = e.orientation, f = e.mirror, p = e.x, m = e.y, h = e.width, g = e.height, _ = e.tickSize, v = e.tickMargin, b = e.fontSize, x = e.letterSpacing, C = e.getTicksConfig, w = e.events, T = e.axisType, O = e.axisId, k = qM(fN(fN({}, C), {}, { ticks: r }), b, x), A = E(C), j = D(i), M = JD(A.textAnchor) ? A.textAnchor : yN(d, f), N = bN(d, f), ee = {};
 	typeof a == "object" && (ee = a);
-	var te = YM(YM({}, A), {}, { fill: "none" }, ee), ne = k.map((e) => YM({ entry: e }, tN(e, p, m, h, g, d, _, f, v))), re = ne.map((e) => {
+	var te = fN(fN({}, A), {}, { fill: "none" }, ee), ne = k.map((e) => fN({ entry: e }, vN(e, p, m, h, g, d, _, f, v))), re = ne.map((e) => {
 		var t = e.entry, n = e.line;
 		return /*#__PURE__*/ S.createElement(ae, {
 			className: "recharts-cartesian-axis-tick",
 			key: `tick-${t.value}-${t.coordinate}-${t.tickCoord}`
-		}, a && /*#__PURE__*/ S.createElement("line", qM({}, te, n, { className: y("recharts-cartesian-axis-tick-line", me(a, "className")) })));
+		}, a && /*#__PURE__*/ S.createElement("line", uN({}, te, n, { className: y("recharts-cartesian-axis-tick-line", me(a, "className")) })));
 	}), ie = ne.map((e, t) => {
-		var n = e.entry, r = e.tick, a = YM(YM({}, YM(YM(YM(YM({ verticalAnchor: N }, A), {}, {
+		var n = e.entry, r = e.tick, a = fN(fN({}, fN(fN(fN(fN({ verticalAnchor: N }, A), {}, {
 			textAnchor: M,
 			stroke: "none",
 			fill: o
@@ -23969,16 +24116,16 @@ var oN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 			tickFormatter: s,
 			padding: l
 		}, u), {}, { angle: u?.angle ?? A.angle ?? 0 })), j);
-		return /*#__PURE__*/ S.createElement(ae, qM({
+		return /*#__PURE__*/ S.createElement(ae, uN({
 			className: "recharts-cartesian-axis-tick-label",
 			key: `tick-label-${n.value}-${n.coordinate}-${n.tickCoord}`
-		}, On(w, n, t)), i && /*#__PURE__*/ S.createElement(iN, {
+		}, On(w, n, t)), i && /*#__PURE__*/ S.createElement(xN, {
 			option: i,
 			tickProps: a,
 			value: `${typeof s == "function" ? s(n.value, t) : n.value}${c || ""}`
 		}));
 	});
-	return /*#__PURE__*/ S.createElement("g", { className: `recharts-cartesian-axis-ticks recharts-${T}-ticks` }, /*#__PURE__*/ S.createElement(aN, {
+	return /*#__PURE__*/ S.createElement("g", { className: `recharts-cartesian-axis-ticks recharts-${T}-ticks` }, /*#__PURE__*/ S.createElement(SN, {
 		ticks: k,
 		axisId: O,
 		axisType: T
@@ -23986,17 +24133,17 @@ var oN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 		className: `recharts-cartesian-axis-tick-labels recharts-${T}-tick-labels`,
 		ref: t
 	}, ie)), re.length > 0 && /*#__PURE__*/ S.createElement("g", { className: `recharts-cartesian-axis-tick-lines recharts-${T}-tick-lines` }, re));
-}), sN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
-	var n = e.axisLine, r = e.width, i = e.height, a = e.className, o = e.hide, s = e.ticks, c = e.axisType, l = e.axisId, u = GM(e, RM), d = zM((0, S.useState)(""), 2), f = d[0], p = d[1], m = zM((0, S.useState)(""), 2), h = m[0], g = m[1], _ = (0, S.useRef)(null);
+}), wN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	var n = e.axisLine, r = e.width, i = e.height, a = e.className, o = e.hide, s = e.ticks, c = e.axisType, l = e.axisId, u = cN(e, tN), d = nN((0, S.useState)(""), 2), f = d[0], p = d[1], m = nN((0, S.useState)(""), 2), h = m[0], g = m[1], _ = (0, S.useRef)(null);
 	(0, S.useImperativeHandle)(t, () => ({
-		getCalculatedWidth: () => jM({
+		getCalculatedWidth: () => JM({
 			ticks: _.current,
 			label: e.labelRef?.current,
 			labelGapWithTick: 5,
 			tickSize: e.tickSize,
 			tickMargin: e.tickMargin
 		}),
-		getCalculatedHeight: () => MM({
+		getCalculatedHeight: () => YM({
 			ticks: _.current,
 			label: e.labelRef?.current,
 			labelGapWithTick: 5,
@@ -24015,7 +24162,7 @@ var oN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 			}
 		}
 	}, [f, h]);
-	return o || r != null && r <= 0 || i != null && i <= 0 ? null : /*#__PURE__*/ S.createElement(GT, { zIndex: e.zIndex }, /*#__PURE__*/ S.createElement(ae, { className: y("recharts-cartesian-axis", a) }, /*#__PURE__*/ S.createElement(eN, {
+	return o || r != null && r <= 0 || i != null && i <= 0 ? null : /*#__PURE__*/ S.createElement(GT, { zIndex: e.zIndex }, /*#__PURE__*/ S.createElement(ae, { className: y("recharts-cartesian-axis", a) }, /*#__PURE__*/ S.createElement(_N, {
 		x: e.x,
 		y: e.y,
 		width: r,
@@ -24024,7 +24171,7 @@ var oN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 		mirror: e.mirror,
 		axisLine: n,
 		otherSvgProps: E(e)
-	}), /*#__PURE__*/ S.createElement(oN, {
+	}), /*#__PURE__*/ S.createElement(CN, {
 		ref: v,
 		axisType: c,
 		events: u,
@@ -24059,26 +24206,26 @@ var oN = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 		label: e.label,
 		labelRef: e.labelRef
 	}), e.children)));
-}), cN = /*#__PURE__*/ S.forwardRef((e, t) => {
-	var n = Pn(e, $M);
-	return /*#__PURE__*/ S.createElement(sN, qM({}, n, { ref: t }));
+}), TN = /*#__PURE__*/ S.forwardRef((e, t) => {
+	var n = Pn(e, gN);
+	return /*#__PURE__*/ S.createElement(wN, uN({}, n, { ref: t }));
 });
-cN.displayName = "CartesianAxis";
+TN.displayName = "CartesianAxis";
 //#endregion
 //#region node_modules/recharts/es6/theme/RechartsThemeContext.js
-var lN = /*#__PURE__*/ (0, S.createContext)({ grid: {
+var EN = /*#__PURE__*/ (0, S.createContext)({ grid: {
 	stroke: "#ccc",
 	fill: "none"
 } });
-lN.Provider;
-var uN = () => (0, S.useContext)(lN), dN = [
+EN.Provider;
+var DN = () => (0, S.useContext)(EN), ON = [
 	"x1",
 	"y1",
 	"x2",
 	"y2",
 	"key"
-], fN = ["offset"], pN = ["xAxisId", "yAxisId"], mN = ["xAxisId", "yAxisId"];
-function hN(e, t) {
+], kN = ["offset"], AN = ["xAxisId", "yAxisId"], jN = ["xAxisId", "yAxisId"];
+function MN(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -24088,30 +24235,30 @@ function hN(e, t) {
 	}
 	return n;
 }
-function gN(e) {
+function NN(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? hN(Object(n), !0).forEach(function(t) {
-			_N(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : hN(Object(n)).forEach(function(t) {
+		t % 2 ? MN(Object(n), !0).forEach(function(t) {
+			PN(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : MN(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function _N(e, t, n) {
-	return (t = vN(t)) in e ? Object.defineProperty(e, t, {
+function PN(e, t, n) {
+	return (t = FN(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function vN(e) {
-	var t = yN(e, "string");
+function FN(e) {
+	var t = IN(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function yN(e, t) {
+function IN(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -24121,25 +24268,25 @@ function yN(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-function bN() {
-	return bN = Object.assign ? Object.assign.bind() : function(e) {
+function LN() {
+	return LN = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, bN.apply(null, arguments);
+	}, LN.apply(null, arguments);
 }
-function xN(e, t) {
+function RN(e, t) {
 	if (e == null) return {};
-	var n, r, i = SN(e, t);
+	var n, r, i = zN(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function SN(e, t) {
+function zN(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -24148,7 +24295,7 @@ function SN(e, t) {
 	}
 	return n;
 }
-var CN = (e) => {
+var BN = (e) => {
 	var t = e.fill;
 	if (!t || t === "none") return null;
 	var n = e.fillOpacity, r = e.x, i = e.y, a = e.width, o = e.height, s = e.ry;
@@ -24164,15 +24311,15 @@ var CN = (e) => {
 		className: "recharts-cartesian-grid-bg"
 	});
 };
-function wN(e) {
+function VN(e) {
 	var t = e.option, n = e.lineItemProps, r;
 	if (/*#__PURE__*/ S.isValidElement(t)) r = /*#__PURE__*/ S.cloneElement(t, n);
 	else if (typeof t == "function") r = t(n);
 	else {
-		var i = n.x1, a = n.y1, o = n.x2, s = n.y2, c = n.key, l = E(xN(n, dN)) ?? {};
+		var i = n.x1, a = n.y1, o = n.x2, s = n.y2, c = n.key, l = E(RN(n, ON)) ?? {};
 		l.offset;
-		var u = xN(l, fN), d = Array.isArray(u.strokeDasharray) ? u.strokeDasharray.join(",") : u.strokeDasharray;
-		r = /*#__PURE__*/ S.createElement("line", bN({}, u, {
+		var u = RN(l, kN), d = Array.isArray(u.strokeDasharray) ? u.strokeDasharray.join(",") : u.strokeDasharray;
+		r = /*#__PURE__*/ S.createElement("line", LN({}, u, {
 			strokeDasharray: d,
 			x1: i,
 			y1: a,
@@ -24184,12 +24331,12 @@ function wN(e) {
 	}
 	return r;
 }
-function TN(e) {
+function HN(e) {
 	var t = e.x, n = e.width, r = e.horizontal, i = r === void 0 || r, a = e.horizontalPoints;
 	if (!i || !a || !a.length) return null;
 	e.xAxisId, e.yAxisId;
-	var o = xN(e, pN), s = a.map((e, r) => {
-		var a = gN(gN({}, o), {}, {
+	var o = RN(e, AN), s = a.map((e, r) => {
+		var a = NN(NN({}, o), {}, {
 			x1: t,
 			y1: e,
 			x2: t + n,
@@ -24197,7 +24344,7 @@ function TN(e) {
 			key: `line-${r}`,
 			index: r
 		});
-		return /*#__PURE__*/ S.createElement(wN, {
+		return /*#__PURE__*/ S.createElement(VN, {
 			key: `line-${r}`,
 			option: i,
 			lineItemProps: a
@@ -24205,12 +24352,12 @@ function TN(e) {
 	});
 	return /*#__PURE__*/ S.createElement("g", { className: "recharts-cartesian-grid-horizontal" }, s);
 }
-function EN(e) {
+function UN(e) {
 	var t = e.y, n = e.height, r = e.vertical, i = r === void 0 || r, a = e.verticalPoints;
 	if (!i || !a || !a.length) return null;
 	e.xAxisId, e.yAxisId;
-	var o = xN(e, mN), s = a.map((e, r) => {
-		var a = gN(gN({}, o), {}, {
+	var o = RN(e, jN), s = a.map((e, r) => {
+		var a = NN(NN({}, o), {}, {
 			x1: e,
 			y1: t,
 			x2: e,
@@ -24218,7 +24365,7 @@ function EN(e) {
 			key: `line-${r}`,
 			index: r
 		});
-		return /*#__PURE__*/ S.createElement(wN, {
+		return /*#__PURE__*/ S.createElement(VN, {
 			option: i,
 			lineItemProps: a,
 			key: `line-${r}`
@@ -24226,7 +24373,7 @@ function EN(e) {
 	});
 	return /*#__PURE__*/ S.createElement("g", { className: "recharts-cartesian-grid-vertical" }, s);
 }
-function DN(e) {
+function WN(e) {
 	var t = e.horizontalFill, n = e.fillOpacity, r = e.x, i = e.y, a = e.width, o = e.height, s = e.horizontalPoints, c = e.horizontal;
 	if (!(c === void 0 || c) || !t || !t.length || s == null) return null;
 	var l = s.map((e) => Math.round(e + i - i)).sort((e, t) => e - t);
@@ -24249,7 +24396,7 @@ function DN(e) {
 	});
 	return /*#__PURE__*/ S.createElement("g", { className: "recharts-cartesian-gridstripes-horizontal" }, u);
 }
-function ON(e) {
+function GN(e) {
 	var t = e.vertical, n = t === void 0 || t, r = e.verticalFill, i = e.fillOpacity, a = e.x, o = e.y, s = e.width, c = e.height, l = e.verticalPoints;
 	if (!n || !r || !r.length) return null;
 	var u = l.map((e) => Math.round(e + a - a)).sort((e, t) => e - t);
@@ -24272,9 +24419,9 @@ function ON(e) {
 	});
 	return /*#__PURE__*/ S.createElement("g", { className: "recharts-cartesian-gridstripes-vertical" }, d);
 }
-var kN = (e, t) => {
+var KN = (e, t) => {
 	var n = e.xAxis, r = e.width, i = e.height, a = e.offset;
-	return ic(AM(gN(gN(gN({}, $M), n), {}, {
+	return ic(qM(NN(NN(NN({}, gN), n), {}, {
 		ticks: ac(n, !0),
 		viewBox: {
 			x: 0,
@@ -24283,9 +24430,9 @@ var kN = (e, t) => {
 			height: i
 		}
 	})), a.left, a.left + a.width, t);
-}, AN = (e, t) => {
+}, qN = (e, t) => {
 	var n = e.yAxis, r = e.width, i = e.height, a = e.offset;
-	return ic(AM(gN(gN(gN({}, $M), n), {}, {
+	return ic(qM(NN(NN(NN({}, gN), n), {}, {
 		ticks: ac(n, !0),
 		viewBox: {
 			x: 0,
@@ -24294,7 +24441,7 @@ var kN = (e, t) => {
 			height: i
 		}
 	})), a.top, a.top + a.height, t);
-}, jN = {
+}, JN = {
 	horizontal: !0,
 	vertical: !0,
 	horizontalPoints: [],
@@ -24306,23 +24453,23 @@ var kN = (e, t) => {
 	syncWithTicks: !1,
 	zIndex: Pm.grid
 };
-function MN(e) {
-	var t = Al(), n = jl(), r = kl(), i = gN(gN({}, Pn(e, jN)), {}, {
+function YN(e) {
+	var t = Al(), n = jl(), r = kl(), i = NN(NN({}, Pn(e, JN)), {}, {
 		x: I(e.x) ? e.x : r.left,
 		y: I(e.y) ? e.y : r.top,
 		width: I(e.width) ? e.width : r.width,
 		height: I(e.height) ? e.height : r.height
-	}), a = i.xAxisId, o = i.yAxisId, s = i.x, c = i.y, l = i.width, u = i.height, d = i.syncWithTicks, f = i.horizontalValues, p = i.verticalValues, m = Wc(), h = z((e) => hC(e, "xAxis", a, m)), g = z((e) => hC(e, "yAxis", o, m)), _ = uN(), v = {
+	}), a = i.xAxisId, o = i.yAxisId, s = i.x, c = i.y, l = i.width, u = i.height, d = i.syncWithTicks, f = i.horizontalValues, p = i.verticalValues, m = Wc(), h = z((e) => hC(e, "xAxis", a, m)), g = z((e) => hC(e, "yAxis", o, m)), _ = DN(), v = {
 		stroke: i.stroke ?? _.grid.stroke,
 		strokeWidth: i.strokeWidth ?? _.grid.strokeWidth,
 		strokeOpacity: i.strokeOpacity ?? _.grid.strokeOpacity,
 		strokeDasharray: i.strokeDasharray ?? _.grid.strokeDasharray
 	};
 	if (!Ys(l) || !Ys(u) || !I(s) || !I(c)) return null;
-	var y = i.verticalCoordinatesGenerator || kN, b = i.horizontalCoordinatesGenerator || AN, x = i.horizontalPoints, C = i.verticalPoints;
+	var y = i.verticalCoordinatesGenerator || KN, b = i.horizontalCoordinatesGenerator || qN, x = i.horizontalPoints, C = i.verticalPoints;
 	if ((!x || !x.length) && typeof b == "function") {
 		var w = f && f.length, T = b({
-			yAxis: g ? gN(gN({}, g), {}, { ticks: w ? f : g.ticks }) : void 0,
+			yAxis: g ? NN(NN({}, g), {}, { ticks: w ? f : g.ticks }) : void 0,
 			width: t ?? l,
 			height: n ?? u,
 			offset: r
@@ -24331,14 +24478,14 @@ function MN(e) {
 	}
 	if ((!C || !C.length) && typeof y == "function") {
 		var E = p && p.length, D = y({
-			xAxis: h ? gN(gN({}, h), {}, { ticks: E ? p : h.ticks }) : void 0,
+			xAxis: h ? NN(NN({}, h), {}, { ticks: E ? p : h.ticks }) : void 0,
 			width: t ?? l,
 			height: n ?? u,
 			offset: r
 		}, E ? !0 : d);
 		Zc(Array.isArray(D), `verticalCoordinatesGenerator should return Array but instead it returned [${typeof D}]`), Array.isArray(D) && (C = D);
 	}
-	return /*#__PURE__*/ S.createElement(GT, { zIndex: i.zIndex }, /*#__PURE__*/ S.createElement("g", { className: "recharts-cartesian-grid" }, /*#__PURE__*/ S.createElement(CN, {
+	return /*#__PURE__*/ S.createElement(GT, { zIndex: i.zIndex }, /*#__PURE__*/ S.createElement("g", { className: "recharts-cartesian-grid" }, /*#__PURE__*/ S.createElement(BN, {
 		fill: i.fill ?? _.grid.fill,
 		fillOpacity: i.fillOpacity ?? _.grid.fillOpacity,
 		x: i.x,
@@ -24346,22 +24493,22 @@ function MN(e) {
 		width: i.width,
 		height: i.height,
 		ry: i.ry
-	}), /*#__PURE__*/ S.createElement(DN, bN({}, i, { horizontalPoints: x })), /*#__PURE__*/ S.createElement(ON, bN({}, i, { verticalPoints: C })), /*#__PURE__*/ S.createElement(TN, bN({}, i, v, {
+	}), /*#__PURE__*/ S.createElement(WN, LN({}, i, { horizontalPoints: x })), /*#__PURE__*/ S.createElement(GN, LN({}, i, { verticalPoints: C })), /*#__PURE__*/ S.createElement(HN, LN({}, i, v, {
 		offset: r,
 		horizontalPoints: x,
 		xAxis: h,
 		yAxis: g
-	})), /*#__PURE__*/ S.createElement(EN, bN({}, i, v, {
+	})), /*#__PURE__*/ S.createElement(UN, LN({}, i, v, {
 		offset: r,
 		verticalPoints: C,
 		xAxis: h,
 		yAxis: g
 	}))));
 }
-MN.displayName = "CartesianGrid";
+YN.displayName = "CartesianGrid";
 //#endregion
 //#region node_modules/recharts/es6/cartesian/LineDrawShape.js
-var NN = [
+var XN = [
 	"animationElapsedTime",
 	"isAnimating",
 	"isEntrance",
@@ -24369,25 +24516,25 @@ var NN = [
 	"strokeDasharray",
 	"connectNulls"
 ];
-function PN() {
-	return PN = Object.assign ? Object.assign.bind() : function(e) {
+function ZN() {
+	return ZN = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, PN.apply(null, arguments);
+	}, ZN.apply(null, arguments);
 }
-function FN(e, t) {
+function QN(e, t) {
 	if (e == null) return {};
-	var n, r, i = IN(e, t);
+	var n, r, i = $N(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function IN(e, t) {
+function $N(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -24396,26 +24543,26 @@ function IN(e, t) {
 	}
 	return n;
 }
-function LN(e) {
+function eP(e) {
 	try {
 		return e && e.getTotalLength && e.getTotalLength() || 0;
 	} catch {
 		return 0;
 	}
 }
-function RN(e, t) {
+function tP(e, t) {
 	return `${t}px ${e}px`;
 }
-function zN(e) {
+function nP(e) {
 	return e.length % 2 == 0 ? e : [...e, ...e];
 }
-function BN(e, t) {
+function rP(e, t) {
 	for (var n = [], r = 0; r < t; ++r) n.push(...e);
 	return n;
 }
-function VN(e, t, n) {
-	var r = zN(n), i = r.reduce((e, t) => e + t, 0);
-	if (!i) return RN(t, e);
+function iP(e, t, n) {
+	var r = nP(n), i = r.reduce((e, t) => e + t, 0);
+	if (!i) return tP(t, e);
 	for (var a = Math.floor(e / i), o = e % i, s = [], c = 0, l = 0; c < r.length; l += (u = r[c]) ?? 0, ++c) {
 		var u, d = r[c];
 		if (d != null && l + d > o) {
@@ -24425,29 +24572,29 @@ function VN(e, t, n) {
 	}
 	var f = s.length % 2 == 0 ? [0, t] : [t];
 	return [
-		...BN(r, a),
+		...rP(r, a),
 		...s,
 		...f
 	].map((e) => `${e}px`).join(", ");
 }
-function HN(e, t, n) {
-	return e ? VN(n, t, `${e}`.split(/[,\s]+/gim).map((e) => parseFloat(e))) : RN(t, n);
+function aP(e, t, n) {
+	return e ? iP(n, t, `${e}`.split(/[,\s]+/gim).map((e) => parseFloat(e))) : tP(t, n);
 }
-function UN(e) {
+function oP(e) {
 	e.animationElapsedTime, e.isAnimating, e.isEntrance;
-	var t = e.visibleLength, n = e.strokeDasharray, r = e.connectNulls, i = FN(e, NN), a = r ?? !1, o;
+	var t = e.visibleLength, n = e.strokeDasharray, r = e.connectNulls, i = QN(e, XN), a = r ?? !1, o;
 	if (t != null) {
 		var s = i.pathRef;
-		o = HN(n, LN(s?.current ?? null), t);
+		o = aP(n, eP(s?.current ?? null), t);
 	} else n != null && (o = String(n));
-	return /*#__PURE__*/ S.createElement(Hd, PN({}, i, {
+	return /*#__PURE__*/ S.createElement(Hd, ZN({}, i, {
 		connectNulls: a,
 		strokeDasharray: o
 	}));
 }
 //#endregion
 //#region node_modules/recharts/es6/cartesian/useAnimatedLineLength.js
-function WN(e) {
+function sP(e) {
 	var t = (0, S.useRef)(0), n = (0, S.useRef)(0), r = (0, S.useRef)(!1), i = (0, S.useRef)(e);
 	return i.current !== e && (t.current = n.current, i.current = e), (0, S.useCallback)((e, i) => {
 		if (r.current) return null;
@@ -24457,7 +24604,7 @@ function WN(e) {
 }
 //#endregion
 //#region node_modules/recharts/es6/state/errorBarSlice.js
-var GN = $o({
+var cP = $o({
 	name: "errorBars",
 	initialState: {},
 	reducers: {
@@ -24474,19 +24621,19 @@ var GN = $o({
 			e[r] && (e[r] = e[r].filter((e) => e.dataKey !== i.dataKey || e.direction !== i.direction));
 		}
 	}
-}), KN = GN.actions;
-KN.addErrorBar, KN.replaceErrorBar, KN.removeErrorBar;
-var qN = GN.reducer, JN = ["children"];
-function YN(e, t) {
+}), lP = cP.actions;
+lP.addErrorBar, lP.replaceErrorBar, lP.removeErrorBar;
+var uP = cP.reducer, dP = ["children"];
+function fP(e, t) {
 	if (e == null) return {};
-	var n, r, i = XN(e, t);
+	var n, r, i = pP(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function XN(e, t) {
+function pP(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -24495,7 +24642,7 @@ function XN(e, t) {
 	}
 	return n;
 }
-var ZN = /*#__PURE__*/ (0, S.createContext)({
+var mP = /*#__PURE__*/ (0, S.createContext)({
 	data: [],
 	xAxisId: "xAxis-0",
 	yAxisId: "yAxis-0",
@@ -24506,13 +24653,13 @@ var ZN = /*#__PURE__*/ (0, S.createContext)({
 	}),
 	errorBarOffset: 0
 });
-function QN(e) {
-	var t = e.children, n = YN(e, JN);
-	return /*#__PURE__*/ S.createElement(ZN.Provider, { value: n }, t);
+function hP(e) {
+	var t = e.children, n = fP(e, dP);
+	return /*#__PURE__*/ S.createElement(mP.Provider, { value: n }, t);
 }
 //#endregion
 //#region node_modules/recharts/es6/cartesian/GraphicalItemClipPath.js
-function $N(e, t) {
+function gP(e, t) {
 	var n = z((t) => gx(t, e)), r = z((e) => yx(e, t)), i = n?.allowDataOverflow ?? mx.allowDataOverflow, a = r?.allowDataOverflow ?? _x.allowDataOverflow;
 	return {
 		needClip: i || a,
@@ -24520,8 +24667,8 @@ function $N(e, t) {
 		needClipY: a
 	};
 }
-function eP(e) {
-	var t = e.xAxisId, n = e.yAxisId, r = e.clipPathId, i = IA(), a = $N(t, n), o = a.needClipX, s = a.needClipY, c = a.needClip, l = z((e) => US(e, t, !1)), u = z((e) => WS(e, n, !1));
+function _P(e) {
+	var t = e.xAxisId, n = e.yAxisId, r = e.clipPathId, i = IA(), a = gP(t, n), o = a.needClipX, s = a.needClipY, c = a.needClip, l = z((e) => US(e, t, !1)), u = z((e) => WS(e, n, !1));
 	if (!c || !i) return null;
 	var d = i.x, f = i.y, p = i.width, m = i.height, h = o && l ? Math.min(l[0], l[1]) : d - p / 2, g = s && u ? Math.min(u[0], u[1]) : f - m / 2, _ = o && l ? Math.abs(l[1] - l[0]) : p * 2, v = s && u ? Math.abs(u[1] - u[0]) : m * 2;
 	return /*#__PURE__*/ S.createElement("clipPath", { id: `clipPath-${r}` }, /*#__PURE__*/ S.createElement("rect", {
@@ -24533,30 +24680,30 @@ function eP(e) {
 }
 //#endregion
 //#region node_modules/recharts/es6/state/selectors/lineSelectors.js
-var tP = (e, t, n, r) => vC(e, "xAxis", t, r), nP = (e, t, n, r) => _C(e, "xAxis", t, r), rP = (e, t, n, r) => vC(e, "yAxis", n, r), iP = (e, t, n, r) => _C(e, "yAxis", n, r), aP = B([
+var vP = (e, t, n, r) => vC(e, "xAxis", t, r), yP = (e, t, n, r) => _C(e, "xAxis", t, r), bP = (e, t, n, r) => vC(e, "yAxis", n, r), xP = (e, t, n, r) => _C(e, "yAxis", n, r), SP = B([
 	Nl,
-	tP,
-	rP,
-	nP,
-	iP
-], (e, t, n, r, i) => rc(e, "xAxis") ? vc(t, r, !1) : vc(n, i, !1)), oP = (e, t, n, r, i) => i;
-function sP(e) {
+	vP,
+	bP,
+	yP,
+	xP
+], (e, t, n, r, i) => rc(e, "xAxis") ? vc(t, r, !1) : vc(n, i, !1)), CP = (e, t, n, r, i) => i;
+function wP(e) {
 	return e.type === "line";
 }
-var cP = B([
+var TP = B([
 	Nl,
-	tP,
-	rP,
-	nP,
-	iP,
-	B([Dx, oP], (e, t) => e.filter(sP).find((e) => e.id === t)),
-	aP,
+	vP,
+	bP,
+	yP,
+	xP,
+	B([Dx, CP], (e, t) => e.filter(wP).find((e) => e.id === t)),
+	SP,
 	Yp
 ], (e, t, n, r, i, a, o, s) => {
 	var c = s.chartData, l = s.dataStartIndex, u = s.dataEndIndex;
 	if (!(a == null || t == null || n == null || r == null || i == null || r.length === 0 || i.length === 0 || o == null || e !== "horizontal" && e !== "vertical")) {
 		var d = a.dataKey, f = a.data, p = f != null && f.length > 0 ? f : c?.slice(l, u + 1);
-		if (p != null) return PP({
+		if (p != null) return ZP({
 			layout: e,
 			xAxis: t,
 			yAxis: n,
@@ -24570,7 +24717,7 @@ var cP = B([
 });
 //#endregion
 //#region node_modules/recharts/es6/util/getRadiusAndStrokeWidthFromDot.js
-function lP(e) {
+function EP(e) {
 	var t = D(e), n = 3, r = 2;
 	if (t != null) {
 		var i = t.r, a = t.strokeWidth, o = Number(i), s = Number(a);
@@ -24586,14 +24733,14 @@ function lP(e) {
 }
 //#endregion
 //#region node_modules/recharts/es6/cartesian/Line.js
-var uP = ["id"], dP = [
+var DP = ["id"], OP = [
 	"type",
 	"layout",
 	"connectNulls",
 	"needClip",
 	"shape",
 	"strokeDasharray"
-], fP = [
+], kP = [
 	"activeDot",
 	"animateNewValues",
 	"animationBegin",
@@ -24609,25 +24756,25 @@ var uP = ["id"], dP = [
 	"yAxisId",
 	"id"
 ];
-function pP() {
-	return pP = Object.assign ? Object.assign.bind() : function(e) {
+function AP() {
+	return AP = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, pP.apply(null, arguments);
+	}, AP.apply(null, arguments);
 }
-function mP(e, t) {
+function jP(e, t) {
 	if (e == null) return {};
-	var n, r, i = hP(e, t);
+	var n, r, i = MP(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function hP(e, t) {
+function MP(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -24636,7 +24783,7 @@ function hP(e, t) {
 	}
 	return n;
 }
-function gP(e, t) {
+function NP(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -24646,30 +24793,30 @@ function gP(e, t) {
 	}
 	return n;
 }
-function _P(e) {
+function PP(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? gP(Object(n), !0).forEach(function(t) {
-			vP(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : gP(Object(n)).forEach(function(t) {
+		t % 2 ? NP(Object(n), !0).forEach(function(t) {
+			FP(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : NP(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function vP(e, t, n) {
-	return (t = yP(t)) in e ? Object.defineProperty(e, t, {
+function FP(e, t, n) {
+	return (t = IP(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function yP(e) {
-	var t = bP(e, "string");
+function IP(e) {
+	var t = LP(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function bP(e, t) {
+function LP(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -24679,19 +24826,19 @@ function bP(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-function xP(e) {
+function RP(e) {
 	try {
 		return e && e.getTotalLength && e.getTotalLength() || 0;
 	} catch {
 		return 0;
 	}
 }
-function SP(e) {
+function zP(e) {
 	var t = 0, n = 0;
 	for (var r of e) r.status === "matched" && r.prev.x != null && r.next.x != null && (t += r.next.x - r.prev.x, n++);
 	return n > 0 ? t / n : 0;
 }
-var CP = {
+var BP = {
 	activeDot: !0,
 	animateNewValues: !0,
 	animationBegin: 0,
@@ -24700,22 +24847,22 @@ var CP = {
 	animationInterpolateFn: (e, t) => {
 		if (e == null) return [];
 		if (t === 1) return e.flatMap((e) => e.status === "removed" ? [] : [e.next]);
-		var n = SP(e), r = [];
-		for (var i of e) if (i.status === "matched") r.push(_P(_P({}, i.next), {}, {
+		var n = zP(e), r = [];
+		for (var i of e) if (i.status === "matched") r.push(PP(PP({}, i.next), {}, {
 			x: Te(i.prev.x, i.next.x, t),
 			y: Te(i.prev.y, i.next.y, t)
 		}));
 		else if (i.status === "added") {
 			if (i.next.x != null) {
 				var a = i.next.x - n;
-				r.push(_P(_P({}, i.next), {}, {
+				r.push(PP(PP({}, i.next), {}, {
 					x: Te(a, i.next.x, t),
 					y: i.next.y
 				}));
 			} else r.push(i.next);
 		} else if (i.status === "removed" && i.prev.x != null) {
 			var o = i.prev.x + n;
-			r.push(_P(_P({}, i.prev), {}, {
+			r.push(PP(PP({}, i.prev), {}, {
 				x: Te(i.prev.x, o, t),
 				y: i.prev.y
 			}));
@@ -24730,14 +24877,14 @@ var CP = {
 	isAnimationActive: "auto",
 	label: !1,
 	legendType: "line",
-	shape: UN,
+	shape: oP,
 	stroke: "#3182bd",
 	strokeWidth: 1,
 	xAxisId: 0,
 	yAxisId: 0,
 	zIndex: Pm.line,
 	type: "linear"
-}, wP = (e) => {
+}, VP = (e) => {
 	var t = e.dataKey, n = e.name, r = e.stroke, i = e.legendType;
 	return [{
 		inactive: e.hide,
@@ -24747,7 +24894,7 @@ var CP = {
 		value: bc(n, t),
 		payload: e
 	}];
-}, TP = /*#__PURE__*/ S.memo((e) => {
+}, HP = /*#__PURE__*/ S.memo((e) => {
 	var t = e.dataKey, n = e.data, r = e.stroke, i = e.strokeWidth, a = e.fill, o = e.name, s = e.hide, c = e.unit, l = e.formatter, u = e.tooltipType, d = e.id, f = {
 		dataDefinedOnItem: n,
 		getPosition: Ae,
@@ -24768,10 +24915,10 @@ var CP = {
 	};
 	return /*#__PURE__*/ S.createElement(yk, { tooltipEntrySettings: f });
 });
-function EP(e) {
+function UP(e) {
 	var t = e.clipPathId, n = e.points, r = e.props, i = r.dot, a = r.dataKey, o = r.needClip;
 	r.id;
-	var s = E(mP(r, uP));
+	var s = E(jP(r, DP));
 	return /*#__PURE__*/ S.createElement(vA, {
 		points: n,
 		dot: i,
@@ -24783,7 +24930,7 @@ function EP(e) {
 		clipPathId: t
 	});
 }
-function DP(e) {
+function WP(e) {
 	var t = e.showLabels, n = e.children, r = e.points, i = (0, S.useMemo)(() => r?.map((e) => {
 		var t = {
 			x: e.x ?? 0,
@@ -24793,7 +24940,7 @@ function DP(e) {
 			upperWidth: 0,
 			height: 0
 		};
-		return _P(_P({}, t), {}, {
+		return PP(PP({}, t), {}, {
 			value: e.value,
 			payload: e.payload,
 			viewBox: t,
@@ -24803,8 +24950,8 @@ function DP(e) {
 	}), [r]);
 	return /*#__PURE__*/ S.createElement(zO, { value: t ? i : void 0 }, n);
 }
-function OP(e) {
-	var t = e.clipPathId, n = e.pathRef, r = e.points, i = e.props, a = e.animationElapsedTime, o = e.isAnimating, s = e.isEntrance, c = e.visibleLength, l = i.type, u = i.layout, d = i.connectNulls, f = i.needClip, p = i.shape, m = i.strokeDasharray, h = _P(_P({}, O(mP(i, dP))), {}, {
+function GP(e) {
+	var t = e.clipPathId, n = e.pathRef, r = e.points, i = e.props, a = e.animationElapsedTime, o = e.isAnimating, s = e.isEntrance, c = e.visibleLength, l = i.type, u = i.layout, d = i.connectNulls, f = i.needClip, p = i.shape, m = i.strokeDasharray, h = PP(PP({}, O(jP(i, OP))), {}, {
 		fill: "none",
 		className: "recharts-line-curve",
 		clipPath: f ? `url(#clipPath-${t})` : void 0,
@@ -24821,17 +24968,17 @@ function OP(e) {
 	});
 	return /*#__PURE__*/ S.createElement(S.Fragment, null, r?.length > 1 && /*#__PURE__*/ S.createElement(hk, {
 		option: p,
-		DefaultShape: CP.shape,
+		DefaultShape: BP.shape,
 		shapeProps: h
-	}), /*#__PURE__*/ S.createElement(EP, {
+	}), /*#__PURE__*/ S.createElement(UP, {
 		points: r,
 		clipPathId: t,
 		props: i
 	}));
 }
-function kP(e) {
-	var t = e.clipPathId, n = e.props, r = e.pathRef, i = e.previousPointsRef, a = n.points, o = n.isAnimationActive, s = n.animationBegin, c = n.animationDuration, l = n.animationEasing, u = n.animationMatchBy, d = n.animationInterpolateFn, f = n.layout, p = xP(r.current), m = Hk(n.onAnimationStart, n.onAnimationEnd), h = m.isAnimating, g = m.handleAnimationStart, _ = m.handleAnimationEnd, v = !h, y = WN(a), b = (0, S.useCallback)((e) => e > 0 && p > 0, [p]);
-	return /*#__PURE__*/ S.createElement(DP, {
+function KP(e) {
+	var t = e.clipPathId, n = e.props, r = e.pathRef, i = e.previousPointsRef, a = n.points, o = n.isAnimationActive, s = n.animationBegin, c = n.animationDuration, l = n.animationEasing, u = n.animationMatchBy, d = n.animationInterpolateFn, f = n.layout, p = RP(r.current), m = Hk(n.onAnimationStart, n.onAnimationEnd), h = m.isAnimating, g = m.handleAnimationStart, _ = m.handleAnimationEnd, v = !h, y = sP(a), b = (0, S.useCallback)((e) => e > 0 && p > 0, [p]);
+	return /*#__PURE__*/ S.createElement(WP, {
 		points: a,
 		showLabels: v
 	}, n.children, /*#__PURE__*/ S.createElement(Uk, {
@@ -24851,7 +24998,7 @@ function kP(e) {
 		layout: f
 	}, (e, i, a) => {
 		var o = h || i < 1, s = o ? y(i, p) : null;
-		return /*#__PURE__*/ S.createElement(OP, {
+		return /*#__PURE__*/ S.createElement(GP, {
 			props: n,
 			points: e,
 			clipPathId: t,
@@ -24863,26 +25010,26 @@ function kP(e) {
 		});
 	}), /*#__PURE__*/ S.createElement(WO, { label: n.label }));
 }
-function AP(e) {
+function qP(e) {
 	var t = e.clipPathId, n = e.props, r = (0, S.useRef)(null), i = (0, S.useRef)(null);
-	return /*#__PURE__*/ S.createElement(kP, {
+	return /*#__PURE__*/ S.createElement(KP, {
 		props: n,
 		clipPathId: t,
 		previousPointsRef: r,
 		pathRef: i
 	});
 }
-var jP = (e, t) => ({
+var JP = (e, t) => ({
 	x: e.x ?? void 0,
 	y: e.y ?? void 0,
 	value: e.value,
 	errorVal: tc(e.payload, t)
-}), MP = class extends S.Component {
+}), YP = class extends S.Component {
 	render() {
 		var e = this.props, t = e.hide, n = e.dot, r = e.points, i = e.className, a = e.xAxisId, o = e.yAxisId, s = e.top, c = e.left, l = e.width, u = e.height, d = e.id, f = e.needClip, p = e.zIndex;
 		if (t) return null;
-		var m = y("recharts-line", i), h = d, g = lP(n), _ = g.r, v = g.strokeWidth, b = ik(n), x = _ * 2 + v, C = f ? `url(#clipPath-${b ? "" : "dots-"}${h})` : void 0;
-		return /*#__PURE__*/ S.createElement(GT, { zIndex: p }, /*#__PURE__*/ S.createElement(ae, { className: m }, f && /*#__PURE__*/ S.createElement("defs", null, /*#__PURE__*/ S.createElement(eP, {
+		var m = y("recharts-line", i), h = d, g = EP(n), _ = g.r, v = g.strokeWidth, b = ik(n), x = _ * 2 + v, C = f ? `url(#clipPath-${b ? "" : "dots-"}${h})` : void 0;
+		return /*#__PURE__*/ S.createElement(GT, { zIndex: p }, /*#__PURE__*/ S.createElement(ae, { className: m }, f && /*#__PURE__*/ S.createElement("defs", null, /*#__PURE__*/ S.createElement(_P, {
 			clipPathId: h,
 			xAxisId: a,
 			yAxisId: o
@@ -24891,13 +25038,13 @@ var jP = (e, t) => ({
 			y: s - x / 2,
 			width: l + x,
 			height: u + x
-		}))), /*#__PURE__*/ S.createElement(QN, {
+		}))), /*#__PURE__*/ S.createElement(hP, {
 			xAxisId: a,
 			yAxisId: o,
 			data: r,
-			dataPointFormatter: jP,
+			dataPointFormatter: JP,
 			errorBarOffset: 0
-		}, /*#__PURE__*/ S.createElement(AP, {
+		}, /*#__PURE__*/ S.createElement(qP, {
 			props: this.props,
 			clipPathId: h
 		}))), /*#__PURE__*/ S.createElement(WA, {
@@ -24909,11 +25056,11 @@ var jP = (e, t) => ({
 		}));
 	}
 };
-function NP(e) {
-	var t = Pn(e, CP), n = t.activeDot, r = t.animateNewValues, i = t.animationBegin, a = t.animationDuration, o = t.animationEasing, s = t.connectNulls, c = t.dot, l = t.hide, u = t.isAnimationActive, d = t.label, f = t.legendType, p = t.xAxisId, m = t.yAxisId, h = t.id, g = mP(t, fP), _ = $N(p, m).needClip, v = IA(), y = Pl(), b = Wc(), x = z((e) => cP(e, p, m, b, h));
+function XP(e) {
+	var t = Pn(e, BP), n = t.activeDot, r = t.animateNewValues, i = t.animationBegin, a = t.animationDuration, o = t.animationEasing, s = t.connectNulls, c = t.dot, l = t.hide, u = t.isAnimationActive, d = t.label, f = t.legendType, p = t.xAxisId, m = t.yAxisId, h = t.id, g = jP(t, kP), _ = gP(p, m).needClip, v = IA(), y = Pl(), b = Wc(), x = z((e) => TP(e, p, m, b, h));
 	if (y !== "horizontal" && y !== "vertical" || x == null || v == null) return null;
 	var C = v.height, w = v.width, T = v.x, E = v.y;
-	return /*#__PURE__*/ S.createElement(MP, pP({}, g, {
+	return /*#__PURE__*/ S.createElement(YP, AP({}, g, {
 		id: h,
 		connectNulls: s,
 		dot: c,
@@ -24937,7 +25084,7 @@ function NP(e) {
 		needClip: _
 	}));
 }
-function PP(e) {
+function ZP(e) {
 	var t = e.layout, n = e.xAxis, r = e.yAxis, i = e.xAxisTicks, a = e.yAxisTicks, o = e.dataKey, s = e.bandSize;
 	return e.displayedData.map((e, c) => {
 		var l = tc(e, o);
@@ -24968,12 +25115,12 @@ function PP(e) {
 		};
 	}).filter(Boolean);
 }
-function FP(e) {
-	var t = Pn(e, CP), n = Wc();
+function QP(e) {
+	var t = Pn(e, BP), n = Wc();
 	return /*#__PURE__*/ S.createElement($k, {
 		id: t.id,
 		type: "line"
-	}, (e) => /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(bk, { legendPayload: wP(t) }), /*#__PURE__*/ S.createElement(TP, {
+	}, (e) => /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(bk, { legendPayload: VP(t) }), /*#__PURE__*/ S.createElement(HP, {
 		dataKey: t.dataKey,
 		data: t.data,
 		stroke: t.stroke,
@@ -24995,157 +25142,27 @@ function FP(e) {
 		dataKey: t.dataKey,
 		hide: t.hide,
 		isPanorama: n
-	}), /*#__PURE__*/ S.createElement(NP, pP({}, t, { id: e }))));
+	}), /*#__PURE__*/ S.createElement(XP, AP({}, t, { id: e }))));
 }
-var IP = /*#__PURE__*/ S.memo(FP, du);
-IP.displayName = "Line";
+var $P = /*#__PURE__*/ S.memo(QP, du);
+$P.displayName = "Line";
 //#endregion
 //#region node_modules/recharts/es6/state/selectors/graphicalItemSelectors.js
-function LP(e, t) {
+function eF(e, t) {
 	return e.graphicalItems.cartesianItems.find((e) => e.id === t)?.xAxisId ?? 0;
 }
-function RP(e, t) {
+function tF(e, t) {
 	return e.graphicalItems.cartesianItems.find((e) => e.id === t)?.yAxisId ?? 0;
 }
 //#endregion
 //#region node_modules/tiny-invariant/dist/esm/tiny-invariant.js
-var zP = "Invariant failed";
-function BP(e, t) {
-	if (!e) throw Error(zP);
+var nF = "Invariant failed";
+function rF(e, t) {
+	if (!e) throw Error(nF);
 }
 //#endregion
 //#region node_modules/recharts/es6/util/BarUtils.js
-var VP = ["option"];
-function HP(e, t) {
-	if (e == null) return {};
-	var n, r, i = UP(e, t);
-	if (Object.getOwnPropertySymbols) {
-		var a = Object.getOwnPropertySymbols(e);
-		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
-	}
-	return i;
-}
-function UP(e, t) {
-	if (e == null) return {};
-	var n = {};
-	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
-		if (t.indexOf(r) !== -1) continue;
-		n[r] = e[r];
-	}
-	return n;
-}
-var WP = fp;
-function GP(e) {
-	var t = e.option, n = HP(e, VP);
-	return /*#__PURE__*/ S.createElement(hk, {
-		option: t,
-		DefaultShape: WP,
-		shapeProps: n,
-		activeClassName: "recharts-active-bar",
-		inActiveClassName: "recharts-inactive-bar"
-	});
-}
-var KP = function(e) {
-	var t = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : 0;
-	return (n, r) => {
-		if (I(e)) return e;
-		var i = I(n) || De(n);
-		return i ? e(n, r) : (!i && BP(!1, `minPointSize callback function received a value with type of ${typeof n}. Currently only numbers or null/undefined are supported.`), t);
-	};
-}, qP = (e, t, n) => n, JP = B([Dx, (e, t) => t], (e, t) => e.filter((e) => e.type === "bar").find((e) => e.id === t)), YP = B([JP], (e) => e?.maxBarSize), XP = (e, t, n, r) => r, ZP = B([
-	Nl,
-	Dx,
-	LP,
-	RP,
-	qP
-], (e, t, n, r, i) => t.filter((t) => e === "horizontal" ? t.xAxisId === n : t.yAxisId === r).filter((e) => e.isPanorama === i).filter((e) => e.hide === !1).filter((e) => e.type === "bar")), QP = (e, t, n) => {
-	var r = Nl(e), i = LP(e, t), a = RP(e, t);
-	if (i != null && a != null) return r === "horizontal" ? $x(e, "yAxis", a, n) : $x(e, "xAxis", i, n);
-}, $P = B([
-	ZP,
-	Dm,
-	(e, t) => {
-		var n = Nl(e), r = LP(e, t), i = RP(e, t);
-		if (r != null && i != null) return n === "horizontal" ? fC(e, "xAxis", r) : fC(e, "yAxis", i);
-	}
-], QA), eF = (e, t, n) => {
-	var r = JP(e, t);
-	if (r == null) return 0;
-	var i = LP(e, t), a = RP(e, t);
-	if (i == null || a == null) return 0;
-	var o = Nl(e), s = wm(e), c = r.maxBarSize, l = De(c) ? s : c, u, d;
-	return o === "horizontal" ? (u = vC(e, "xAxis", i, n), d = _C(e, "xAxis", i, n)) : (u = vC(e, "yAxis", a, n), d = _C(e, "yAxis", a, n)), vc(u, d, !0) ?? l ?? 0;
-}, tF = (e, t, n) => {
-	var r = Nl(e), i = LP(e, t), a = RP(e, t);
-	if (i != null && a != null) {
-		var o, s;
-		return r === "horizontal" ? (o = vC(e, "xAxis", i, n), s = _C(e, "xAxis", i, n)) : (o = vC(e, "yAxis", a, n), s = _C(e, "yAxis", a, n)), vc(o, s);
-	}
-}, nF = B([
-	Bc,
-	Hc,
-	(e, t, n) => {
-		var r = LP(e, t);
-		if (r != null) return vC(e, "xAxis", r, n);
-	},
-	(e, t, n) => {
-		var r = RP(e, t);
-		if (r != null) return vC(e, "yAxis", r, n);
-	},
-	(e, t, n) => {
-		var r = LP(e, t);
-		if (r != null) return _C(e, "xAxis", r, n);
-	},
-	(e, t, n) => {
-		var r = RP(e, t);
-		if (r != null) return _C(e, "yAxis", r, n);
-	},
-	B([B([
-		$P,
-		wm,
-		Tm,
-		Em,
-		eF,
-		tF,
-		YP
-	], aj), JP], sj),
-	Nl,
-	Xp,
-	tF,
-	B([QP, JP], oj),
-	JP,
-	XP
-], (e, t, n, r, i, a, o, s, c, l, u, d, f) => {
-	var p = c.chartData, m = c.dataStartIndex, h = c.dataEndIndex;
-	if (!(d == null || o == null || t == null || s !== "horizontal" && s !== "vertical" || n == null || r == null || i == null || a == null || l == null)) {
-		var g = d.data, _ = g != null && g.length > 0 ? g : p?.slice(m, h + 1);
-		if (_ != null) return GF({
-			layout: s,
-			barSettings: d,
-			pos: o,
-			parentViewBox: t,
-			bandSize: l,
-			xAxis: n,
-			yAxis: r,
-			xAxisTicks: i,
-			yAxisTicks: a,
-			stackedData: u,
-			displayedData: _,
-			offset: e,
-			cells: f,
-			dataStartIndex: m
-		});
-	}
-}), rF = ["index"];
-function iF() {
-	return iF = Object.assign ? Object.assign.bind() : function(e) {
-		for (var t = 1; t < arguments.length; t++) {
-			var n = arguments[t];
-			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
-		}
-		return e;
-	}, iF.apply(null, arguments);
-}
+var iF = ["option"];
 function aF(e, t) {
 	if (e == null) return {};
 	var n, r, i = oF(e, t);
@@ -25164,54 +25181,184 @@ function oF(e, t) {
 	}
 	return n;
 }
-var sF = /*#__PURE__*/ (0, S.createContext)(void 0), cF = (e) => {
-	var t = (0, S.useContext)(sF);
+var sF = fp;
+function cF(e) {
+	var t = e.option, n = aF(e, iF);
+	return /*#__PURE__*/ S.createElement(hk, {
+		option: t,
+		DefaultShape: sF,
+		shapeProps: n,
+		activeClassName: "recharts-active-bar",
+		inActiveClassName: "recharts-inactive-bar"
+	});
+}
+var lF = function(e) {
+	var t = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : 0;
+	return (n, r) => {
+		if (I(e)) return e;
+		var i = I(n) || De(n);
+		return i ? e(n, r) : (!i && rF(!1, `minPointSize callback function received a value with type of ${typeof n}. Currently only numbers or null/undefined are supported.`), t);
+	};
+}, uF = (e, t, n) => n, dF = B([Dx, (e, t) => t], (e, t) => e.filter((e) => e.type === "bar").find((e) => e.id === t)), fF = B([dF], (e) => e?.maxBarSize), pF = (e, t, n, r) => r, mF = B([
+	Nl,
+	Dx,
+	eF,
+	tF,
+	uF
+], (e, t, n, r, i) => t.filter((t) => e === "horizontal" ? t.xAxisId === n : t.yAxisId === r).filter((e) => e.isPanorama === i).filter((e) => e.hide === !1).filter((e) => e.type === "bar")), hF = (e, t, n) => {
+	var r = Nl(e), i = eF(e, t), a = tF(e, t);
+	if (i != null && a != null) return r === "horizontal" ? $x(e, "yAxis", a, n) : $x(e, "xAxis", i, n);
+}, gF = B([
+	mF,
+	Dm,
+	(e, t) => {
+		var n = Nl(e), r = eF(e, t), i = tF(e, t);
+		if (r != null && i != null) return n === "horizontal" ? fC(e, "xAxis", r) : fC(e, "yAxis", i);
+	}
+], QA), _F = (e, t, n) => {
+	var r = dF(e, t);
+	if (r == null) return 0;
+	var i = eF(e, t), a = tF(e, t);
+	if (i == null || a == null) return 0;
+	var o = Nl(e), s = wm(e), c = r.maxBarSize, l = De(c) ? s : c, u, d;
+	return o === "horizontal" ? (u = vC(e, "xAxis", i, n), d = _C(e, "xAxis", i, n)) : (u = vC(e, "yAxis", a, n), d = _C(e, "yAxis", a, n)), vc(u, d, !0) ?? l ?? 0;
+}, vF = (e, t, n) => {
+	var r = Nl(e), i = eF(e, t), a = tF(e, t);
+	if (i != null && a != null) {
+		var o, s;
+		return r === "horizontal" ? (o = vC(e, "xAxis", i, n), s = _C(e, "xAxis", i, n)) : (o = vC(e, "yAxis", a, n), s = _C(e, "yAxis", a, n)), vc(o, s);
+	}
+}, yF = B([
+	Bc,
+	Hc,
+	(e, t, n) => {
+		var r = eF(e, t);
+		if (r != null) return vC(e, "xAxis", r, n);
+	},
+	(e, t, n) => {
+		var r = tF(e, t);
+		if (r != null) return vC(e, "yAxis", r, n);
+	},
+	(e, t, n) => {
+		var r = eF(e, t);
+		if (r != null) return _C(e, "xAxis", r, n);
+	},
+	(e, t, n) => {
+		var r = tF(e, t);
+		if (r != null) return _C(e, "yAxis", r, n);
+	},
+	B([B([
+		gF,
+		wm,
+		Tm,
+		Em,
+		_F,
+		vF,
+		fF
+	], aj), dF], sj),
+	Nl,
+	Xp,
+	vF,
+	B([hF, dF], oj),
+	dF,
+	pF
+], (e, t, n, r, i, a, o, s, c, l, u, d, f) => {
+	var p = c.chartData, m = c.dataStartIndex, h = c.dataEndIndex;
+	if (!(d == null || o == null || t == null || s !== "horizontal" && s !== "vertical" || n == null || r == null || i == null || a == null || l == null)) {
+		var g = d.data, _ = g != null && g.length > 0 ? g : p?.slice(m, h + 1);
+		if (_ != null) return cI({
+			layout: s,
+			barSettings: d,
+			pos: o,
+			parentViewBox: t,
+			bandSize: l,
+			xAxis: n,
+			yAxis: r,
+			xAxisTicks: i,
+			yAxisTicks: a,
+			stackedData: u,
+			displayedData: _,
+			offset: e,
+			cells: f,
+			dataStartIndex: m
+		});
+	}
+}), bF = ["index"];
+function xF() {
+	return xF = Object.assign ? Object.assign.bind() : function(e) {
+		for (var t = 1; t < arguments.length; t++) {
+			var n = arguments[t];
+			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
+		}
+		return e;
+	}, xF.apply(null, arguments);
+}
+function SF(e, t) {
+	if (e == null) return {};
+	var n, r, i = CF(e, t);
+	if (Object.getOwnPropertySymbols) {
+		var a = Object.getOwnPropertySymbols(e);
+		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
+	}
+	return i;
+}
+function CF(e, t) {
+	if (e == null) return {};
+	var n = {};
+	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
+		if (t.indexOf(r) !== -1) continue;
+		n[r] = e[r];
+	}
+	return n;
+}
+var wF = /*#__PURE__*/ (0, S.createContext)(void 0), TF = (e) => {
+	var t = (0, S.useContext)(wF);
 	if (t != null) return t.stackId;
 	if (e != null) return lc(e);
-}, lF = (e, t) => `recharts-bar-stack-clip-path-${e}-${t}`, uF = (e) => {
-	var t = (0, S.useContext)(sF);
+}, EF = (e, t) => `recharts-bar-stack-clip-path-${e}-${t}`, DF = (e) => {
+	var t = (0, S.useContext)(wF);
 	if (t != null) {
 		var n = t.stackId;
-		return `url(#${lF(n, e)})`;
+		return `url(#${EF(n, e)})`;
 	}
-}, dF = (e) => {
-	var t = e.index, n = aF(e, rF), r = uF(t);
-	return /*#__PURE__*/ S.createElement(ae, iF({
+}, OF = (e) => {
+	var t = e.index, n = SF(e, bF), r = DF(t);
+	return /*#__PURE__*/ S.createElement(ae, xF({
 		className: "recharts-bar-stack-layer",
 		clipPath: r
 	}, n));
-}, fF = [
+}, kF = [
 	"onMouseEnter",
 	"onMouseLeave",
 	"onClick"
-], pF = [
+], AF = [
 	"value",
 	"background",
 	"tooltipPosition"
-], mF = ["id"], hF = [
+], jF = ["id"], MF = [
 	"onMouseEnter",
 	"onClick",
 	"onMouseLeave"
 ];
-function gF(e, t) {
-	return xF(e) || bF(e, t) || vF(e, t) || _F();
+function NF(e, t) {
+	return RF(e) || LF(e, t) || FF(e, t) || PF();
 }
-function _F() {
+function PF() {
 	throw TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
-function vF(e, t) {
+function FF(e, t) {
 	if (e) {
-		if (typeof e == "string") return yF(e, t);
+		if (typeof e == "string") return IF(e, t);
 		var n = {}.toString.call(e).slice(8, -1);
-		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? yF(e, t) : void 0;
+		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? IF(e, t) : void 0;
 	}
 }
-function yF(e, t) {
+function IF(e, t) {
 	(t == null || t > e.length) && (t = e.length);
 	for (var n = 0, r = Array(t); n < t; n++) r[n] = e[n];
 	return r;
 }
-function bF(e, t) {
+function LF(e, t) {
 	var n = e == null ? null : typeof Symbol < "u" && e[Symbol.iterator] || e["@@iterator"];
 	if (n != null) {
 		var r, i, a, o, s = [], c = !0, l = !1;
@@ -25232,19 +25379,19 @@ function bF(e, t) {
 		return s;
 	}
 }
-function xF(e) {
+function RF(e) {
 	if (Array.isArray(e)) return e;
 }
-function SF() {
-	return SF = Object.assign ? Object.assign.bind() : function(e) {
+function zF() {
+	return zF = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, SF.apply(null, arguments);
+	}, zF.apply(null, arguments);
 }
-function CF(e, t) {
+function BF(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -25254,30 +25401,30 @@ function CF(e, t) {
 	}
 	return n;
 }
-function wF(e) {
+function VF(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? CF(Object(n), !0).forEach(function(t) {
-			TF(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : CF(Object(n)).forEach(function(t) {
+		t % 2 ? BF(Object(n), !0).forEach(function(t) {
+			HF(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : BF(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function TF(e, t, n) {
-	return (t = EF(t)) in e ? Object.defineProperty(e, t, {
+function HF(e, t, n) {
+	return (t = UF(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function EF(e) {
-	var t = DF(e, "string");
+function UF(e) {
+	var t = WF(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function DF(e, t) {
+function WF(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -25287,16 +25434,16 @@ function DF(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-function OF(e, t) {
+function GF(e, t) {
 	if (e == null) return {};
-	var n, r, i = kF(e, t);
+	var n, r, i = KF(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function kF(e, t) {
+function KF(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -25305,7 +25452,7 @@ function kF(e, t) {
 	}
 	return n;
 }
-var AF = (e) => {
+var qF = (e) => {
 	var t = e.dataKey, n = e.name, r = e.fill, i = e.legendType;
 	return [{
 		inactive: e.hide,
@@ -25315,7 +25462,7 @@ var AF = (e) => {
 		value: bc(n, t),
 		payload: e
 	}];
-}, jF = /*#__PURE__*/ S.memo((e) => {
+}, JF = /*#__PURE__*/ S.memo((e) => {
 	var t = e.dataKey, n = e.stroke, r = e.strokeWidth, i = e.fill, a = e.name, o = e.hide, s = e.unit, c = e.formatter, l = e.tooltipType, u = e.id, d = {
 		dataDefinedOnItem: void 0,
 		getPosition: Ae,
@@ -25336,17 +25483,17 @@ var AF = (e) => {
 	};
 	return /*#__PURE__*/ S.createElement(yk, { tooltipEntrySettings: d });
 });
-function MF(e) {
-	var t = z(Vw), n = e.data, r = e.dataKey, i = e.background, a = e.allOtherBarProps, o = a.onMouseEnter, s = a.onMouseLeave, c = a.onClick, l = OF(a, fF), u = gk(o, r, a.id), d = _k(s), f = vk(c, r, a.id);
+function YF(e) {
+	var t = z(Vw), n = e.data, r = e.dataKey, i = e.background, a = e.allOtherBarProps, o = a.onMouseEnter, s = a.onMouseLeave, c = a.onClick, l = GF(a, kF), u = gk(o, r, a.id), d = _k(s), f = vk(c, r, a.id);
 	if (!i || n == null) return null;
 	var p = D(i);
 	return /*#__PURE__*/ S.createElement(GT, { zIndex: cj(i, Pm.barBackground) }, n.map((e, n) => {
 		e.value;
 		var a = e.background;
 		e.tooltipPosition;
-		var o = OF(e, pF);
+		var o = GF(e, AF);
 		if (!a) return null;
-		var s = u(e, e.originalDataIndex), c = d(e, e.originalDataIndex), m = f(e, e.originalDataIndex), h = wF(wF(wF(wF(wF({
+		var s = u(e, e.originalDataIndex), c = d(e, e.originalDataIndex), m = f(e, e.originalDataIndex), h = VF(VF(VF(VF(VF({
 			option: i,
 			isActive: String(e.originalDataIndex) === t
 		}, o), {}, { fill: "#eee" }, a), p), On(l, e, n)), {}, {
@@ -25357,10 +25504,10 @@ function MF(e) {
 			index: n,
 			className: "recharts-bar-background-rectangle"
 		});
-		return /*#__PURE__*/ S.createElement(GP, SF({ key: `background-bar-${n}` }, h));
+		return /*#__PURE__*/ S.createElement(cF, zF({ key: `background-bar-${n}` }, h));
 	}));
 }
-function NF(e) {
+function XF(e) {
 	var t = e.showLabels, n = e.children, r = e.rects?.map((e) => {
 		var t = {
 			x: e.x,
@@ -25370,7 +25517,7 @@ function NF(e) {
 			upperWidth: e.width,
 			height: e.height
 		};
-		return wF(wF({}, t), {}, {
+		return VF(VF({}, t), {}, {
 			value: e.value,
 			payload: e.payload,
 			parentViewBox: e.parentViewBox,
@@ -25380,8 +25527,8 @@ function NF(e) {
 	});
 	return /*#__PURE__*/ S.createElement(zO, { value: t ? r : void 0 }, n);
 }
-function PF(e) {
-	var t = e.shape, n = e.activeBar, r = e.baseProps, i = e.entry, a = e.index, o = e.dataKey, s = z(Vw), c = z(Uw), l = n && String(i.originalDataIndex) === s && (c == null || o === c), u = s != null && (String(i.originalDataIndex) !== s || c != null && o !== c), d = gF((0, S.useState)(!1), 2), f = d[0], p = d[1], m = gF((0, S.useState)(!1), 2), h = m[0], g = m[1];
+function ZF(e) {
+	var t = e.shape, n = e.activeBar, r = e.baseProps, i = e.entry, a = e.index, o = e.dataKey, s = z(Vw), c = z(Uw), l = n && String(i.originalDataIndex) === s && (c == null || o === c), u = s != null && (String(i.originalDataIndex) !== s || c != null && o !== c), d = NF((0, S.useState)(!1), 2), f = d[0], p = d[1], m = NF((0, S.useState)(!1), 2), h = m[0], g = m[1];
 	(0, S.useEffect)(() => {
 		var e;
 		return l ? (p(!0), e = requestAnimationFrame(() => {
@@ -25392,7 +25539,7 @@ function PF(e) {
 	}, [l, u]);
 	var _ = (0, S.useCallback)(() => {
 		l || p(!1);
-	}, [l]), v = l && h, y = l || f, b = l ? n === !0 ? t : n : t, x = /*#__PURE__*/ S.createElement(GP, SF({}, r, { name: String(r.name) }, i, {
+	}, [l]), v = l && h, y = l || f, b = l ? n === !0 ? t : n : t, x = /*#__PURE__*/ S.createElement(cF, zF({}, r, { name: String(r.name) }, i, {
 		isActive: v,
 		option: b,
 		index: a,
@@ -25402,11 +25549,11 @@ function PF(e) {
 		isEntrance: e.isEntrance,
 		onTransitionEnd: _
 	}));
-	return y ? /*#__PURE__*/ S.createElement(GT, { zIndex: Pm.activeBar }, /*#__PURE__*/ S.createElement(dF, { index: i.originalDataIndex }, x)) : x;
+	return y ? /*#__PURE__*/ S.createElement(GT, { zIndex: Pm.activeBar }, /*#__PURE__*/ S.createElement(OF, { index: i.originalDataIndex }, x)) : x;
 }
-function FF(e) {
+function QF(e) {
 	var t = e.shape, n = e.baseProps, r = e.entry, i = e.index, a = e.dataKey;
-	return /*#__PURE__*/ S.createElement(GP, SF({}, n, { name: String(n.name) }, r, {
+	return /*#__PURE__*/ S.createElement(cF, zF({}, n, { name: String(n.name) }, r, {
 		isActive: !1,
 		option: t,
 		index: i,
@@ -25416,9 +25563,9 @@ function FF(e) {
 		isEntrance: e.isEntrance
 	}));
 }
-function IF(e) {
-	var t = e.data, n = e.props, r = e.animationElapsedTime, i = e.isAnimating, a = e.isEntrance, o = E(n) ?? {}, s = o.id, c = OF(o, mF), l = n.shape, u = n.dataKey, d = n.activeBar, f = n.onMouseEnter, p = n.onClick, m = n.onMouseLeave, h = OF(n, hF), g = gk(f, u, s), _ = _k(m), v = vk(p, u, s);
-	return t ? /*#__PURE__*/ S.createElement(S.Fragment, null, t.map((e, t) => /*#__PURE__*/ S.createElement(dF, SF({
+function $F(e) {
+	var t = e.data, n = e.props, r = e.animationElapsedTime, i = e.isAnimating, a = e.isEntrance, o = E(n) ?? {}, s = o.id, c = GF(o, jF), l = n.shape, u = n.dataKey, d = n.activeBar, f = n.onMouseEnter, p = n.onClick, m = n.onMouseLeave, h = GF(n, MF), g = gk(f, u, s), _ = _k(m), v = vk(p, u, s);
+	return t ? /*#__PURE__*/ S.createElement(S.Fragment, null, t.map((e, t) => /*#__PURE__*/ S.createElement(OF, zF({
 		index: e.originalDataIndex,
 		key: `rectangle-${e?.x}-${e?.y}-${e?.value}-${t}`,
 		className: "recharts-bar-rectangle"
@@ -25426,7 +25573,7 @@ function IF(e) {
 		onMouseEnter: g(e, e.originalDataIndex),
 		onMouseLeave: _(e, e.originalDataIndex),
 		onClick: v(e, e.originalDataIndex)
-	}), d ? /*#__PURE__*/ S.createElement(PF, {
+	}), d ? /*#__PURE__*/ S.createElement(ZF, {
 		shape: l,
 		activeBar: d,
 		baseProps: c,
@@ -25436,7 +25583,7 @@ function IF(e) {
 		animationElapsedTime: r,
 		isAnimating: i,
 		isEntrance: a
-	}) : /*#__PURE__*/ S.createElement(FF, {
+	}) : /*#__PURE__*/ S.createElement(QF, {
 		shape: l,
 		baseProps: c,
 		entry: e,
@@ -25447,29 +25594,29 @@ function IF(e) {
 		isEntrance: a
 	})))) : null;
 }
-var LF = (e, t, n) => e == null ? [] : t === 1 ? e.flatMap((e) => e.status === "removed" ? [] : [e.next]) : e.flatMap((e) => {
-	if (e.status === "removed") return n === "horizontal" ? [wF(wF({}, e.prev), {}, {
+var eI = (e, t, n) => e == null ? [] : t === 1 ? e.flatMap((e) => e.status === "removed" ? [] : [e.next]) : e.flatMap((e) => {
+	if (e.status === "removed") return n === "horizontal" ? [VF(VF({}, e.prev), {}, {
 		height: Te(e.prev.height, 0, t),
 		y: Te(e.prev.y, e.prev.y + e.prev.height, t)
-	})] : [wF(wF({}, e.prev), {}, { width: Te(e.prev.width, 0, t) })];
-	if (e.status === "matched") return [wF(wF({}, e.next), {}, {
+	})] : [VF(VF({}, e.prev), {}, { width: Te(e.prev.width, 0, t) })];
+	if (e.status === "matched") return [VF(VF({}, e.next), {}, {
 		x: Te(e.prev.x, e.next.x, t),
 		y: Te(e.prev.y, e.next.y, t),
 		width: Te(e.prev.width, e.next.width, t),
 		height: Te(e.prev.height, e.next.height, t)
 	})];
 	var r = e.next;
-	return n === "horizontal" ? [wF(wF({}, r), {}, {
+	return n === "horizontal" ? [VF(VF({}, r), {}, {
 		height: Te(0, r.height, t),
 		y: Te(r.stackedBarStart, r.y, t)
-	})] : [wF(wF({}, r), {}, {
+	})] : [VF(VF({}, r), {}, {
 		width: Te(0, r.width, t),
 		x: Te(r.stackedBarStart, r.x, t)
 	})];
 });
-function RF(e) {
+function tI(e) {
 	var t = e.props, n = e.previousRectanglesRef, r = t.data, i = t.isAnimationActive, a = t.animationBegin, o = t.animationDuration, s = t.animationEasing, c = t.animationInterpolateFn, l = t.layout, u = Hk(t.onAnimationStart, t.onAnimationEnd), d = u.isAnimating, f = u.handleAnimationStart, p = u.handleAnimationEnd;
-	return /*#__PURE__*/ S.createElement(NF, {
+	return /*#__PURE__*/ S.createElement(XF, {
 		showLabels: !d,
 		rects: r
 	}, /*#__PURE__*/ S.createElement(Uk, {
@@ -25486,7 +25633,7 @@ function RF(e) {
 		animationInterpolateFn: c,
 		animationMatchBy: t.animationMatchBy,
 		layout: l
-	}, (e, n, r) => /*#__PURE__*/ S.createElement(ae, null, /*#__PURE__*/ S.createElement(IF, {
+	}, (e, n, r) => /*#__PURE__*/ S.createElement(ae, null, /*#__PURE__*/ S.createElement($F, {
 		props: t,
 		data: e,
 		animationElapsedTime: n,
@@ -25494,14 +25641,14 @@ function RF(e) {
 		isEntrance: r
 	}))), /*#__PURE__*/ S.createElement(WO, { label: t.label }), t.children);
 }
-function zF(e) {
+function nI(e) {
 	var t = (0, S.useRef)(null);
-	return /*#__PURE__*/ S.createElement(RF, {
+	return /*#__PURE__*/ S.createElement(tI, {
 		previousRectanglesRef: t,
 		props: e
 	});
 }
-var BF = 0, VF = (e, t) => {
+var rI = 0, iI = (e, t) => {
 	var n = Array.isArray(e.value) ? e.value[1] : e.value;
 	return {
 		x: e.x,
@@ -25509,7 +25656,7 @@ var BF = 0, VF = (e, t) => {
 		value: n,
 		errorVal: tc(e, t)
 	};
-}, HF = class extends S.PureComponent {
+}, aI = class extends S.PureComponent {
 	render() {
 		var e = this.props, t = e.hide, n = e.data, r = e.dataKey, i = e.className, a = e.xAxisId, o = e.yAxisId, s = e.needClip, c = e.background, l = e.id;
 		if (t || n == null) return null;
@@ -25517,49 +25664,49 @@ var BF = 0, VF = (e, t) => {
 		return /*#__PURE__*/ S.createElement(ae, {
 			className: u,
 			id: l
-		}, s && /*#__PURE__*/ S.createElement("defs", null, /*#__PURE__*/ S.createElement(eP, {
+		}, s && /*#__PURE__*/ S.createElement("defs", null, /*#__PURE__*/ S.createElement(_P, {
 			clipPathId: d,
 			xAxisId: a,
 			yAxisId: o
 		})), /*#__PURE__*/ S.createElement(ae, {
 			className: "recharts-bar-rectangles",
 			clipPath: s ? `url(#clipPath-${d})` : void 0
-		}, /*#__PURE__*/ S.createElement(MF, {
+		}, /*#__PURE__*/ S.createElement(YF, {
 			data: n,
 			dataKey: r,
 			background: c,
 			allOtherBarProps: this.props
-		}), /*#__PURE__*/ S.createElement(zF, this.props)));
+		}), /*#__PURE__*/ S.createElement(nI, this.props)));
 	}
-}, UF = {
+}, oI = {
 	activeBar: !1,
 	animationBegin: 0,
 	animationDuration: 400,
 	animationEasing: "ease",
-	animationInterpolateFn: LF,
+	animationInterpolateFn: eI,
 	animationMatchBy: Ok,
 	background: !1,
 	hide: !1,
 	isAnimationActive: "auto",
 	label: !1,
 	legendType: "rect",
-	minPointSize: BF,
-	shape: WP,
+	minPointSize: rI,
+	shape: sF,
 	xAxisId: 0,
 	yAxisId: 0,
 	zIndex: Pm.bar
 };
-function WF(e) {
-	var t = e.xAxisId, n = e.yAxisId, r = e.hide, i = e.legendType, a = e.minPointSize, o = e.activeBar, s = e.animationBegin, c = e.animationDuration, l = e.animationEasing, u = e.isAnimationActive, d = $N(t, n).needClip, f = Pl(), p = Wc(), m = rk(e.children, KE), h = z((t) => nF(t, e.id, p, m));
+function sI(e) {
+	var t = e.xAxisId, n = e.yAxisId, r = e.hide, i = e.legendType, a = e.minPointSize, o = e.activeBar, s = e.animationBegin, c = e.animationDuration, l = e.animationEasing, u = e.isAnimationActive, d = gP(t, n).needClip, f = Pl(), p = Wc(), m = rk(e.children, KE), h = z((t) => yF(t, e.id, p, m));
 	if (f !== "vertical" && f !== "horizontal") return null;
 	var g, _ = h?.[0];
-	return g = _ == null || _.height == null || _.width == null ? 0 : f === "vertical" ? _.height / 2 : _.width / 2, /*#__PURE__*/ S.createElement(QN, {
+	return g = _ == null || _.height == null || _.width == null ? 0 : f === "vertical" ? _.height / 2 : _.width / 2, /*#__PURE__*/ S.createElement(hP, {
 		xAxisId: t,
 		yAxisId: n,
 		data: h,
-		dataPointFormatter: VF,
+		dataPointFormatter: iI,
 		errorBarOffset: g
-	}, /*#__PURE__*/ S.createElement(HF, SF({}, e, {
+	}, /*#__PURE__*/ S.createElement(aI, zF({}, e, {
 		layout: f,
 		needClip: d,
 		data: h,
@@ -25575,7 +25722,7 @@ function WF(e) {
 		isAnimationActive: u
 	})));
 }
-function GF(e) {
+function cI(e) {
 	var t = e.layout, n = e.barSettings, r = n.dataKey, i = n.minPointSize, a = n.hasCustomShape, o = e.pos, s = e.bandSize, c = e.xAxis, l = e.yAxis, u = e.xAxisTicks, d = e.yAxisTicks, f = e.stackedData, p = e.displayedData, m = e.offset, h = e.cells, g = e.parentViewBox, _ = e.dataStartIndex, v = t === "horizontal" ? l : c, y = f ? v.scale.domain() : null, b = fc({ numericAxis: v }), x = v.scale.map(b);
 	return p.map((e, n) => {
 		var p, v, S, C, w, T;
@@ -25584,7 +25731,7 @@ function GF(e) {
 			if (E == null) return null;
 			p = oc(E, y);
 		} else p = tc(e, r), Array.isArray(p) || (p = [b, p]);
-		var D = KP(i, BF)(p[1], n);
+		var D = lF(i, rI)(p[1], n);
 		if (t === "horizontal") {
 			var O = l.scale.map(p[0]), k = l.scale.map(p[1]);
 			if (O == null || k == null) return null;
@@ -25626,7 +25773,7 @@ function GF(e) {
 				C += ee;
 			}
 		}
-		return v == null || S == null || C == null || w == null || !a && (C === 0 || w === 0) ? null : wF(wF({}, e), {}, {
+		return v == null || S == null || C == null || w == null || !a && (C === 0 || w === 0) ? null : VF(VF({}, e), {}, {
 			stackedBarStart: x,
 			x: v,
 			y: S,
@@ -25644,12 +25791,12 @@ function GF(e) {
 		}, h && h[n] && h[n].props);
 	}).filter(Boolean);
 }
-function KF(e) {
-	var t = Pn(e, UF), n = cF(t.stackId), r = Wc();
+function lI(e) {
+	var t = Pn(e, oI), n = TF(t.stackId), r = Wc();
 	return /*#__PURE__*/ S.createElement($k, {
 		id: t.id,
 		type: "bar"
-	}, (e) => /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(bk, { legendPayload: AF(t) }), /*#__PURE__*/ S.createElement(jF, {
+	}, (e) => /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(bk, { legendPayload: qF(t) }), /*#__PURE__*/ S.createElement(JF, {
 		dataKey: t.dataKey,
 		stroke: t.stroke,
 		strokeWidth: t.strokeWidth,
@@ -25674,24 +25821,24 @@ function KF(e) {
 		minPointSize: t.minPointSize,
 		maxBarSize: t.maxBarSize,
 		isPanorama: r,
-		hasCustomShape: t.shape != null && t.shape !== WP
-	}), /*#__PURE__*/ S.createElement(GT, { zIndex: t.zIndex }, /*#__PURE__*/ S.createElement(WF, SF({}, t, { id: e })))));
+		hasCustomShape: t.shape != null && t.shape !== sF
+	}), /*#__PURE__*/ S.createElement(GT, { zIndex: t.zIndex }, /*#__PURE__*/ S.createElement(sI, zF({}, t, { id: e })))));
 }
-var qF = /*#__PURE__*/ S.memo(KF, du);
-qF.displayName = "Bar";
+var uI = /*#__PURE__*/ S.memo(lI, du);
+uI.displayName = "Bar";
 //#endregion
 //#region node_modules/recharts/es6/util/axisPropsAreEqual.js
-var JF = ["domain", "range"], YF = ["domain", "range"];
-function XF(e, t) {
+var dI = ["domain", "range"], fI = ["domain", "range"];
+function pI(e, t) {
 	if (e == null) return {};
-	var n, r, i = ZF(e, t);
+	var n, r, i = mI(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function ZF(e, t) {
+function mI(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -25700,31 +25847,31 @@ function ZF(e, t) {
 	}
 	return n;
 }
-function QF(e, t) {
+function hI(e, t) {
 	return e === t ? !0 : Array.isArray(e) && e.length === 2 && Array.isArray(t) && t.length === 2 ? e[0] === t[0] && e[1] === t[1] : !1;
 }
-function $F(e, t) {
+function gI(e, t) {
 	if (e === t) return !0;
-	var n = e.domain, r = e.range, i = XF(e, JF), a = t.domain, o = t.range, s = XF(t, YF);
-	return !QF(n, a) || !QF(r, o) ? !1 : du(i, s);
+	var n = e.domain, r = e.range, i = pI(e, dI), a = t.domain, o = t.range, s = pI(t, fI);
+	return !hI(n, a) || !hI(r, o) ? !1 : du(i, s);
 }
 //#endregion
 //#region node_modules/recharts/es6/cartesian/XAxis.js
-var eI = ["type"], tI = [
+var _I = ["type"], vI = [
 	"dangerouslySetInnerHTML",
 	"ticks",
 	"scale"
-], nI = ["id", "scale"];
-function rI() {
-	return rI = Object.assign ? Object.assign.bind() : function(e) {
+], yI = ["id", "scale"];
+function bI() {
+	return bI = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, rI.apply(null, arguments);
+	}, bI.apply(null, arguments);
 }
-function iI(e, t) {
+function xI(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -25734,30 +25881,30 @@ function iI(e, t) {
 	}
 	return n;
 }
-function aI(e) {
+function SI(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? iI(Object(n), !0).forEach(function(t) {
-			oI(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : iI(Object(n)).forEach(function(t) {
+		t % 2 ? xI(Object(n), !0).forEach(function(t) {
+			CI(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : xI(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function oI(e, t, n) {
-	return (t = sI(t)) in e ? Object.defineProperty(e, t, {
+function CI(e, t, n) {
+	return (t = wI(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function sI(e) {
-	var t = cI(e, "string");
+function wI(e) {
+	var t = TI(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function cI(e, t) {
+function TI(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -25767,16 +25914,16 @@ function cI(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-function lI(e, t) {
+function EI(e, t) {
 	if (e == null) return {};
-	var n, r, i = uI(e, t);
+	var n, r, i = DI(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function uI(e, t) {
+function DI(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -25785,9 +25932,9 @@ function uI(e, t) {
 	}
 	return n;
 }
-function dI(e) {
-	var t = ui(), n = (0, S.useRef)(null), r = Fl(), i = e.type, a = lI(e, eI), o = Rm(r, "xAxis", i), s = (0, S.useMemo)(() => {
-		if (o != null) return aI(aI({}, a), {}, { type: o });
+function OI(e) {
+	var t = ui(), n = (0, S.useRef)(null), r = Fl(), i = e.type, a = EI(e, _I), o = Rm(r, "xAxis", i), s = (0, S.useMemo)(() => {
+		if (o != null) return SI(SI({}, a), {}, { type: o });
 	}, [a, o]);
 	return (0, S.useLayoutEffect)(() => {
 		s != null && (n.current === null ? t(EA(s)) : n.current !== s && t(DA({
@@ -25798,7 +25945,7 @@ function dI(e) {
 		n.current &&= (t(OA(n.current)), null);
 	}, [t]), null;
 }
-var fI = (e) => {
+var kI = (e) => {
 	var t = e.xAxisId, n = e.className, r = e.height, i = e.label, a = (0, S.useRef)(null), o = (0, S.useRef)(null), s = z(Hc), c = Wc(), l = ui(), u = "xAxis", d = z((e) => gC(e, u, t, c)), f = z((e) => iC(e, t)), p = z((e) => lC(e, t)), m = z((e) => hx(e, t));
 	if ((0, S.useLayoutEffect)(() => {
 		if (!(r !== "auto" || !f || SO(i) || /*#__PURE__*/ (0, S.isValidElement)(i) || m == null)) {
@@ -25821,10 +25968,10 @@ var fI = (e) => {
 		m
 	]), f == null || p == null || m == null) return null;
 	e.dangerouslySetInnerHTML, e.ticks, e.scale;
-	var h = lI(e, tI);
+	var h = EI(e, vI);
 	m.id, m.scale;
-	var g = lI(m, nI);
-	return /*#__PURE__*/ S.createElement(cN, rI({}, h, g, {
+	var g = EI(m, yI);
+	return /*#__PURE__*/ S.createElement(TN, bI({}, h, g, {
 		ref: a,
 		labelRef: o,
 		x: p.x,
@@ -25837,12 +25984,12 @@ var fI = (e) => {
 		axisType: u,
 		axisId: t
 	}));
-}, pI = {
+}, AI = {
 	allowDataOverflow: mx.allowDataOverflow,
 	allowDecimals: mx.allowDecimals,
 	allowDuplicatedCategory: mx.allowDuplicatedCategory,
 	angle: mx.angle,
-	axisLine: $M.axisLine,
+	axisLine: gN.axisLine,
 	height: mx.height,
 	hide: !1,
 	includeHidden: mx.includeHidden,
@@ -25856,14 +26003,14 @@ var fI = (e) => {
 	scale: mx.scale,
 	tick: mx.tick,
 	tickCount: mx.tickCount,
-	tickLine: $M.tickLine,
-	tickSize: $M.tickSize,
+	tickLine: gN.tickLine,
+	tickSize: gN.tickSize,
 	type: mx.type,
 	niceTicks: mx.niceTicks,
 	xAxisId: 0
-}, mI = /*#__PURE__*/ S.memo((e) => {
-	var t = Pn(e, pI);
-	return /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(dI, {
+}, jI = /*#__PURE__*/ S.memo((e) => {
+	var t = Pn(e, AI);
+	return /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(OI, {
 		allowDataOverflow: t.allowDataOverflow,
 		allowDecimals: t.allowDecimals,
 		allowDuplicatedCategory: t.allowDuplicatedCategory,
@@ -25889,26 +26036,26 @@ var fI = (e) => {
 		type: t.type,
 		unit: t.unit,
 		niceTicks: t.niceTicks
-	}), /*#__PURE__*/ S.createElement(fI, t));
-}, $F);
-mI.displayName = "XAxis";
+	}), /*#__PURE__*/ S.createElement(kI, t));
+}, gI);
+jI.displayName = "XAxis";
 //#endregion
 //#region node_modules/recharts/es6/cartesian/YAxis.js
-var hI = ["type"], gI = [
+var MI = ["type"], NI = [
 	"dangerouslySetInnerHTML",
 	"ticks",
 	"scale"
-], _I = ["id", "scale"];
-function vI() {
-	return vI = Object.assign ? Object.assign.bind() : function(e) {
+], PI = ["id", "scale"];
+function FI() {
+	return FI = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, vI.apply(null, arguments);
+	}, FI.apply(null, arguments);
 }
-function yI(e, t) {
+function II(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -25918,30 +26065,30 @@ function yI(e, t) {
 	}
 	return n;
 }
-function bI(e) {
+function LI(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? yI(Object(n), !0).forEach(function(t) {
-			xI(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : yI(Object(n)).forEach(function(t) {
+		t % 2 ? II(Object(n), !0).forEach(function(t) {
+			RI(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : II(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function xI(e, t, n) {
-	return (t = SI(t)) in e ? Object.defineProperty(e, t, {
+function RI(e, t, n) {
+	return (t = zI(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function SI(e) {
-	var t = CI(e, "string");
+function zI(e) {
+	var t = BI(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function CI(e, t) {
+function BI(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -25951,16 +26098,16 @@ function CI(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-function wI(e, t) {
+function VI(e, t) {
 	if (e == null) return {};
-	var n, r, i = TI(e, t);
+	var n, r, i = HI(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function TI(e, t) {
+function HI(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -25969,9 +26116,9 @@ function TI(e, t) {
 	}
 	return n;
 }
-function EI(e) {
-	var t = ui(), n = (0, S.useRef)(null), r = Fl(), i = e.type, a = wI(e, hI), o = Rm(r, "yAxis", i), s = (0, S.useMemo)(() => {
-		if (o != null) return bI(bI({}, a), {}, { type: o });
+function UI(e) {
+	var t = ui(), n = (0, S.useRef)(null), r = Fl(), i = e.type, a = VI(e, MI), o = Rm(r, "yAxis", i), s = (0, S.useMemo)(() => {
+		if (o != null) return LI(LI({}, a), {}, { type: o });
 	}, [o, a]);
 	return (0, S.useLayoutEffect)(() => {
 		s != null && (n.current === null ? t(kA(s)) : n.current !== s && t(AA({
@@ -25982,7 +26129,7 @@ function EI(e) {
 		n.current &&= (t(jA(n.current)), null);
 	}, [t]), null;
 }
-function DI(e) {
+function WI(e) {
 	var t = e.yAxisId, n = e.className, r = e.width, i = e.label, a = (0, S.useRef)(null), o = (0, S.useRef)(null), s = z(Hc), c = Wc(), l = ui(), u = "yAxis", d = z((e) => dC(e, t)), f = z((e) => uC(e, t)), p = z((e) => gC(e, u, t, c)), m = z((e) => vx(e, t));
 	if ((0, S.useLayoutEffect)(() => {
 		if (!(r !== "auto" || !d || SO(i) || /*#__PURE__*/ (0, S.isValidElement)(i) || m == null)) {
@@ -26005,10 +26152,10 @@ function DI(e) {
 		m
 	]), d == null || f == null || m == null) return null;
 	e.dangerouslySetInnerHTML, e.ticks, e.scale;
-	var h = wI(e, gI);
+	var h = VI(e, NI);
 	m.id, m.scale;
-	var g = wI(m, _I);
-	return /*#__PURE__*/ S.createElement(cN, vI({}, h, g, {
+	var g = VI(m, PI);
+	return /*#__PURE__*/ S.createElement(TN, FI({}, h, g, {
 		ref: a,
 		labelRef: o,
 		x: f.x,
@@ -26023,12 +26170,12 @@ function DI(e) {
 		axisId: t
 	}));
 }
-var OI = {
+var GI = {
 	allowDataOverflow: _x.allowDataOverflow,
 	allowDecimals: _x.allowDecimals,
 	allowDuplicatedCategory: _x.allowDuplicatedCategory,
 	angle: _x.angle,
-	axisLine: $M.axisLine,
+	axisLine: gN.axisLine,
 	hide: !1,
 	includeHidden: _x.includeHidden,
 	interval: _x.interval,
@@ -26041,15 +26188,15 @@ var OI = {
 	scale: _x.scale,
 	tick: _x.tick,
 	tickCount: _x.tickCount,
-	tickLine: $M.tickLine,
-	tickSize: $M.tickSize,
+	tickLine: gN.tickLine,
+	tickSize: gN.tickSize,
 	type: _x.type,
 	niceTicks: _x.niceTicks,
 	width: _x.width,
 	yAxisId: 0
-}, kI = /*#__PURE__*/ S.memo((e) => {
-	var t = Pn(e, OI);
-	return /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(EI, {
+}, KI = /*#__PURE__*/ S.memo((e) => {
+	var t = Pn(e, GI);
+	return /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(UI, {
 		interval: t.interval,
 		id: t.yAxisId,
 		scale: t.scale,
@@ -26075,10 +26222,10 @@ var OI = {
 		tick: t.tick,
 		tickFormatter: t.tickFormatter,
 		niceTicks: t.niceTicks
-	}), /*#__PURE__*/ S.createElement(DI, t));
-}, $F);
-kI.displayName = "YAxis";
-var AI = B([
+	}), /*#__PURE__*/ S.createElement(WI, t));
+}, gI);
+KI.displayName = "YAxis";
+var qI = B([
 	(e, t) => t,
 	Nl,
 	eh,
@@ -26090,12 +26237,12 @@ var AI = B([
 ], DT);
 //#endregion
 //#region node_modules/recharts/es6/util/getRelativeCoordinate.js
-function jI(e) {
+function JI(e) {
 	return "getBBox" in e.currentTarget && typeof e.currentTarget.getBBox == "function";
 }
-function MI(e) {
+function YI(e) {
 	var t = e.currentTarget.getBoundingClientRect(), n, r;
-	if (jI(e)) {
+	if (JI(e)) {
 		var i = e.currentTarget.getBBox();
 		n = i.width > 0 ? t.width / i.width : 1, r = i.height > 0 ? t.height / i.height : 1;
 	} else {
@@ -26110,11 +26257,11 @@ function MI(e) {
 }
 //#endregion
 //#region node_modules/recharts/es6/state/mouseEventsMiddleware.js
-var NI = No("mouseClick"), PI = zs();
-PI.startListening({
-	actionCreator: NI,
+var XI = No("mouseClick"), ZI = zs();
+ZI.startListening({
+	actionCreator: XI,
 	effect: (e, t) => {
-		var n = e.payload, r = AI(t.getState(), MI(n));
+		var n = e.payload, r = qI(t.getState(), YI(n));
 		r?.activeIndex != null && t.dispatch(zC({
 			activeIndex: r.activeIndex,
 			activeDataKey: void 0,
@@ -26122,43 +26269,43 @@ PI.startListening({
 		}));
 	}
 });
-var FI = No("mouseMove"), II = zs(), LI = null, RI = null, zI = null;
-II.startListening({
-	actionCreator: FI,
+var QI = No("mouseMove"), $I = zs(), eL = null, tL = null, nL = null;
+$I.startListening({
+	actionCreator: QI,
 	effect: (e, t) => {
 		var n = e.payload, r = t.getState().eventSettings, i = r.throttleDelay, a = r.throttledEvents, o = a === "all" || a?.includes("mousemove");
-		LI !== null && (cancelAnimationFrame(LI), LI = null), RI !== null && (typeof i != "number" || !o) && (clearTimeout(RI), RI = null), zI = MI(n);
+		eL !== null && (cancelAnimationFrame(eL), eL = null), tL !== null && (typeof i != "number" || !o) && (clearTimeout(tL), tL = null), nL = YI(n);
 		var s = () => {
 			var e = t.getState(), n = CC(e, e.tooltip.settings.shared);
-			if (!zI) {
-				LI = null, RI = null;
+			if (!nL) {
+				eL = null, tL = null;
 				return;
 			}
 			if (n === "axis") {
-				var r = AI(e, zI);
+				var r = qI(e, nL);
 				r?.activeIndex == null ? t.dispatch(IC()) : t.dispatch(RC({
 					activeIndex: r.activeIndex,
 					activeDataKey: void 0,
 					activeCoordinate: r.activeCoordinate
 				}));
 			}
-			LI = null, RI = null;
+			eL = null, tL = null;
 		};
 		if (!o) {
 			s();
 			return;
 		}
-		i === "raf" ? LI = requestAnimationFrame(s) : typeof i == "number" && RI === null && (RI = setTimeout(s, i));
+		i === "raf" ? eL = requestAnimationFrame(s) : typeof i == "number" && tL === null && (tL = setTimeout(s, i));
 	}
 });
 //#endregion
 //#region node_modules/recharts/es6/state/reduxDevtoolsJsonStringifyReplacer.js
-function BI(e, t) {
+function rL(e, t) {
 	return t instanceof HTMLElement ? `HTMLElement <${t.tagName} class="${t.className}">` : t === window ? "global.window" : e === "children" && typeof t == "object" && t ? "<<CHILDREN>>" : t;
 }
 //#endregion
 //#region node_modules/recharts/es6/state/rootPropsSlice.js
-var VI = {
+var iL = {
 	accessibilityLayer: !0,
 	barCategoryGap: "10%",
 	barGap: 4,
@@ -26170,30 +26317,30 @@ var VI = {
 	syncMethod: "index",
 	baseValue: void 0,
 	reverseStackOrder: !1
-}, HI = $o({
+}, aL = $o({
 	name: "rootProps",
-	initialState: VI,
+	initialState: iL,
 	reducers: { updateOptions: (e, t) => {
-		e.accessibilityLayer = t.payload.accessibilityLayer, e.barCategoryGap = t.payload.barCategoryGap, e.barGap = t.payload.barGap ?? VI.barGap, e.barSize = t.payload.barSize, e.maxBarSize = t.payload.maxBarSize, e.stackOffset = t.payload.stackOffset, e.syncId = t.payload.syncId, e.syncMethod = t.payload.syncMethod, e.className = t.payload.className, e.baseValue = t.payload.baseValue, e.reverseStackOrder = t.payload.reverseStackOrder;
+		e.accessibilityLayer = t.payload.accessibilityLayer, e.barCategoryGap = t.payload.barCategoryGap, e.barGap = t.payload.barGap ?? iL.barGap, e.barSize = t.payload.barSize, e.maxBarSize = t.payload.maxBarSize, e.stackOffset = t.payload.stackOffset, e.syncId = t.payload.syncId, e.syncMethod = t.payload.syncMethod, e.className = t.payload.className, e.baseValue = t.payload.baseValue, e.reverseStackOrder = t.payload.reverseStackOrder;
 	} }
-}), UI = HI.reducer, WI = HI.actions.updateOptions, GI = $o({
+}), oL = aL.reducer, sL = aL.actions.updateOptions, cL = $o({
 	name: "polarOptions",
 	initialState: null,
 	reducers: { updatePolarOptions: (e, t) => e === null ? t.payload : (e.startAngle = t.payload.startAngle, e.endAngle = t.payload.endAngle, e.cx = t.payload.cx, e.cy = t.payload.cy, e.innerRadius = t.payload.innerRadius, e.outerRadius = t.payload.outerRadius, e) }
 });
-GI.actions.updatePolarOptions;
-var KI = GI.reducer, qI = No("keyDown"), JI = No("focus"), YI = No("blur"), XI = zs(), ZI = null, QI = null, $I = null;
-XI.startListening({
-	actionCreator: qI,
+cL.actions.updatePolarOptions;
+var lL = cL.reducer, uL = No("keyDown"), dL = No("focus"), fL = No("blur"), pL = zs(), mL = null, hL = null, gL = null;
+pL.startListening({
+	actionCreator: uL,
 	effect: (e, t) => {
-		$I = e.payload, ZI !== null && (cancelAnimationFrame(ZI), ZI = null);
+		gL = e.payload, mL !== null && (cancelAnimationFrame(mL), mL = null);
 		var n = t.getState().eventSettings, r = n.throttleDelay, i = n.throttledEvents, a = i === "all" || i.includes("keydown");
-		QI !== null && (typeof r != "number" || !a) && (clearTimeout(QI), QI = null);
+		hL !== null && (typeof r != "number" || !a) && (clearTimeout(hL), hL = null);
 		var o = () => {
 			try {
 				var e = t.getState();
 				if (e.rootProps.accessibilityLayer === !1) return;
-				var n = e.tooltip.keyboardInteraction, r = $I;
+				var n = e.tooltip.keyboardInteraction, r = gL;
 				if (r !== "ArrowRight" && r !== "ArrowLeft" && r !== "Enter") return;
 				var i = ew(n, Sw(e), Xx(e), jw(e)), a = i == null ? -1 : Number(i), o = !Number.isFinite(a) || a < 0, s = Iw(e), c = Sw(e), l = CC(e, e.tooltip.settings.shared);
 				if (r === "Enter") {
@@ -26237,19 +26384,19 @@ XI.startListening({
 					activeCoordinate: x
 				}));
 			} finally {
-				ZI = null, QI = null;
+				mL = null, hL = null;
 			}
 		};
 		if (!a) {
 			o();
 			return;
 		}
-		r === "raf" ? ZI = requestAnimationFrame(o) : typeof r == "number" && QI === null && (o(), $I = null, QI = setTimeout(() => {
-			$I ? o() : (QI = null, ZI = null);
+		r === "raf" ? mL = requestAnimationFrame(o) : typeof r == "number" && hL === null && (o(), gL = null, hL = setTimeout(() => {
+			gL ? o() : (hL = null, mL = null);
 		}, r));
 	}
-}), XI.startListening({
-	actionCreator: JI,
+}), pL.startListening({
+	actionCreator: dL,
 	effect: (e, t) => {
 		var n = t.getState();
 		if (n.rootProps.accessibilityLayer !== !1) {
@@ -26264,8 +26411,8 @@ XI.startListening({
 			}
 		}
 	}
-}), XI.startListening({
-	actionCreator: YI,
+}), pL.startListening({
+	actionCreator: fL,
 	effect: (e, t) => {
 		var n = t.getState();
 		if (n.rootProps.accessibilityLayer !== !1) {
@@ -26280,7 +26427,7 @@ XI.startListening({
 });
 //#endregion
 //#region node_modules/recharts/es6/util/createEventProxy.js
-function eL(e) {
+function _L(e) {
 	e.persist();
 	var t = e.currentTarget;
 	return new Proxy(e, { get: (e, n) => {
@@ -26291,23 +26438,23 @@ function eL(e) {
 }
 //#endregion
 //#region node_modules/recharts/es6/state/externalEventsMiddleware.js
-var tL = No("externalEvent"), nL = zs(), rL = /* @__PURE__ */ new Map(), iL = /* @__PURE__ */ new Map(), aL = /* @__PURE__ */ new Map();
-nL.startListening({
-	actionCreator: tL,
+var vL = No("externalEvent"), yL = zs(), bL = /* @__PURE__ */ new Map(), xL = /* @__PURE__ */ new Map(), SL = /* @__PURE__ */ new Map();
+yL.startListening({
+	actionCreator: vL,
 	effect: (e, t) => {
 		var n = e.payload, r = n.handler, i = n.reactEvent;
 		if (r != null) {
-			var a = i.type, o = eL(i);
-			aL.set(a, {
+			var a = i.type, o = _L(i);
+			SL.set(a, {
 				handler: r,
 				reactEvent: o
 			});
-			var s = rL.get(a);
-			s !== void 0 && (cancelAnimationFrame(s), rL.delete(a));
-			var c = t.getState().eventSettings, l = c.throttleDelay, u = c.throttledEvents, d = u === "all" || u?.includes(a), f = iL.get(a);
-			f !== void 0 && (typeof l != "number" || !d) && (clearTimeout(f), iL.delete(a));
+			var s = bL.get(a);
+			s !== void 0 && (cancelAnimationFrame(s), bL.delete(a));
+			var c = t.getState().eventSettings, l = c.throttleDelay, u = c.throttledEvents, d = u === "all" || u?.includes(a), f = xL.get(a);
+			f !== void 0 && (typeof l != "number" || !d) && (clearTimeout(f), xL.delete(a));
 			var p = () => {
-				var e = aL.get(a);
+				var e = SL.get(a);
 				try {
 					if (!e) return;
 					var n = e.handler, r = e.reactEvent, i = t.getState(), o = {
@@ -26320,7 +26467,7 @@ nL.startListening({
 					};
 					n && n(o, r);
 				} finally {
-					rL.delete(a), iL.delete(a), aL.delete(a);
+					bL.delete(a), xL.delete(a), SL.delete(a);
 				}
 			};
 			if (!d) {
@@ -26329,18 +26476,18 @@ nL.startListening({
 			}
 			if (l === "raf") {
 				var m = requestAnimationFrame(p);
-				rL.set(a, m);
+				bL.set(a, m);
 			} else if (typeof l == "number") {
-				if (!iL.has(a)) {
+				if (!xL.has(a)) {
 					p();
 					var h = setTimeout(p, l);
-					iL.set(a, h);
+					xL.set(a, h);
 				}
 			} else p();
 		}
 	}
 });
-var oL = B([
+var CL = B([
 	B([iw], (e) => e.tooltipItemPayloads),
 	(e, t) => t,
 	(e, t, n) => n
@@ -26352,42 +26499,42 @@ var oL = B([
 			if (i != null) return i(t);
 		}
 	}
-}), sL = No("touchMove"), cL = zs(), lL = null, uL = null, dL = null, fL = null;
-cL.startListening({
-	actionCreator: sL,
+}), wL = No("touchMove"), TL = zs(), EL = null, DL = null, OL = null, kL = null;
+TL.startListening({
+	actionCreator: wL,
 	effect: (e, t) => {
 		var n = e.payload;
 		if (n.touches != null && n.touches.length !== 0) {
-			fL = eL(n);
+			kL = _L(n);
 			var r = t.getState().eventSettings, i = r.throttleDelay, a = r.throttledEvents, o = a === "all" || a.includes("touchmove");
-			lL !== null && (cancelAnimationFrame(lL), lL = null), uL !== null && (typeof i != "number" || !o) && (clearTimeout(uL), uL = null), dL = Array.from(n.touches).map((e) => MI({
+			EL !== null && (cancelAnimationFrame(EL), EL = null), DL !== null && (typeof i != "number" || !o) && (clearTimeout(DL), DL = null), OL = Array.from(n.touches).map((e) => YI({
 				clientX: e.clientX,
 				clientY: e.clientY,
 				currentTarget: n.currentTarget
 			}));
 			var s = () => {
-				if (fL != null) {
+				if (kL != null) {
 					var e = t.getState(), n = CC(e, e.tooltip.settings.shared);
 					if (n === "axis") {
-						var r = dL?.[0];
+						var r = OL?.[0];
 						if (r == null) {
-							lL = null, uL = null;
+							EL = null, DL = null;
 							return;
 						}
-						var i = AI(e, r);
+						var i = qI(e, r);
 						i?.activeIndex != null && t.dispatch(RC({
 							activeIndex: i.activeIndex,
 							activeDataKey: void 0,
 							activeCoordinate: i.activeCoordinate
 						}));
 					} else if (n === "item") {
-						var a = fL.touches[0];
+						var a = kL.touches[0];
 						if (document.elementFromPoint == null || a == null) return;
 						var o = document.elementFromPoint(a.clientX, a.clientY);
 						if (!o || !o.getAttribute) return;
 						var s = o.getAttribute(kc), c = o.getAttribute("data-recharts-item-id") ?? void 0, l = vw(e).find((e) => e.id === c);
 						if (s == null || l == null || c == null) return;
-						var u = l.dataKey, d = oL(e, s, c);
+						var u = l.dataKey, d = CL(e, s, c);
 						t.dispatch(PC({
 							activeDataKey: u,
 							activeIndex: s,
@@ -26395,22 +26542,22 @@ cL.startListening({
 							activeGraphicalItemId: c
 						}));
 					}
-					lL = null, uL = null;
+					EL = null, DL = null;
 				}
 			};
 			if (!o) {
 				s();
 				return;
 			}
-			i === "raf" ? lL = requestAnimationFrame(s) : typeof i == "number" && uL === null && (s(), fL = null, uL = setTimeout(() => {
-				fL ? s() : (uL = null, lL = null);
+			i === "raf" ? EL = requestAnimationFrame(s) : typeof i == "number" && DL === null && (s(), kL = null, DL = setTimeout(() => {
+				kL ? s() : (DL = null, EL = null);
 			}, i));
 		}
 	}
 });
 //#endregion
 //#region node_modules/recharts/es6/state/eventSettingsSlice.js
-var pL = {
+var AL = {
 	throttleDelay: "raf",
 	throttledEvents: [
 		"mousemove",
@@ -26419,33 +26566,33 @@ var pL = {
 		"scroll",
 		"wheel"
 	]
-}, mL = $o({
+}, jL = $o({
 	name: "eventSettings",
-	initialState: pL,
+	initialState: AL,
 	reducers: { setEventSettings: (e, t) => {
 		t.payload.throttleDelay != null && (e.throttleDelay = t.payload.throttleDelay), t.payload.throttledEvents != null && (e.throttledEvents = H(t.payload.throttledEvents));
 	} }
-}), hL = mL.actions.setEventSettings, gL = mL.reducer, _L = ra({
+}), ML = jL.actions.setEventSettings, NL = jL.reducer, PL = ra({
 	brush: Tj,
 	cartesianAxis: PA,
 	chartData: gE,
-	errorBars: qN,
-	eventSettings: gL,
+	errorBars: uP,
+	eventSettings: NL,
 	graphicalItems: aA,
 	layout: qs,
 	legend: Kl,
 	options: lE,
 	polarAxis: YO,
-	polarOptions: KI,
-	referenceElements: tM,
-	renderedTicks: LM,
-	rootProps: UI,
+	polarOptions: lL,
+	referenceElements: iM,
+	renderedTicks: eN,
+	rootProps: oL,
 	tooltip: HC,
 	zIndex: WT
-}), vL = function(e) {
+}), FL = function(e) {
 	var t = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "Chart";
 	return Uo({
-		reducer: _L,
+		reducer: PL,
 		preloadedState: e,
 		middleware: (e) => e({
 			serializableCheck: !1,
@@ -26455,28 +26602,28 @@ var pL = {
 				"production"
 			].includes("es6")
 		}).concat([
-			PI.middleware,
-			II.middleware,
-			XI.middleware,
-			nL.middleware,
-			cL.middleware
+			ZI.middleware,
+			$I.middleware,
+			pL.middleware,
+			yL.middleware,
+			TL.middleware
 		]),
 		enhancers: (e) => {
 			var t = e;
 			return typeof e == "function" && (t = e()), t.concat(Vo({ type: "raf" }));
 		},
 		devTools: ad.devToolsEnabled && {
-			serialize: { replacer: BI },
+			serialize: { replacer: rL },
 			name: `recharts-${t}`
 		}
 	});
 };
 //#endregion
 //#region node_modules/recharts/es6/state/RechartsStoreProvider.js
-function yL(e) {
+function IL(e) {
 	var t = e.preloadedState, n = e.children, r = e.reduxStoreName, i = Wc(), a = (0, S.useRef)(null);
 	if (i) return n;
-	a.current ??= vL(t, r);
+	a.current ??= FL(t, r);
 	var o = si;
 	return /*#__PURE__*/ S.createElement(cu, {
 		context: o,
@@ -26485,7 +26632,7 @@ function yL(e) {
 }
 //#endregion
 //#region node_modules/recharts/es6/state/ReportMainChartProps.js
-function bL(e) {
+function LL(e) {
 	var t = e.layout, n = e.margin, r = ui(), i = Wc();
 	return (0, S.useEffect)(() => {
 		i || (r(Ws(t)), r(Us(n)));
@@ -26496,24 +26643,24 @@ function bL(e) {
 		n
 	]), null;
 }
-var xL = /*#__PURE__*/ (0, S.memo)(bL, du);
+var RL = /*#__PURE__*/ (0, S.memo)(LL, du);
 //#endregion
 //#region node_modules/recharts/es6/state/ReportChartProps.js
-function SL(e) {
+function zL(e) {
 	var t = ui();
 	return (0, S.useEffect)(() => {
-		t(WI(e));
+		t(sL(e));
 	}, [t, e]), null;
 }
-var CL = /*#__PURE__*/ (0, S.memo)((e) => {
+var BL = /*#__PURE__*/ (0, S.memo)((e) => {
 	var t = ui();
 	return (0, S.useEffect)(() => {
-		t(hL(e));
+		t(ML(e));
 	}, [t, e]), null;
 }, du);
 //#endregion
 //#region node_modules/recharts/es6/zIndex/ZIndexPortal.js
-function wL(e) {
+function VL(e) {
 	var t = e.zIndex, n = e.isPanorama, r = (0, S.useRef)(null), i = ui();
 	return (0, S.useLayoutEffect)(() => (r.current && i(HT({
 		zIndex: t,
@@ -26534,15 +26681,15 @@ function wL(e) {
 		className: `recharts-zIndex-layer_${t}`
 	});
 }
-function TL(e) {
+function HL(e) {
 	var t = e.children, n = e.isPanorama, r = z(kT);
 	if (!r || r.length === 0) return t;
 	var i = r.filter((e) => e < 0), a = r.filter((e) => e > 0);
-	return /*#__PURE__*/ S.createElement(S.Fragment, null, i.map((e) => /*#__PURE__*/ S.createElement(wL, {
+	return /*#__PURE__*/ S.createElement(S.Fragment, null, i.map((e) => /*#__PURE__*/ S.createElement(VL, {
 		key: e,
 		zIndex: e,
 		isPanorama: n
-	})), t, a.map((e) => /*#__PURE__*/ S.createElement(wL, {
+	})), t, a.map((e) => /*#__PURE__*/ S.createElement(VL, {
 		key: e,
 		zIndex: e,
 		isPanorama: n
@@ -26550,17 +26697,17 @@ function TL(e) {
 }
 //#endregion
 //#region node_modules/recharts/es6/container/RootSurface.js
-var EL = ["children"];
-function DL(e, t) {
+var UL = ["children"];
+function WL(e, t) {
 	if (e == null) return {};
-	var n, r, i = OL(e, t);
+	var n, r, i = GL(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function OL(e, t) {
+function GL(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -26569,34 +26716,34 @@ function OL(e, t) {
 	}
 	return n;
 }
-function kL() {
-	return kL = Object.assign ? Object.assign.bind() : function(e) {
+function KL() {
+	return KL = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, kL.apply(null, arguments);
+	}, KL.apply(null, arguments);
 }
-var AL = {
+var qL = {
 	width: "100%",
 	height: "100%",
 	display: "block"
-}, jL = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+}, JL = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 	var n = Al(), r = jl(), i = Dd();
 	if (!Ys(n) || !Ys(r)) return null;
 	var a = e.children, o = e.otherAttributes, s = e.title, c = e.desc, l, u;
-	return o != null && (l = typeof o.tabIndex == "number" ? o.tabIndex : i ? 0 : void 0, u = typeof o.role == "string" ? o.role : i ? "application" : void 0), /*#__PURE__*/ S.createElement(ee, kL({}, o, {
+	return o != null && (l = typeof o.tabIndex == "number" ? o.tabIndex : i ? 0 : void 0, u = typeof o.role == "string" ? o.role : i ? "application" : void 0), /*#__PURE__*/ S.createElement(ee, KL({}, o, {
 		title: s,
 		desc: c,
 		role: u,
 		tabIndex: l,
 		width: n,
 		height: r,
-		style: AL,
+		style: qL,
 		ref: t
 	}), a);
-}), ML = (e) => {
+}), YL = (e) => {
 	var t = e.children, n = z(qc);
 	if (!n) return null;
 	var r = n.width, i = n.height, a = n.y, o = n.x;
@@ -26606,31 +26753,31 @@ var AL = {
 		x: o,
 		y: a
 	}, t);
-}, NL = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
-	var n = e.children, r = DL(e, EL);
-	return Wc() ? /*#__PURE__*/ S.createElement(ML, null, /*#__PURE__*/ S.createElement(TL, { isPanorama: !0 }, n)) : /*#__PURE__*/ S.createElement(jL, kL({ ref: t }, r), /*#__PURE__*/ S.createElement(TL, { isPanorama: !1 }, n));
+}, XL = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	var n = e.children, r = WL(e, UL);
+	return Wc() ? /*#__PURE__*/ S.createElement(YL, null, /*#__PURE__*/ S.createElement(HL, { isPanorama: !0 }, n)) : /*#__PURE__*/ S.createElement(JL, KL({ ref: t }, r), /*#__PURE__*/ S.createElement(HL, { isPanorama: !1 }, n));
 });
 //#endregion
 //#region node_modules/recharts/es6/util/useReportScale.js
-function PL(e, t) {
-	return zL(e) || RL(e, t) || IL(e, t) || FL();
+function ZL(e, t) {
+	return nR(e) || tR(e, t) || $L(e, t) || QL();
 }
-function FL() {
+function QL() {
 	throw TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
-function IL(e, t) {
+function $L(e, t) {
 	if (e) {
-		if (typeof e == "string") return LL(e, t);
+		if (typeof e == "string") return eR(e, t);
 		var n = {}.toString.call(e).slice(8, -1);
-		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? LL(e, t) : void 0;
+		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? eR(e, t) : void 0;
 	}
 }
-function LL(e, t) {
+function eR(e, t) {
 	(t == null || t > e.length) && (t = e.length);
 	for (var n = 0, r = Array(t); n < t; n++) r[n] = e[n];
 	return r;
 }
-function RL(e, t) {
+function tR(e, t) {
 	var n = e == null ? null : typeof Symbol < "u" && e[Symbol.iterator] || e["@@iterator"];
 	if (n != null) {
 		var r, i, a, o, s = [], c = !0, l = !1;
@@ -26651,11 +26798,11 @@ function RL(e, t) {
 		return s;
 	}
 }
-function zL(e) {
+function nR(e) {
 	if (Array.isArray(e)) return e;
 }
-function BL() {
-	var e = ui(), t = PL((0, S.useState)(null), 2), n = t[0], r = t[1], i = z(Tc);
+function rR() {
+	var e = ui(), t = ZL((0, S.useState)(null), 2), n = t[0], r = t[1], i = z(Tc);
 	return (0, S.useEffect)(() => {
 		if (n != null) {
 			var t = n.getBoundingClientRect().width / n.offsetWidth;
@@ -26669,7 +26816,7 @@ function BL() {
 }
 //#endregion
 //#region node_modules/recharts/es6/chart/RechartsWrapper.js
-function VL(e, t) {
+function iR(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -26679,30 +26826,30 @@ function VL(e, t) {
 	}
 	return n;
 }
-function HL(e) {
+function aR(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? VL(Object(n), !0).forEach(function(t) {
-			UL(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : VL(Object(n)).forEach(function(t) {
+		t % 2 ? iR(Object(n), !0).forEach(function(t) {
+			oR(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : iR(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function UL(e, t, n) {
-	return (t = WL(t)) in e ? Object.defineProperty(e, t, {
+function oR(e, t, n) {
+	return (t = sR(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function WL(e) {
-	var t = GL(e, "string");
+function sR(e) {
+	var t = cR(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function GL(e, t) {
+function cR(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -26712,34 +26859,34 @@ function GL(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-function KL() {
-	return KL = Object.assign ? Object.assign.bind() : function(e) {
+function lR() {
+	return lR = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, KL.apply(null, arguments);
+	}, lR.apply(null, arguments);
 }
-function qL(e, t) {
-	return QL(e) || ZL(e, t) || YL(e, t) || JL();
+function uR(e, t) {
+	return hR(e) || mR(e, t) || fR(e, t) || dR();
 }
-function JL() {
+function dR() {
 	throw TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
-function YL(e, t) {
+function fR(e, t) {
 	if (e) {
-		if (typeof e == "string") return XL(e, t);
+		if (typeof e == "string") return pR(e, t);
 		var n = {}.toString.call(e).slice(8, -1);
-		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? XL(e, t) : void 0;
+		return n === "Object" && e.constructor && (n = e.constructor.name), n === "Map" || n === "Set" ? Array.from(e) : n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n) ? pR(e, t) : void 0;
 	}
 }
-function XL(e, t) {
+function pR(e, t) {
 	(t == null || t > e.length) && (t = e.length);
 	for (var n = 0, r = Array(t); n < t; n++) r[n] = e[n];
 	return r;
 }
-function ZL(e, t) {
+function mR(e, t) {
 	var n = e == null ? null : typeof Symbol < "u" && e[Symbol.iterator] || e["@@iterator"];
 	if (n != null) {
 		var r, i, a, o, s = [], c = !0, l = !1;
@@ -26760,11 +26907,11 @@ function ZL(e, t) {
 		return s;
 	}
 }
-function QL(e) {
+function hR(e) {
 	if (Array.isArray(e)) return e;
 }
-var $L = () => (DE(), null);
-function eR(e) {
+var gR = () => (DE(), null);
+function _R(e) {
 	if (typeof e == "number") return e;
 	if (typeof e == "string") {
 		var t = parseFloat(e);
@@ -26772,10 +26919,10 @@ function eR(e) {
 	}
 	return 0;
 }
-var tR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
-	var n = (0, S.useRef)(null), r = qL((0, S.useState)({
-		containerWidth: eR(e.style?.width),
-		containerHeight: eR(e.style?.height)
+var vR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	var n = (0, S.useRef)(null), r = uR((0, S.useState)({
+		containerWidth: _R(e.style?.width),
+		containerHeight: _R(e.style?.height)
 	}), 2), i = r[0], a = r[1], o = (0, S.useCallback)((e, t) => {
 		a((n) => {
 			var r = Math.round(e), i = Math.round(t);
@@ -26803,11 +26950,11 @@ var tR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 	}, [o]), /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(Rl, {
 		width: i.containerWidth,
 		height: i.containerHeight
-	}), /*#__PURE__*/ S.createElement("div", KL({ ref: s }, e)));
-}), nR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
-	var n = e.width, r = e.height, i = qL((0, S.useState)({
-		containerWidth: eR(n),
-		containerHeight: eR(r)
+	}), /*#__PURE__*/ S.createElement("div", lR({ ref: s }, e)));
+}), yR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	var n = e.width, r = e.height, i = uR((0, S.useState)({
+		containerWidth: _R(n),
+		containerHeight: _R(r)
 	}), 2), a = i[0], o = i[1], s = (0, S.useCallback)((e, t) => {
 		o((n) => {
 			var r = Math.round(e), i = Math.round(t);
@@ -26825,29 +26972,29 @@ var tR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 	return /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(Rl, {
 		width: a.containerWidth,
 		height: a.containerHeight
-	}), /*#__PURE__*/ S.createElement("div", KL({ ref: c }, e)));
-}), rR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	}), /*#__PURE__*/ S.createElement("div", lR({ ref: c }, e)));
+}), bR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 	var n = e.width, r = e.height;
 	return /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(Rl, {
 		width: n,
 		height: r
-	}), /*#__PURE__*/ S.createElement("div", KL({ ref: t }, e)));
-}), iR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	}), /*#__PURE__*/ S.createElement("div", lR({ ref: t }, e)));
+}), xR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 	var n = e.width, r = e.height;
-	return typeof n == "string" || typeof r == "string" ? /*#__PURE__*/ S.createElement(nR, KL({}, e, { ref: t })) : typeof n == "number" && typeof r == "number" ? /*#__PURE__*/ S.createElement(rR, KL({}, e, {
+	return typeof n == "string" || typeof r == "string" ? /*#__PURE__*/ S.createElement(yR, lR({}, e, { ref: t })) : typeof n == "number" && typeof r == "number" ? /*#__PURE__*/ S.createElement(bR, lR({}, e, {
 		width: n,
 		height: r,
 		ref: t
 	})) : /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(Rl, {
 		width: n,
 		height: r
-	}), /*#__PURE__*/ S.createElement("div", KL({ ref: t }, e)));
+	}), /*#__PURE__*/ S.createElement("div", lR({ ref: t }, e)));
 });
-function aR(e) {
-	return e ? tR : iR;
+function SR(e) {
+	return e ? vR : xR;
 }
-var oR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
-	var n = e.children, r = e.className, i = e.height, a = e.onClick, o = e.onContextMenu, s = e.onDoubleClick, c = e.onMouseDown, l = e.onMouseEnter, u = e.onMouseLeave, d = e.onMouseMove, f = e.onMouseUp, p = e.onTouchEnd, m = e.onTouchMove, h = e.onTouchStart, g = e.style, _ = e.width, v = e.responsive, b = e.dispatchTouchEvents, x = b === void 0 || b, C = (0, S.useRef)(null), w = ui(), T = qL((0, S.useState)(null), 2), E = T[0], D = T[1], O = qL((0, S.useState)(null), 2), k = O[0], A = O[1], j = BL(), M = wl(), N = M?.width > 0 ? M.width : _, ee = M?.height > 0 ? M.height : i, te = (0, S.useCallback)((e) => {
+var CR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	var n = e.children, r = e.className, i = e.height, a = e.onClick, o = e.onContextMenu, s = e.onDoubleClick, c = e.onMouseDown, l = e.onMouseEnter, u = e.onMouseLeave, d = e.onMouseMove, f = e.onMouseUp, p = e.onTouchEnd, m = e.onTouchMove, h = e.onTouchStart, g = e.style, _ = e.width, v = e.responsive, b = e.dispatchTouchEvents, x = b === void 0 || b, C = (0, S.useRef)(null), w = ui(), T = uR((0, S.useState)(null), 2), E = T[0], D = T[1], O = uR((0, S.useState)(null), 2), k = O[0], A = O[1], j = rR(), M = wl(), N = M?.width > 0 ? M.width : _, ee = M?.height > 0 ? M.height : i, te = (0, S.useCallback)((e) => {
 		j(e), typeof t == "function" && t(e), D(e), A(e), e != null && (C.current = e);
 	}, [
 		j,
@@ -26855,58 +27002,58 @@ var oR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 		D,
 		A
 	]), ne = (0, S.useCallback)((e) => {
-		w(NI(e)), w(tL({
+		w(XI(e)), w(vL({
 			handler: a,
 			reactEvent: e
 		}));
 	}, [w, a]), re = (0, S.useCallback)((e) => {
-		w(FI(e)), w(tL({
+		w(QI(e)), w(vL({
 			handler: l,
 			reactEvent: e
 		}));
 	}, [w, l]), ie = (0, S.useCallback)((e) => {
-		w(IC()), w(tL({
+		w(IC()), w(vL({
 			handler: u,
 			reactEvent: e
 		}));
 	}, [w, u]), ae = (0, S.useCallback)((e) => {
-		w(FI(e)), w(tL({
+		w(QI(e)), w(vL({
 			handler: d,
 			reactEvent: e
 		}));
 	}, [w, d]), oe = (0, S.useCallback)(() => {
-		w(JI());
+		w(dL());
 	}, [w]), se = (0, S.useCallback)(() => {
-		w(YI());
+		w(fL());
 	}, [w]), ce = (0, S.useCallback)((e) => {
-		w(qI(e.key));
+		w(uL(e.key));
 	}, [w]), le = (0, S.useCallback)((e) => {
-		w(tL({
+		w(vL({
 			handler: o,
 			reactEvent: e
 		}));
 	}, [w, o]), ue = (0, S.useCallback)((e) => {
-		w(tL({
+		w(vL({
 			handler: s,
 			reactEvent: e
 		}));
 	}, [w, s]), de = (0, S.useCallback)((e) => {
-		w(tL({
+		w(vL({
 			handler: c,
 			reactEvent: e
 		}));
 	}, [w, c]), fe = (0, S.useCallback)((e) => {
-		w(tL({
+		w(vL({
 			handler: f,
 			reactEvent: e
 		}));
 	}, [w, f]), pe = (0, S.useCallback)((e) => {
-		w(tL({
+		w(vL({
 			handler: h,
 			reactEvent: e
 		}));
 	}, [w, h]), me = (0, S.useCallback)((e) => {
-		x && w(sL(e)), w(tL({
+		x && w(wL(e)), w(vL({
 			handler: m,
 			reactEvent: e
 		}));
@@ -26915,16 +27062,16 @@ var oR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 		x,
 		m
 	]), he = (0, S.useCallback)((e) => {
-		w(tL({
+		w(vL({
 			handler: p,
 			reactEvent: e
 		}));
-	}, [w, p]), ge = aR(v);
+	}, [w, p]), ge = SR(v);
 	return /*#__PURE__*/ S.createElement(tE.Provider, { value: E }, /*#__PURE__*/ S.createElement(Be.Provider, { value: k }, /*#__PURE__*/ S.createElement(ge, {
 		width: N ?? g?.width,
 		height: ee ?? g?.height,
 		className: y("recharts-wrapper", r),
-		style: HL({
+		style: aR({
 			position: "relative",
 			cursor: "default",
 			width: N,
@@ -26945,8 +27092,8 @@ var oR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 		onTouchMove: me,
 		onTouchStart: pe,
 		ref: te
-	}, /*#__PURE__*/ S.createElement($L, null), n)));
-}), sR = [
+	}, /*#__PURE__*/ S.createElement(gR, null), n)));
+}), wR = [
 	"width",
 	"height",
 	"responsive",
@@ -26957,16 +27104,16 @@ var oR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 	"title",
 	"desc"
 ];
-function cR(e, t) {
+function TR(e, t) {
 	if (e == null) return {};
-	var n, r, i = lR(e, t);
+	var n, r, i = ER(e, t);
 	if (Object.getOwnPropertySymbols) {
 		var a = Object.getOwnPropertySymbols(e);
 		for (r = 0; r < a.length; r++) n = a[r], t.indexOf(n) === -1 && {}.propertyIsEnumerable.call(e, n) && (i[n] = e[n]);
 	}
 	return i;
 }
-function lR(e, t) {
+function ER(e, t) {
 	if (e == null) return {};
 	var n = {};
 	for (var r in e) if ({}.hasOwnProperty.call(e, r)) {
@@ -26975,16 +27122,16 @@ function lR(e, t) {
 	}
 	return n;
 }
-var uR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
-	var n = e.width, r = e.height, i = e.responsive, a = e.children, o = e.className, s = e.style, c = e.compact, l = e.title, u = e.desc, d = E(cR(e, sR));
+var DR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
+	var n = e.width, r = e.height, i = e.responsive, a = e.children, o = e.className, s = e.style, c = e.compact, l = e.title, u = e.desc, d = E(TR(e, wR));
 	return c ? /*#__PURE__*/ S.createElement(S.Fragment, null, /*#__PURE__*/ S.createElement(Rl, {
 		width: n,
 		height: r
-	}), /*#__PURE__*/ S.createElement(NL, {
+	}), /*#__PURE__*/ S.createElement(XL, {
 		otherAttributes: d,
 		title: l,
 		desc: u
-	}, a)) : /*#__PURE__*/ S.createElement(oR, {
+	}, a)) : /*#__PURE__*/ S.createElement(CR, {
 		className: o,
 		style: s,
 		width: n,
@@ -27001,25 +27148,25 @@ var uR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => {
 		onTouchStart: e.onTouchStart,
 		onTouchMove: e.onTouchMove,
 		onTouchEnd: e.onTouchEnd
-	}, /*#__PURE__*/ S.createElement(NL, {
+	}, /*#__PURE__*/ S.createElement(XL, {
 		otherAttributes: d,
 		title: l,
 		desc: u,
 		ref: t
-	}, /*#__PURE__*/ S.createElement(lM, null, a)));
+	}, /*#__PURE__*/ S.createElement(fM, null, a)));
 });
 //#endregion
 //#region node_modules/recharts/es6/chart/CartesianChart.js
-function dR() {
-	return dR = Object.assign ? Object.assign.bind() : function(e) {
+function OR() {
+	return OR = Object.assign ? Object.assign.bind() : function(e) {
 		for (var t = 1; t < arguments.length; t++) {
 			var n = arguments[t];
 			for (var r in n) ({}).hasOwnProperty.call(n, r) && (e[r] = n[r]);
 		}
 		return e;
-	}, dR.apply(null, arguments);
+	}, OR.apply(null, arguments);
 }
-function fR(e, t) {
+function kR(e, t) {
 	var n = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
 		var r = Object.getOwnPropertySymbols(e);
@@ -27029,30 +27176,30 @@ function fR(e, t) {
 	}
 	return n;
 }
-function pR(e) {
+function AR(e) {
 	for (var t = 1; t < arguments.length; t++) {
 		var n = arguments[t] == null ? {} : arguments[t];
-		t % 2 ? fR(Object(n), !0).forEach(function(t) {
-			mR(e, t, n[t]);
-		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : fR(Object(n)).forEach(function(t) {
+		t % 2 ? kR(Object(n), !0).forEach(function(t) {
+			jR(e, t, n[t]);
+		}) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : kR(Object(n)).forEach(function(t) {
 			Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t));
 		});
 	}
 	return e;
 }
-function mR(e, t, n) {
-	return (t = hR(t)) in e ? Object.defineProperty(e, t, {
+function jR(e, t, n) {
+	return (t = MR(t)) in e ? Object.defineProperty(e, t, {
 		value: n,
 		enumerable: !0,
 		configurable: !0,
 		writable: !0
 	}) : e[t] = n, e;
 }
-function hR(e) {
-	var t = gR(e, "string");
+function MR(e) {
+	var t = NR(e, "string");
 	return typeof t == "symbol" ? t : t + "";
 }
-function gR(e, t) {
+function NR(e, t) {
 	if (typeof e != "object" || !e) return e;
 	var n = e[Symbol.toPrimitive];
 	if (n !== void 0) {
@@ -27062,7 +27209,7 @@ function gR(e, t) {
 	}
 	return (t === "string" ? String : Number)(e);
 }
-var _R = pR({
+var PR = AR({
 	accessibilityLayer: !0,
 	barCategoryGap: "10%",
 	barGap: 4,
@@ -27077,24 +27224,24 @@ var _R = pR({
 	reverseStackOrder: !1,
 	stackOffset: "none",
 	syncMethod: "index"
-}, pL), vR = /*#__PURE__*/ (0, S.forwardRef)(function(e, t) {
-	var n = Pn(e.categoricalChartProps, _R), r = e.chartName, i = e.defaultTooltipEventType, a = e.validateTooltipEventTypes, o = e.tooltipPayloadSearcher, s = e.categoricalChartProps, c = {
+}, AL), FR = /*#__PURE__*/ (0, S.forwardRef)(function(e, t) {
+	var n = Pn(e.categoricalChartProps, PR), r = e.chartName, i = e.defaultTooltipEventType, a = e.validateTooltipEventTypes, o = e.tooltipPayloadSearcher, s = e.categoricalChartProps, c = {
 		chartName: r,
 		defaultTooltipEventType: i,
 		validateTooltipEventTypes: a,
 		tooltipPayloadSearcher: o,
 		eventEmitter: void 0
 	};
-	return /*#__PURE__*/ S.createElement(yL, {
+	return /*#__PURE__*/ S.createElement(IL, {
 		preloadedState: { options: c },
 		reduxStoreName: s.id ?? r
-	}, /*#__PURE__*/ S.createElement(gj, { chartData: s.data }), /*#__PURE__*/ S.createElement(xL, {
+	}, /*#__PURE__*/ S.createElement(gj, { chartData: s.data }), /*#__PURE__*/ S.createElement(RL, {
 		layout: n.layout,
 		margin: n.margin
-	}), /*#__PURE__*/ S.createElement(CL, {
+	}), /*#__PURE__*/ S.createElement(BL, {
 		throttleDelay: n.throttleDelay,
 		throttledEvents: n.throttledEvents
-	}), /*#__PURE__*/ S.createElement(SL, {
+	}), /*#__PURE__*/ S.createElement(zL, {
 		baseValue: n.baseValue,
 		accessibilityLayer: n.accessibilityLayer,
 		barCategoryGap: n.barCategoryGap,
@@ -27106,15 +27253,22 @@ var _R = pR({
 		syncMethod: n.syncMethod,
 		className: n.className,
 		reverseStackOrder: n.reverseStackOrder
-	}), /*#__PURE__*/ S.createElement(uR, dR({}, n, { ref: t })));
-}), yR = ["axis"], bR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => /*#__PURE__*/ S.createElement(vR, {
+	}), /*#__PURE__*/ S.createElement(DR, OR({}, n, { ref: t })));
+}), IR = ["axis"], LR = /*#__PURE__*/ (0, S.forwardRef)((e, t) => /*#__PURE__*/ S.createElement(FR, {
 	chartName: "ComposedChart",
 	defaultTooltipEventType: "axis",
-	validateTooltipEventTypes: yR,
+	validateTooltipEventTypes: IR,
 	tooltipPayloadSearcher: sE,
 	categoricalChartProps: e,
 	ref: t
-})), xR = _(), SR = {
+})), RR = _(), zR = {
+	close: "Close",
+	relogin_done: "Logged in with BankID.",
+	relogin_checking: "BankID done, checking the account…",
+	relogin_failed: "The login did not complete. Try again.",
+	zoom_hint: "Drag across the chart to zoom; the slider below adjusts the same window. Double-click to reset.",
+	table_zoom: "Zoomed",
+	table_full: "Whole period",
 	title: "Mälarenergi",
 	tab_overview: "Overview",
 	tab_history: "History",
@@ -27145,9 +27299,11 @@ var _R = pR({
 	updated: "Updated",
 	energy: "energy",
 	grid: "grid",
-	net_info: "Cost of bought power minus compensation for sold power this month, from Mälarenergi's own meter values (incl. VAT, excl. fixed fees).",
+	net_info: "Compensation for sold power minus cost of bought power this month (+ green = you earned more than you paid), from Mälarenergi's own meter values (incl. VAT, excl. fixed fees).",
 	peak_info: "The month's highest hourly grid power according to the meter.",
 	daily_info: "Mälarenergi's meter values. Bars = kWh, lines = cost and compensation in SEK.",
+	wallet_info: "Shown from your wallet: + (green) is money paid to you, − is money you pay. Amounts incl. VAT; production payouts are VAT-free.",
+	wallet_net_info: "Your net for the year: production payouts minus consumption invoices. Negative (red) means you paid more than you were paid.",
 	inv_info: "Consumption and production are invoiced separately. Fixed fees, power fee and other items are shown per invoice.",
 	fixed: "Fixed",
 	power_fee: "Power",
@@ -27186,21 +27342,43 @@ var _R = pR({
 	lang_auto: "Same as Home Assistant",
 	settings_notify: "Notifications",
 	notify_targets: "Send to",
+	no_targets: "No recipient selected: notifications appear in Home Assistant's notification panel.",
 	notify_new_invoice: "New invoice",
 	notify_overdue: "Overdue invoice",
 	notify_han_change: "HAN port changed",
 	notify_auth: "Login expired",
 	settings_account: "Account",
 	relogin: "Log in again with BankID",
-	relogin_info: "Starts a new BankID login. It shows up as a notification under Settings → Devices & services.",
+	relogin_info: "Starts a new BankID login in a dialog here: scan the QR code, or choose BankID on this device on a phone.",
 	relogin_started: "Login started — open Settings → Devices & services in Home Assistant.",
 	saved: "Saved",
 	none_found: "No notify services found",
-	invoices_per_page: "Invoices per page"
-}, CR = {
-	en: SR,
+	invoices_per_page: "Invoices per page",
+	c_grid_fixed: "Grid fixed fee (fuse)",
+	c_grid_transfer: "Grid transfer",
+	c_power_fee: "Power fee",
+	c_energy_tax: "Energy tax",
+	c_spot_energy: "Electricity (spot)",
+	c_supply_markup: "Supplier markup",
+	c_supply_fixed: "Supplier fixed fee",
+	c_broadband: "Broadband",
+	c_production_spot: "Sold electricity (spot)",
+	c_production_bonus: "Production bonus",
+	c_production_grid: "Grid benefit",
+	c_production_other: "Other production payout",
+	c_other: "Other",
+	show_lines: "Show invoice lines"
+}, BR = {
+	en: zR,
 	sv: {
-		...SR,
+		...zR,
+		close: "Stäng",
+		relogin_done: "Inloggad med BankID.",
+		relogin_checking: "BankID klart, kontrollerar kontot…",
+		relogin_failed: "Inloggningen blev inte klar. Försök igen.",
+		zoom_hint: "Dra över diagrammet för att zooma; reglaget under justerar samma fönster. Dubbelklicka för att återställa.",
+		table_zoom: "Inzoomat",
+		table_full: "Hela perioden",
 		tab_overview: "Översikt",
 		tab_history: "Historik",
 		tab_invoices: "Fakturor",
@@ -27229,9 +27407,11 @@ var _R = pR({
 		updated: "Uppdaterad",
 		energy: "el",
 		grid: "nät",
-		net_info: "Kostnad för köpt el minus ersättning för såld el, denna månad, enligt Mälarenergis egna mätvärden (inkl. moms, utan fasta avgifter).",
+		net_info: "Ersättning för såld el minus kostnad för köpt el, denna månad (+ grönt = du fick mer än du betalade), enligt Mälarenergis egna mätvärden (inkl. moms, utan fasta avgifter).",
 		peak_info: "Månadens högsta timeffekt från nätet enligt elmätaren.",
 		daily_info: "Mälarenergis mätvärden. Staplar = kWh, linjer = kostnad respektive ersättning i kr.",
+		wallet_info: "Visas från din plånbok: + (grönt) är pengar till dig, − är pengar du betalar. Belopp inkl. moms; ersättning för produktion är momsfri.",
+		wallet_net_info: "Ditt netto för året: utbetalningar för produktion minus fakturor för förbrukning. Negativt (rött) betyder att du betalat mer än du fått.",
 		inv_info: "Förbrukning och produktion faktureras separat. Fasta avgifter, effektavgift och övriga poster visas per faktura.",
 		fixed: "Fasta",
 		power_fee: "Effekt",
@@ -27270,20 +27450,40 @@ var _R = pR({
 		lang_auto: "Som Home Assistant",
 		settings_notify: "Notiser",
 		notify_targets: "Skicka till",
+		no_targets: "Ingen mottagare vald: notiser visas i Home Assistants notispanel.",
 		notify_new_invoice: "Ny faktura",
 		notify_overdue: "Förfallen faktura",
 		notify_han_change: "HAN-port ändrad",
 		notify_auth: "Inloggning utgången",
 		settings_account: "Konto",
 		relogin: "Logga in igen med BankID",
-		relogin_info: "Startar en ny BankID-inloggning. Den syns som en notis under Inställningar → Enheter och tjänster.",
+		relogin_info: "Startar en ny BankID-inloggning i en ruta här: skanna QR-koden, eller välj BankID på den här enheten på mobilen.",
 		relogin_started: "Inloggning startad — öppna Inställningar → Enheter och tjänster i Home Assistant.",
 		saved: "Sparat",
 		none_found: "Inga notify-tjänster hittades",
-		invoices_per_page: "Fakturor per sida"
+		invoices_per_page: "Fakturor per sida",
+		c_grid_fixed: "Elnät fast avgift (säkring)",
+		c_grid_transfer: "Elöverföring",
+		c_power_fee: "Effektavgift",
+		c_energy_tax: "Energiskatt",
+		c_spot_energy: "El (spotpris)",
+		c_supply_markup: "Elhandel påslag",
+		c_supply_fixed: "Elhandel fast avgift",
+		c_broadband: "Bredband",
+		c_production_spot: "Såld el (spotpris)",
+		c_production_bonus: "Produktionsersättning",
+		c_production_grid: "Nätnytta",
+		c_production_other: "Övrig produktionsersättning",
+		c_other: "Övrigt",
+		show_lines: "Visa fakturarader"
 	},
 	nb: {
-		...SR,
+		...zR,
+		zoom_hint: "Dra over diagrammet for å zoome; glidebryteren under justerer samme vindu. Dobbeltklikk for å tilbakestille.",
+		table_zoom: "Zoomet",
+		table_full: "Hele perioden",
+		wallet_info: "Vist fra lommeboken din: + (grønn) er penger til deg, − er penger du betaler. Beløp inkl. mva; produksjonsutbetaling er mva-fri.",
+		wallet_net_info: "Ditt netto for året: utbetalinger for produksjon minus fakturaer for forbruk. Negativt (rødt) betyr at du har betalt mer enn du har fått.",
 		tab_overview: "Oversikt",
 		tab_history: "Historikk",
 		tab_invoices: "Fakturaer",
@@ -27345,6 +27545,7 @@ var _R = pR({
 		lang_auto: "Som Home Assistant",
 		settings_notify: "Varsler",
 		notify_targets: "Send til",
+		no_targets: "Ingen mottaker valgt: varsler vises i Home Assistants varselpanel.",
 		notify_new_invoice: "Ny faktura",
 		notify_overdue: "Forfalt faktura",
 		notify_han_change: "HAN-port endret",
@@ -27355,7 +27556,12 @@ var _R = pR({
 		invoices_per_page: "Fakturaer per side"
 	},
 	da: {
-		...SR,
+		...zR,
+		zoom_hint: "Træk hen over diagrammet for at zoome; skyderen nedenfor justerer samme vindue. Dobbeltklik for at nulstille.",
+		table_zoom: "Zoomet",
+		table_full: "Hele perioden",
+		wallet_info: "Vist fra din pung: + (grøn) er penge til dig, − er penge du betaler. Beløb inkl. moms; afregning for produktion er momsfri.",
+		wallet_net_info: "Dit netto for året: udbetalinger for produktion minus fakturaer for forbrug. Negativt (rødt) betyder, at du har betalt mere, end du har fået.",
 		tab_overview: "Overblik",
 		tab_history: "Historik",
 		tab_invoices: "Fakturaer",
@@ -27417,6 +27623,7 @@ var _R = pR({
 		lang_auto: "Som Home Assistant",
 		settings_notify: "Notifikationer",
 		notify_targets: "Send til",
+		no_targets: "Ingen modtager valgt: notifikationer vises i Home Assistants notifikationspanel.",
 		notify_new_invoice: "Ny faktura",
 		notify_overdue: "Forfalden faktura",
 		notify_han_change: "HAN-port ændret",
@@ -27427,7 +27634,12 @@ var _R = pR({
 		invoices_per_page: "Fakturaer pr. side"
 	},
 	fi: {
-		...SR,
+		...zR,
+		zoom_hint: "Vedä kaavion yli zoomataksesi; alla oleva liukusäädin säätää samaa ikkunaa. Palauta kaksoisnapsautuksella.",
+		table_zoom: "Zoomattu",
+		table_full: "Koko jakso",
+		wallet_info: "Näytetään lompakkosi kannalta: + (vihreä) on sinulle maksettua rahaa, − on rahaa, jonka maksat. Summat sis. ALV; tuotannon hyvitys on ALV-vapaa.",
+		wallet_net_info: "Vuoden nettosi: tuotannon hyvitykset miinus kulutuslaskut. Negatiivinen (punainen) tarkoittaa, että olet maksanut enemmän kuin saanut.",
 		tab_overview: "Yleiskatsaus",
 		tab_history: "Historia",
 		tab_invoices: "Laskut",
@@ -27490,6 +27702,7 @@ var _R = pR({
 		lang_auto: "Kuten Home Assistant",
 		settings_notify: "Ilmoitukset",
 		notify_targets: "Lähetä",
+		no_targets: "Vastaanottajaa ei ole valittu: ilmoitukset näkyvät Home Assistantin ilmoituspaneelissa.",
 		notify_new_invoice: "Uusi lasku",
 		notify_overdue: "Erääntynyt lasku",
 		notify_han_change: "HAN-portti muuttui",
@@ -27500,7 +27713,12 @@ var _R = pR({
 		invoices_per_page: "Laskuja sivulla"
 	},
 	is: {
-		...SR,
+		...zR,
+		zoom_hint: "Dragðu yfir grafið til að þysja; sleðinn fyrir neðan stillir sama glugga. Tvísmelltu til að endurstilla.",
+		table_zoom: "Þysjað",
+		table_full: "Allt tímabilið",
+		wallet_info: "Sýnt frá veskinu þínu: + (grænt) eru peningar til þín, − eru peningar sem þú greiðir. Upphæðir með VSK; greiðsla fyrir framleiðslu er án VSK.",
+		wallet_net_info: "Nettó ársins: greiðslur fyrir framleiðslu að frádregnum reikningum fyrir notkun. Neikvætt (rautt) þýðir að þú hefur greitt meira en þú fékkst.",
 		tab_overview: "Yfirlit",
 		tab_history: "Saga",
 		tab_invoices: "Reikningar",
@@ -27547,13 +27765,14 @@ var _R = pR({
 		lang_auto: "Eins og Home Assistant",
 		settings_notify: "Tilkynningar",
 		notify_targets: "Senda til",
+		no_targets: "Enginn viðtakandi valinn: tilkynningar birtast í tilkynningaspjaldi Home Assistant.",
 		notify_new_invoice: "Nýr reikningur",
 		notify_overdue: "Gjaldfallinn reikningur",
 		settings_account: "Aðgangur",
 		relogin: "Skrá inn aftur með BankID",
 		saved: "Vistað"
 	}
-}, wR = {
+}, VR = {
 	en: "English",
 	sv: "Svenska",
 	nb: "Norsk",
@@ -27561,10 +27780,10 @@ var _R = pR({
 	fi: "Suomi",
 	is: "Íslenska"
 };
-function TR(e, t) {
+function HR(e, t) {
 	let n = t && t !== "auto" ? t : String(e ?? "en").toLowerCase();
 	return (n.startsWith("no") || n === "nn") && (n = "nb"), n = n.slice(0, 2), {
-		t: CR[n] ?? SR,
+		t: BR[n] ?? zR,
 		locale: {
 			sv: "sv-SE",
 			nb: "nb-NO",
@@ -27572,12 +27791,12 @@ function TR(e, t) {
 			fi: "fi-FI",
 			is: "is-IS"
 		}[n] ?? "en-GB",
-		code: CR[n] ? n : "en"
+		code: BR[n] ? n : "en"
 	};
 }
 //#endregion
 //#region node_modules/react/cjs/react-jsx-runtime.production.js
-var ER = /* @__PURE__ */ o(((e) => {
+var UR = /* @__PURE__ */ o(((e) => {
 	var t = Symbol.for("react.transitional.element"), n = Symbol.for("react.fragment");
 	function r(e, n, r) {
 		var i = null;
@@ -27593,26 +27812,26 @@ var ER = /* @__PURE__ */ o(((e) => {
 	}
 	e.Fragment = n, e.jsx = r, e.jsxs = r;
 })), $ = (/* @__PURE__ */ o(((e, t) => {
-	t.exports = ER();
-})))(), DR = [
+	t.exports = UR();
+})))(), WR = [
 	"overview",
 	"history",
 	"invoices",
 	"contracts",
 	"settings"
-], OR = (e) => +(e != null && Math.abs(e) < 10), kR = (e, t = 0, n = "") => e == null || Number.isNaN(e) ? "–" : `${e.toLocaleString("sv-SE", {
+], GR = (e) => +(e != null && Math.abs(e) < 10), KR = (e, t = 0, n = "") => e == null || Number.isNaN(e) ? "–" : `${e.toLocaleString("sv-SE", {
 	minimumFractionDigits: t,
 	maximumFractionDigits: t
-})}${n ? "\xA0" + n : ""}`, AR = (e) => new Date(e).toLocaleDateString("sv-SE"), jR = { contentStyle: {
+})}${n ? "\xA0" + n : ""}`, qR = (e) => new Date(e).toLocaleDateString("sv-SE"), JR = { contentStyle: {
 	background: "var(--me-card)",
 	border: "1px solid var(--me-line)",
 	borderRadius: 10,
 	fontSize: 12
-} }, MR = {
+} }, YR = {
 	stroke: "var(--me-muted)",
 	fontSize: 11
 };
-function NR({ text: e }) {
+function XR({ text: e }) {
 	let [t, n] = (0, S.useState)(!1), r = (0, S.useRef)(null);
 	return (0, S.useEffect)(() => {
 		if (!t) return;
@@ -27634,13 +27853,13 @@ function NR({ text: e }) {
 		})]
 	});
 }
-function PR({ label: e, value: t, sub: n, info: r, tone: i }) {
+function ZR({ label: e, value: t, sub: n, info: r, tone: i }) {
 	return /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "kpi",
 		children: [
 			/* @__PURE__ */ (0, $.jsxs)("div", {
 				className: "label",
-				children: [e, r && /* @__PURE__ */ (0, $.jsx)(NR, { text: r })]
+				children: [e, r && /* @__PURE__ */ (0, $.jsx)(XR, { text: r })]
 			}),
 			/* @__PURE__ */ (0, $.jsx)("div", {
 				className: `value ${i ?? ""}`,
@@ -27653,8 +27872,8 @@ function PR({ label: e, value: t, sub: n, info: r, tone: i }) {
 		]
 	});
 }
-function FR({ hass: e, narrow: t }) {
-	let [n, r] = (0, S.useState)(null), [i, a] = (0, S.useState)(() => localStorage.getItem("me_tab") || "overview"), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), { t: u, locale: d } = TR(e.locale?.language ?? e.language, n?.language), f = Object.values(e.states).find((e) => e.entity_id.startsWith("sensor.") && e.attributes?.invoices)?.last_updated;
+function QR({ hass: e, narrow: t }) {
+	let [n, r] = (0, S.useState)(null), [i, a] = (0, S.useState)(() => localStorage.getItem("me_tab") || "overview"), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), { t: u, locale: d } = HR(e.locale?.language ?? e.language, n?.language), f = Object.values(e.states).find((e) => e.entity_id.startsWith("sensor.") && e.attributes?.invoices)?.last_updated;
 	(0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((e) => r(e.options)).catch(() => r({}));
 	}, []), (0, S.useEffect)(() => {
@@ -27695,7 +27914,7 @@ function FR({ hass: e, narrow: t }) {
 				})]
 			}), /* @__PURE__ */ (0, $.jsx)("nav", {
 				className: "tabs",
-				children: DR.map((e) => /* @__PURE__ */ (0, $.jsx)("button", {
+				children: WR.map((e) => /* @__PURE__ */ (0, $.jsx)("button", {
 					className: i === e ? "on" : "",
 					onClick: () => p(e),
 					children: u[`tab_${e}`]
@@ -27709,18 +27928,18 @@ function FR({ hass: e, narrow: t }) {
 				className: "card",
 				children: c ? u.none : u.loading
 			}) : /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [
-				i === "overview" && o && /* @__PURE__ */ (0, $.jsx)(IR, {
+				i === "overview" && o && /* @__PURE__ */ (0, $.jsx)($R, {
 					...h,
 					d: o
 				}),
-				i === "history" && /* @__PURE__ */ (0, $.jsx)(RR, { ...h }),
-				i === "invoices" && o && /* @__PURE__ */ (0, $.jsx)(zR, {
+				i === "history" && /* @__PURE__ */ (0, $.jsx)(nz, { ...h }),
+				i === "invoices" && o && /* @__PURE__ */ (0, $.jsx)(oz, {
 					...h,
 					invoices: o.invoices ?? [],
 					perPage0: n?.invoices_per_page ?? 12
 				}),
-				i === "contracts" && /* @__PURE__ */ (0, $.jsx)(BR, { ...h }),
-				i === "settings" && n && /* @__PURE__ */ (0, $.jsx)(VR, {
+				i === "contracts" && /* @__PURE__ */ (0, $.jsx)(sz, { ...h }),
+				i === "settings" && n && /* @__PURE__ */ (0, $.jsx)(cz, {
 					...h,
 					opts: n,
 					setOpts: r
@@ -27737,38 +27956,38 @@ function FR({ hass: e, narrow: t }) {
 		]
 	});
 }
-function IR({ t: e, locale: t, narrow: n, d: r }) {
+function $R({ t: e, locale: t, narrow: n, d: r }) {
 	let i = (0, S.useMemo)(() => {
 		let e = /* @__PURE__ */ new Map(), t = (t, n) => (t ?? []).forEach(([t, r]) => {
-			let i = AR(t);
+			let i = qR(t);
 			(e.get(i) ?? e.set(i, { k: i }).get(i))[n] = r;
 		});
 		return t(r.CONSUMPTION?.daily?.consumption, "cons"), t(r.CONSUMPTION?.daily?.cost, "cost"), t(r.PRODUCTION?.daily?.production, "prod"), t(r.PRODUCTION?.daily?.compensation, "comp"), [...e.values()].sort((e, t) => e.k.localeCompare(t.k));
-	}, [r]), a = (/* @__PURE__ */ new Date()).toLocaleDateString("sv-SE").slice(0, 7), o = (e) => i.filter((e) => e.k.startsWith(a)).reduce((t, n) => t + (n[e] ?? 0), 0), s = (e) => (e ?? []).filter(([e]) => AR(e).startsWith(a)).reduce((e, [, t]) => e + t, 0), c = r.CONSUMPTION?.peak, l = o("cost") - o("comp");
+	}, [r]), a = (/* @__PURE__ */ new Date()).toLocaleDateString("sv-SE").slice(0, 7), o = (e) => i.filter((e) => e.k.startsWith(a)).reduce((t, n) => t + (n[e] ?? 0), 0), s = (e) => (e ?? []).filter(([e]) => qR(e).startsWith(a)).reduce((e, [, t]) => e + t, 0), c = r.CONSUMPTION?.peak, l = o("cost") - o("comp");
 	return /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "kpis",
 		children: [
-			/* @__PURE__ */ (0, $.jsx)(PR, {
+			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${e.consumption} · ${e.month}`,
-				value: kR(o("cons"), OR(o("cons")), "kWh"),
-				sub: `${e.cost} ${kR(o("cost"), OR(o("cost")), "kr")}`
+				value: KR(o("cons"), GR(o("cons")), "kWh"),
+				sub: `${e.cost} ${KR(o("cost"), GR(o("cost")), "kr")}`
 			}),
-			/* @__PURE__ */ (0, $.jsx)(PR, {
+			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${e.production} · ${e.month}`,
-				value: kR(o("prod"), OR(o("prod")), "kWh"),
-				sub: `${e.compensation} ${kR(o("comp"), OR(o("comp")), "kr")}`
+				value: KR(o("prod"), GR(o("prod")), "kWh"),
+				sub: `${e.compensation} ${KR(o("comp"), GR(o("comp")), "kr")}`
 			}),
-			/* @__PURE__ */ (0, $.jsx)(PR, {
+			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${e.net} · ${e.month}`,
 				info: e.net_info,
-				value: kR(l, OR(l), "kr"),
+				value: iz(-l, GR(l)),
 				tone: l <= 0 ? "pos" : "neg",
-				sub: `${e.energy} ${kR(s(r.CONSUMPTION?.daily?.costEL), 0)} · ${e.grid} ${kR(s(r.CONSUMPTION?.daily?.costELEXT), 0)}`
+				sub: `${e.energy} ${KR(s(r.CONSUMPTION?.daily?.costEL), 0)} · ${e.grid} ${KR(s(r.CONSUMPTION?.daily?.costELEXT), 0)}`
 			}),
-			/* @__PURE__ */ (0, $.jsx)(PR, {
+			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: e.peak,
 				info: e.peak_info,
-				value: kR(c?.peakPowerConsumption, (c?.peakPowerConsumption ?? 1) < 1 ? 2 : 1, "kW"),
+				value: KR(c?.peakPowerConsumption, (c?.peakPowerConsumption ?? 1) < 1 ? 2 : 1, "kW"),
 				sub: c?.dateTime ? new Date(c.dateTime).toLocaleString(t, {
 					day: "numeric",
 					month: "short",
@@ -27779,7 +27998,7 @@ function IR({ t: e, locale: t, narrow: n, d: r }) {
 		]
 	}), /* @__PURE__ */ (0, $.jsxs)("section", {
 		className: "card",
-		children: [/* @__PURE__ */ (0, $.jsxs)("h2", { children: [e.daily, /* @__PURE__ */ (0, $.jsx)(NR, { text: e.daily_info })] }), /* @__PURE__ */ (0, $.jsx)(LR, {
+		children: [/* @__PURE__ */ (0, $.jsxs)("h2", { children: [e.daily, /* @__PURE__ */ (0, $.jsx)(XR, { text: e.daily_info })] }), /* @__PURE__ */ (0, $.jsx)(ez, {
 			rows: i,
 			t: e,
 			height: n ? 240 : 300,
@@ -27787,11 +28006,12 @@ function IR({ t: e, locale: t, narrow: n, d: r }) {
 		})]
 	})] });
 }
-function LR({ rows: e, t, height: n, tick: r, brush: i }) {
+function ez({ rows: e, t, height: n, tick: r, brush: i, zoom: a, setZoom: o }) {
+	let [s, c] = (0, S.useState)(null), l = (t) => e.findIndex((e) => e.k === t);
 	return /* @__PURE__ */ (0, $.jsx)(El, {
 		width: "100%",
 		height: n,
-		children: /* @__PURE__ */ (0, $.jsxs)(bR, {
+		children: /* @__PURE__ */ (0, $.jsxs)(LR, {
 			data: e,
 			margin: {
 				top: 8,
@@ -27799,35 +28019,59 @@ function LR({ rows: e, t, height: n, tick: r, brush: i }) {
 				left: 0,
 				bottom: 0
 			},
+			onMouseDown: (e) => o && e?.activeLabel && c({
+				a: e.activeLabel,
+				b: e.activeLabel
+			}),
+			onMouseMove: (e) => s && e?.activeLabel && c({
+				...s,
+				b: e.activeLabel
+			}),
+			onMouseUp: () => {
+				if (s && o) {
+					let [e, t] = [l(s.a), l(s.b)].sort((e, t) => e - t);
+					t > e && o({
+						a: e,
+						b: t
+					});
+				}
+				c(null);
+			},
+			onMouseLeave: () => c(null),
+			onDoubleClick: () => o?.(null),
+			style: {
+				cursor: o ? "crosshair" : void 0,
+				userSelect: "none"
+			},
 			children: [
-				/* @__PURE__ */ (0, $.jsx)(MN, {
+				/* @__PURE__ */ (0, $.jsx)(YN, {
 					stroke: "var(--me-line)",
 					vertical: !1
 				}),
-				/* @__PURE__ */ (0, $.jsx)(mI, {
+				/* @__PURE__ */ (0, $.jsx)(jI, {
 					dataKey: "k",
 					tickFormatter: r,
 					minTickGap: 24,
-					...MR
+					...YR
 				}),
-				/* @__PURE__ */ (0, $.jsx)(kI, {
+				/* @__PURE__ */ (0, $.jsx)(KI, {
 					yAxisId: "e",
 					width: 44,
-					...MR
+					...YR
 				}),
-				/* @__PURE__ */ (0, $.jsx)(kI, {
+				/* @__PURE__ */ (0, $.jsx)(KI, {
 					yAxisId: "m",
 					orientation: "right",
 					width: 44,
-					...MR
+					...YR
 				}),
 				/* @__PURE__ */ (0, $.jsx)(GE, {
-					...jR,
+					...JR,
 					labelFormatter: r,
-					formatter: (e, t) => [kR(Number(e), 1), t]
+					formatter: (e, t) => [KR(Number(e), 1), t]
 				}),
 				/* @__PURE__ */ (0, $.jsx)(Vu, { wrapperStyle: { fontSize: 12 } }),
-				/* @__PURE__ */ (0, $.jsx)(qF, {
+				/* @__PURE__ */ (0, $.jsx)(uI, {
 					yAxisId: "e",
 					dataKey: "cons",
 					name: `${t.consumption} (kWh)`,
@@ -27840,7 +28084,7 @@ function LR({ rows: e, t, height: n, tick: r, brush: i }) {
 					],
 					isAnimationActive: !1
 				}),
-				/* @__PURE__ */ (0, $.jsx)(qF, {
+				/* @__PURE__ */ (0, $.jsx)(uI, {
 					yAxisId: "e",
 					dataKey: "prod",
 					name: `${t.production} (kWh)`,
@@ -27853,7 +28097,7 @@ function LR({ rows: e, t, height: n, tick: r, brush: i }) {
 					],
 					isAnimationActive: !1
 				}),
-				/* @__PURE__ */ (0, $.jsx)(IP, {
+				/* @__PURE__ */ (0, $.jsx)($P, {
 					yAxisId: "m",
 					dataKey: "cost",
 					name: `${t.cost} (kr)`,
@@ -27862,7 +28106,7 @@ function LR({ rows: e, t, height: n, tick: r, brush: i }) {
 					strokeWidth: 2,
 					isAnimationActive: !1
 				}),
-				/* @__PURE__ */ (0, $.jsx)(IP, {
+				/* @__PURE__ */ (0, $.jsx)($P, {
 					yAxisId: "m",
 					dataKey: "comp",
 					name: `${t.compensation} (kr)`,
@@ -27871,20 +28115,107 @@ function LR({ rows: e, t, height: n, tick: r, brush: i }) {
 					strokeWidth: 2,
 					isAnimationActive: !1
 				}),
-				i && e.length > 8 && /* @__PURE__ */ (0, $.jsx)(Xj, {
+				s && /* @__PURE__ */ (0, $.jsx)(EM, {
+					yAxisId: "e",
+					x1: s.a,
+					x2: s.b,
+					fill: "var(--me-accent)",
+					fillOpacity: .15,
+					stroke: "var(--me-accent)",
+					strokeOpacity: .5
+				}),
+				i && e.length > 1 && /* @__PURE__ */ (0, $.jsx)(Xj, {
 					dataKey: "k",
 					height: 22,
 					stroke: "var(--me-accent)",
 					fill: "var(--me-card)",
 					tickFormatter: r,
-					travellerWidth: 8
+					travellerWidth: 8,
+					startIndex: a?.a ?? 0,
+					endIndex: a?.b ?? e.length - 1,
+					onChange: (t) => o?.(t.startIndex === 0 && t.endIndex === e.length - 1 ? null : {
+						a: t.startIndex,
+						b: t.endIndex
+					})
 				})
 			]
 		})
 	});
 }
-function RR({ hass: e, t, locale: n, narrow: r }) {
-	let [i, a] = (0, S.useState)("day"), [o, s] = (0, S.useState)(0), [c, l] = (0, S.useState)(null), [u, d] = (0, S.useState)(null), f = (0, S.useMemo)(() => {
+function tz({ rows: e, t, label: n, title: r }) {
+	let i = (t) => e.reduce((e, n) => e + (n[t] ?? 0), 0), a = [
+		[
+			"cons",
+			`${t.consumption} (kWh)`,
+			1
+		],
+		[
+			"prod",
+			`${t.production} (kWh)`,
+			1
+		],
+		[
+			"cost",
+			`${t.cost} (kr)`,
+			0
+		],
+		[
+			"comp",
+			`${t.compensation} (kr)`,
+			0
+		]
+	], o = (e) => (e.comp ?? 0) - (e.cost ?? 0);
+	return /* @__PURE__ */ (0, $.jsxs)("section", {
+		className: "card",
+		children: [/* @__PURE__ */ (0, $.jsx)("h2", { children: r }), /* @__PURE__ */ (0, $.jsx)("div", {
+			className: "table-wrap",
+			children: /* @__PURE__ */ (0, $.jsxs)("table", {
+				className: "sum",
+				children: [
+					/* @__PURE__ */ (0, $.jsx)("thead", { children: /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
+						/* @__PURE__ */ (0, $.jsx)("th", { children: t.period }),
+						a.map(([e, t]) => /* @__PURE__ */ (0, $.jsx)("th", {
+							className: "r",
+							children: t
+						}, e)),
+						/* @__PURE__ */ (0, $.jsxs)("th", {
+							className: "r",
+							children: [
+								t.net,
+								" (kr)",
+								/* @__PURE__ */ (0, $.jsx)(XR, { text: t.wallet_info })
+							]
+						})
+					] }) }),
+					/* @__PURE__ */ (0, $.jsx)("tbody", { children: e.map((e) => /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
+						/* @__PURE__ */ (0, $.jsx)("td", { children: n(e.k) }),
+						a.map(([t, , n]) => /* @__PURE__ */ (0, $.jsx)("td", {
+							className: "r",
+							children: KR(e[t], n)
+						}, t)),
+						/* @__PURE__ */ (0, $.jsx)("td", {
+							className: `r ${o(e) >= 0 ? "pos" : "neg"}`,
+							children: iz(o(e))
+						})
+					] }, e.k)) }),
+					/* @__PURE__ */ (0, $.jsx)("tfoot", { children: /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
+						/* @__PURE__ */ (0, $.jsx)("th", { children: t.total }),
+						a.map(([e, , t]) => /* @__PURE__ */ (0, $.jsx)("th", {
+							className: "r",
+							children: KR(i(e), t)
+						}, e)),
+						/* @__PURE__ */ (0, $.jsx)("th", {
+							className: `r ${i("comp") - i("cost") >= 0 ? "pos" : "neg"}`,
+							children: iz(i("comp") - i("cost"))
+						})
+					] }) })
+				]
+			})
+		})]
+	});
+}
+function nz({ hass: e, t, locale: n, narrow: r }) {
+	let [i, a] = (0, S.useState)("day"), [o, s] = (0, S.useState)(0), [c, l] = (0, S.useState)(null), [u, d] = (0, S.useState)(null), [f, p] = (0, S.useState)(null), m = (0, S.useMemo)(() => {
 		let e = /* @__PURE__ */ new Date(), t, n;
 		return i === "hour" ? (t = new Date(e.getFullYear(), e.getMonth(), e.getDate() + o), n = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1)) : i === "day" ? (t = new Date(e.getFullYear(), e.getMonth() + o, 1), n = new Date(t.getFullYear(), t.getMonth() + 1, 1)) : (t = new Date(e.getFullYear() + o, 0, 1), n = new Date(t.getFullYear() + 1, 0, 1)), {
 			s: t,
@@ -27892,34 +28223,49 @@ function RR({ hass: e, t, locale: n, narrow: r }) {
 		};
 	}, [i, o]);
 	(0, S.useEffect)(() => {
-		l(null), d(null), e.connection.sendMessagePromise({
+		let t = !0;
+		return l(null), d(null), p(null), e.connection.sendMessagePromise({
 			type: "malarenergi/series",
 			resolution: i,
-			start: f.s.toISOString(),
-			end: f.e.toISOString()
+			start: m.s.toISOString(),
+			end: m.e.toISOString()
 		}).then((e) => {
-			let t = /* @__PURE__ */ new Map(), n = (e) => {
+			let n = /* @__PURE__ */ new Map(), r = (e) => {
 				let t = new Date(e);
-				return i === "hour" ? t.toISOString().slice(0, 13) : i === "day" ? AR(e) : AR(new Date(t.getTime() + 1728e5).toISOString()).slice(0, 7);
-			}, r = (e, r) => (e ?? []).forEach(([e, i]) => {
-				let a = n(e), o = t.get(a) ?? t.set(a, {
+				return i === "hour" ? t.toISOString().slice(0, 13) : i === "day" ? qR(e) : qR(new Date(t.getTime() + 1728e5).toISOString()).slice(0, 7);
+			}, a = (e, t) => (e ?? []).forEach(([e, i]) => {
+				let a = r(e), o = n.get(a) ?? n.set(a, {
 					k: a,
 					t: e
 				}).get(a);
-				o[r] = (o[r] ?? 0) + i;
+				o[t] = (o[t] ?? 0) + i;
 			});
-			r(e.CONSUMPTION?.consumption, "cons"), r(e.CONSUMPTION?.cost, "cost"), r(e.PRODUCTION?.production, "prod"), r(e.PRODUCTION?.compensation, "comp"), l([...t.values()].sort((e, t) => e.k.localeCompare(t.k)));
-		}).catch((e) => d(e?.message ?? String(e)));
-	}, [i, f.s.getTime()]);
-	let p = i === "hour" ? f.s.toLocaleDateString(n, {
+			a(e.CONSUMPTION?.consumption, "cons"), a(e.CONSUMPTION?.cost, "cost"), a(e.PRODUCTION?.production, "prod"), a(e.PRODUCTION?.compensation, "comp"), t && (l([...n.values()].sort((e, t) => e.k.localeCompare(t.k))), p(null));
+		}).catch((e) => {
+			t && d(e?.message ?? String(e));
+		}), () => {
+			t = !1;
+		};
+	}, [i, m.s.getTime()]);
+	let h = i === "hour" ? m.s.toLocaleDateString(n, {
 		weekday: "short",
 		day: "numeric",
 		month: "long",
 		year: "numeric"
-	}) : i === "day" ? f.s.toLocaleDateString(n, {
+	}) : i === "day" ? m.s.toLocaleDateString(n, {
 		month: "long",
 		year: "numeric"
-	}) : String(f.s.getFullYear()), m = (e) => i === "hour" ? new Date(c?.find((t) => t.k === e)?.t ?? e).toLocaleTimeString(n, { hour: "2-digit" }) : i === "day" ? String(e).slice(8) : (/* @__PURE__ */ new Date(String(e) + "-15")).toLocaleDateString(n, { month: "short" }), h = (e) => (c ?? []).reduce((t, n) => t + (n[e] ?? 0), 0);
+	}) : String(m.s.getFullYear()), g = (e) => i === "hour" ? new Date(c?.find((t) => t.k === e)?.t ?? e).toLocaleTimeString(n, { hour: "2-digit" }) : i === "day" ? String(e).slice(8) : (/* @__PURE__ */ new Date(String(e) + "-15")).toLocaleDateString(n, { month: "short" }), _ = (e) => (c ?? []).reduce((t, n) => t + (n[e] ?? 0), 0), v = (e) => i === "hour" ? new Date(c?.find((t) => t.k === e)?.t ?? e).toLocaleTimeString(n, {
+		hour: "2-digit",
+		minute: "2-digit"
+	}) : i === "day" ? new Date(String(e)).toLocaleDateString(n, {
+		weekday: "short",
+		day: "numeric",
+		month: "short"
+	}) : (/* @__PURE__ */ new Date(String(e) + "-15")).toLocaleDateString(n, {
+		month: "long",
+		year: "numeric"
+	});
 	return /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [
 		/* @__PURE__ */ (0, $.jsxs)("div", {
 			className: "toolbar",
@@ -27947,7 +28293,7 @@ function RR({ hass: e, t, locale: n, narrow: r }) {
 					}),
 					/* @__PURE__ */ (0, $.jsx)("b", {
 						className: "range-label",
-						children: p
+						children: h
 					}),
 					/* @__PURE__ */ (0, $.jsx)("button", {
 						className: "btn",
@@ -27967,85 +28313,134 @@ function RR({ hass: e, t, locale: n, narrow: r }) {
 		/* @__PURE__ */ (0, $.jsxs)("div", {
 			className: "kpis",
 			children: [
-				/* @__PURE__ */ (0, $.jsx)(PR, {
+				/* @__PURE__ */ (0, $.jsx)(ZR, {
 					label: `${t.consumption} · ${t.total}`,
-					value: kR(h("cons"), OR(h("cons")), "kWh"),
-					sub: `${t.cost} ${kR(h("cost"), 0, "kr")}`
+					value: KR(_("cons"), GR(_("cons")), "kWh"),
+					sub: `${t.cost} ${KR(_("cost"), 0, "kr")}`
 				}),
-				/* @__PURE__ */ (0, $.jsx)(PR, {
+				/* @__PURE__ */ (0, $.jsx)(ZR, {
 					label: `${t.production} · ${t.total}`,
-					value: kR(h("prod"), OR(h("prod")), "kWh"),
-					sub: `${t.compensation} ${kR(h("comp"), 0, "kr")}`
+					value: KR(_("prod"), GR(_("prod")), "kWh"),
+					sub: `${t.compensation} ${KR(_("comp"), 0, "kr")}`
 				}),
-				/* @__PURE__ */ (0, $.jsx)(PR, {
+				/* @__PURE__ */ (0, $.jsx)(ZR, {
 					label: `${t.net} · ${t.total}`,
 					info: t.net_info,
-					value: kR(h("cost") - h("comp"), 0, "kr"),
-					tone: h("cost") - h("comp") <= 0 ? "pos" : "neg"
+					value: iz(_("comp") - _("cost")),
+					tone: _("comp") - _("cost") >= 0 ? "pos" : "neg"
 				})
 			]
 		}),
 		/* @__PURE__ */ (0, $.jsxs)("section", {
 			className: "card",
-			children: [/* @__PURE__ */ (0, $.jsxs)("h2", { children: [p, /* @__PURE__ */ (0, $.jsx)(NR, { text: t.history_info })] }), u ? /* @__PURE__ */ (0, $.jsx)("div", {
-				className: "muted",
-				children: u
-			}) : c ? c.length ? /* @__PURE__ */ (0, $.jsx)(LR, {
-				rows: c,
-				t,
-				height: r ? 260 : 340,
-				tick: m,
-				brush: !0
-			}) : /* @__PURE__ */ (0, $.jsx)("div", {
-				className: "muted",
-				children: t.none
-			}) : /* @__PURE__ */ (0, $.jsx)("div", {
-				className: "muted",
-				children: t.loading
-			})]
+			children: [
+				/* @__PURE__ */ (0, $.jsxs)("h2", { children: [h, /* @__PURE__ */ (0, $.jsx)(XR, { text: t.history_info })] }),
+				u ? /* @__PURE__ */ (0, $.jsx)("div", {
+					className: "muted",
+					children: u
+				}) : c ? c.length ? /* @__PURE__ */ (0, $.jsx)(ez, {
+					rows: c,
+					t,
+					height: r ? 260 : 340,
+					tick: g,
+					brush: !0,
+					zoom: f,
+					setZoom: p
+				}) : /* @__PURE__ */ (0, $.jsx)("div", {
+					className: "muted",
+					children: t.none
+				}) : /* @__PURE__ */ (0, $.jsx)("div", {
+					className: "muted",
+					children: t.loading
+				}),
+				c && c.length > 1 && /* @__PURE__ */ (0, $.jsx)("div", {
+					className: "muted hint",
+					children: t.zoom_hint
+				})
+			]
+		}),
+		c && c.length > 0 && f && f.b < c.length && /* @__PURE__ */ (0, $.jsx)(tz, {
+			rows: c.slice(f.a, f.b + 1),
+			t,
+			label: v,
+			title: `${t.table_zoom}: ${v(c[f.a].k)} – ${v(c[f.b].k)}`
+		}),
+		c && c.length > 0 && /* @__PURE__ */ (0, $.jsx)(tz, {
+			rows: c,
+			t,
+			label: v,
+			title: `${t.table_full}: ${h}`
 		})
 	] });
 }
-function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
-	let [a, o] = (0, S.useState)(() => Number(localStorage.getItem("me_per_page")) || i), [s, c] = (0, S.useState)(0), [l, u] = (0, S.useState)(null), d = a ? Math.max(1, Math.ceil(r.length / a)) : 1, f = (e) => (/* @__PURE__ */ new Date(`${e}-15`)).toLocaleDateString(n, {
+var rz = {
+	en: "🇬🇧",
+	sv: "🇸🇪",
+	nb: "🇳🇴",
+	da: "🇩🇰",
+	fi: "🇫🇮",
+	is: "🇮🇸"
+}, iz = (e, t = 0) => e == null ? "–" : `${e > 0 ? "+" : e < 0 ? "−" : ""}${KR(Math.abs(e), t, "kr")}`;
+function az(e) {
+	let t = {};
+	for (let n of e) {
+		let e = t[n.category] ??= {
+			amount: 0,
+			kwh: 0,
+			byName: {}
+		};
+		e.amount += n.amount, e.byName[n.name] = (e.byName[n.name] ?? 0) + n.kwh, e.kwh = Math.max(...Object.values(e.byName));
+	}
+	return t;
+}
+function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
+	let [a, o] = (0, S.useState)(() => Number(localStorage.getItem("me_per_page")) || i), [s, c] = (0, S.useState)(0), [l, u] = (0, S.useState)(null), [d, f] = (0, S.useState)({}), p = a ? Math.max(1, Math.ceil(r.length / a)) : 1, m = (e) => (/* @__PURE__ */ new Date(`${e}-15`)).toLocaleDateString(n, {
 		month: "short",
 		year: "numeric"
-	}), p = (e) => e ? new Date(e).toLocaleDateString(n, {
+	}), h = (e) => e ? new Date(e).toLocaleDateString(n, {
 		day: "numeric",
 		month: "short"
-	}) : "–", m = async (t) => {
-		if (!l) {
-			u(t);
-			try {
-				let n = await e.callService("malarenergi", "download_invoice", { invoice_id: t }, void 0, !1, !0);
-				n?.response?.url && window.open(n.response.url, "_blank");
-			} finally {
-				u(null);
-			}
-		}
-	}, h = (/* @__PURE__ */ new Date()).getFullYear(), g = (e) => r.filter((t) => t.kind === e && t.period_start.startsWith(String(h))).reduce((e, t) => e + (t.amount ?? 0), 0);
+	}) : "–", g = r.slice(s * a, a ? (s + 1) * a : void 0).map((e) => e.invoice_id).filter(Boolean);
+	(0, S.useEffect)(() => {
+		let t = !0, n = () => Promise.all(g.map((t) => e.connection.sendMessagePromise({
+			type: "auth/sign_path",
+			path: `/api/malarenergi/invoice/${t}`,
+			expires: 3600
+		}).then((e) => [t, e.path]))).then((e) => {
+			t && f(Object.fromEntries(e));
+		}).catch(() => void 0);
+		n();
+		let r = setInterval(n, 18e5);
+		return () => {
+			t = !1, clearInterval(r);
+		};
+	}, [g.join(",")]);
+	let _ = (/* @__PURE__ */ new Date()).getFullYear(), v = (e) => e.startsWith("production_"), y = (e) => r.filter((e) => e.period_start.startsWith(String(_))).reduce((t, n) => n.lines?.length ? t + n.lines.filter((t) => v(t.category) === (e === "production")).reduce((e, t) => e + t.amount, 0) : t + (n.kind === e ? n.amount ?? 0 : 0), 0);
 	return /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "kpis",
 		children: [
-			/* @__PURE__ */ (0, $.jsx)(PR, {
-				label: `${t.consumption} · ${h}`,
-				value: kR(g("consumption"), 0, "kr")
+			/* @__PURE__ */ (0, $.jsx)(ZR, {
+				label: `${t.consumption} · ${_}`,
+				info: t.wallet_info,
+				value: iz(-y("consumption"))
 			}),
-			/* @__PURE__ */ (0, $.jsx)(PR, {
-				label: `${t.production} · ${h}`,
-				value: kR(-g("production"), 0, "kr"),
-				tone: "pos"
+			/* @__PURE__ */ (0, $.jsx)(ZR, {
+				label: `${t.production} · ${_}`,
+				info: t.wallet_info,
+				value: iz(-y("production")),
+				tone: -y("production") >= 0 ? "pos" : "neg"
 			}),
-			/* @__PURE__ */ (0, $.jsx)(PR, {
-				label: `${t.net} · ${h}`,
-				value: kR(g("consumption") + g("production"), 0, "kr"),
-				tone: g("consumption") + g("production") <= 0 ? "pos" : "neg"
+			/* @__PURE__ */ (0, $.jsx)(ZR, {
+				label: `${t.net} · ${_}`,
+				info: t.wallet_net_info,
+				value: iz(-(y("consumption") + y("production"))),
+				tone: y("consumption") + y("production") <= 0 ? "pos" : "neg"
 			})
 		]
 	}), /* @__PURE__ */ (0, $.jsxs)("section", {
 		className: "card",
 		children: [
-			/* @__PURE__ */ (0, $.jsxs)("h2", { children: [t.invoices, /* @__PURE__ */ (0, $.jsx)(NR, { text: t.inv_info })] }),
+			/* @__PURE__ */ (0, $.jsxs)("h2", { children: [t.invoices, /* @__PURE__ */ (0, $.jsx)(XR, { text: `${t.inv_info} ${t.wallet_info}` })] }),
 			/* @__PURE__ */ (0, $.jsx)("div", {
 				className: "table-wrap",
 				children: /* @__PURE__ */ (0, $.jsxs)("table", { children: [/* @__PURE__ */ (0, $.jsx)("thead", { children: /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
@@ -28074,44 +28469,92 @@ function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 					/* @__PURE__ */ (0, $.jsx)("th", { children: t.due }),
 					/* @__PURE__ */ (0, $.jsx)("th", { children: t.status }),
 					/* @__PURE__ */ (0, $.jsx)("th", {})
-				] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: r.slice(s * a, a ? (s + 1) * a : void 0).map((e) => /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
-					/* @__PURE__ */ (0, $.jsx)("td", { children: f(e.period_start.slice(0, 7)) }),
-					/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", { className: `dot ${e.kind}` }), /* @__PURE__ */ (0, $.jsx)("span", {
-						className: "wide",
-						children: e.kind === "production" ? t.production : t.consumption
-					})] }),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: `r ${e.amount < 0 ? "pos" : ""}`,
-						children: kR(e.amount, 0, "kr")
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: "r wide",
-						children: kR(e.kwh, 0)
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: "r wide",
-						children: kR(e.fixed, 0)
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: "r wide",
-						children: e.power_fee ? kR(e.power_fee, 0) : "–"
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", {
-						className: "r wide",
-						children: e.other ? kR(e.other, 0) : "–"
-					}),
-					/* @__PURE__ */ (0, $.jsx)("td", { children: p(e.due_date) }),
-					/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
-						className: `badge ${e.closed ? "ok" : "warn"}`,
-						children: e.amount < 0 ? t.credit : e.closed ? t.paid : t.open
-					}) }),
-					/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("button", {
-						className: "btn",
-						disabled: l === e.invoice_id,
-						onClick: () => m(e.invoice_id),
-						children: l === e.invoice_id ? t.downloading : t.pdf
-					}) })
-				] }, e.invoice_id)) })] })
+				] }) }), /* @__PURE__ */ (0, $.jsx)("tbody", { children: r.slice(s * a, a ? (s + 1) * a : void 0).map((e) => {
+					let n = e.invoice_id ?? JSON.stringify([
+						e.period_start,
+						e.period_end,
+						e.kind,
+						e.issue_date,
+						e.due_date,
+						e.amount,
+						e.utilities,
+						(e.lines ?? []).map((e) => [e.name, e.amount])
+					]);
+					return /* @__PURE__ */ (0, $.jsxs)(S.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("tr", {
+						className: "clickable",
+						onClick: () => u(l === n ? null : n),
+						title: t.show_lines,
+						children: [
+							/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", {
+								className: `chev ${l === n ? "open" : ""}`,
+								children: "›"
+							}), m(e.period_start.slice(0, 7))] }),
+							/* @__PURE__ */ (0, $.jsxs)("td", { children: [/* @__PURE__ */ (0, $.jsx)("span", { className: `dot ${e.kind}` }), /* @__PURE__ */ (0, $.jsx)("span", {
+								className: "wide",
+								children: e.kind === "production" ? t.production : t.consumption
+							})] }),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: `r ${e.amount < 0 ? "pos" : ""}`,
+								children: iz(e.amount == null ? null : -e.amount)
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: "r wide",
+								children: KR(e.kwh, 0)
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: "r wide",
+								children: e.fixed ? iz(-e.fixed) : "–"
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: "r wide",
+								children: e.power_fee ? iz(-e.power_fee) : "–"
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", {
+								className: "r wide",
+								children: e.other ? iz(-e.other) : "–"
+							}),
+							/* @__PURE__ */ (0, $.jsx)("td", { children: h(e.due_date) }),
+							/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
+								className: `badge ${e.closed ? "ok" : "warn"}`,
+								children: e.amount < 0 ? t.credit : e.closed ? t.paid : t.open
+							}) }),
+							/* @__PURE__ */ (0, $.jsx)("td", { children: d[e.invoice_id] ? /* @__PURE__ */ (0, $.jsx)("a", {
+								className: "btn",
+								href: d[e.invoice_id],
+								target: "_blank",
+								rel: "noopener",
+								onClick: (e) => e.stopPropagation(),
+								children: t.pdf
+							}) : /* @__PURE__ */ (0, $.jsx)("button", {
+								className: "btn",
+								disabled: !0,
+								children: t.pdf
+							}) })
+						]
+					}), l === n && /* @__PURE__ */ (0, $.jsx)("tr", {
+						className: "lines-row",
+						children: /* @__PURE__ */ (0, $.jsx)("td", {
+							colSpan: 10,
+							children: /* @__PURE__ */ (0, $.jsx)("div", {
+								className: "lines",
+								children: Object.entries(az(e.lines ?? [])).sort((e, t) => Math.abs(t[1].amount) - Math.abs(e[1].amount)).map(([e, n]) => /* @__PURE__ */ (0, $.jsxs)("div", {
+									className: "line",
+									children: [
+										/* @__PURE__ */ (0, $.jsx)("span", { children: t[`c_${e}`] ?? e }),
+										/* @__PURE__ */ (0, $.jsx)("span", {
+											className: "muted",
+											children: n.kwh ? `${KR(n.kwh, 0)} kWh` : ""
+										}),
+										/* @__PURE__ */ (0, $.jsx)("b", {
+											className: n.amount < 0 ? "pos" : "",
+											children: iz(-n.amount, 2)
+										})
+									]
+								}, e))
+							})
+						})
+					})] }, n);
+				}) })] })
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("div", {
 				className: "pager",
@@ -28133,7 +28576,7 @@ function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 						value: 0,
 						children: t.all
 					})]
-				})] }), d > 1 && /* @__PURE__ */ (0, $.jsxs)("span", {
+				})] }), p > 1 && /* @__PURE__ */ (0, $.jsxs)("span", {
 					className: "pages",
 					children: [
 						/* @__PURE__ */ (0, $.jsx)("button", {
@@ -28147,11 +28590,11 @@ function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 							" ",
 							t.of,
 							" ",
-							d
+							p
 						] }),
 						/* @__PURE__ */ (0, $.jsx)("button", {
 							className: "btn",
-							disabled: s >= d - 1,
+							disabled: s >= p - 1,
 							onClick: () => c(s + 1),
 							children: "›"
 						})
@@ -28161,7 +28604,7 @@ function zR({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 		]
 	})] });
 }
-function BR({ hass: e, t, locale: n }) {
+function sz({ hass: e, t, locale: n }) {
 	let [r, i] = (0, S.useState)(null);
 	if ((0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/contracts" }).then(i).catch(() => i([]));
@@ -28218,7 +28661,7 @@ function BR({ hass: e, t, locale: n }) {
 							}),
 							n.yearly_kwh && /* @__PURE__ */ (0, $.jsxs)("span", {
 								className: "chip",
-								children: [kR(n.yearly_kwh, 0), " kWh/år"]
+								children: [KR(n.yearly_kwh, 0), " kWh/år"]
 							})
 						]
 					})
@@ -28227,34 +28670,84 @@ function BR({ hass: e, t, locale: n }) {
 		})]
 	}, String(e))) });
 }
-function VR({ hass: e, t, opts: n, setOpts: r }) {
-	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null);
-	(0, S.useEffect)(() => {
+function cz({ hass: e, t, opts: n, setOpts: r }) {
+	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), [u, d] = (0, S.useState)(!1), f = (0, S.useRef)(null);
+	f.current = c;
+	let p = (t) => e.connection.sendMessagePromise({
+		type: "malarenergi/reauth_cancel",
+		flow_id: t
+	}).catch(() => void 0), m = () => {
+		c && p(c.flow), l(null), s((e) => e === t.relogin_checking ? null : e);
+	}, h = (0, S.useRef)(!0);
+	(0, S.useEffect)(() => () => {
+		h.current = !1, f.current && p(f.current.flow);
+	}, []), (0, S.useEffect)(() => {
+		if (!c) return;
+		let n = async (n) => {
+			if (n.origin !== location.origin || n.data?.malarenergi !== "bankid-complete") return;
+			s(t.relogin_checking);
+			let r = c.flow, i = () => f.current?.flow === r;
+			for (let n = 0; n < 40 && i(); n++) {
+				if (await new Promise((e) => setTimeout(e, 1e3)), !i()) return;
+				let n = await e.connection.sendMessagePromise({
+					type: "malarenergi/reauth_status",
+					flow_id: r
+				}).catch(() => null);
+				if (n?.done && i()) {
+					l(null), s(n.ok ? t.relogin_done : t.relogin_failed);
+					return;
+				}
+			}
+			i() && (p(r), l(null), s(t.relogin_failed));
+		};
+		return window.addEventListener("message", n), () => window.removeEventListener("message", n);
+	}, [c]), (0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((e) => a(e.notify_services));
 	}, []);
-	let c = async (n) => {
+	let g = async (n) => {
 		r((await e.connection.sendMessagePromise({
 			type: "malarenergi/settings/set",
 			options: n
 		})).options), s(t.saved), setTimeout(() => s(null), 1500);
-	}, l = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
+	}, _ = (e) => /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "setting",
 		children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t[e] }), /* @__PURE__ */ (0, $.jsxs)("label", {
 			className: "switch",
 			children: [/* @__PURE__ */ (0, $.jsx)("input", {
 				type: "checkbox",
 				checked: !!n[e],
-				onChange: (t) => c({ [e]: t.target.checked })
+				onChange: (t) => g({ [e]: t.target.checked })
 			}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 		})]
-	}, e), u = n.notify_targets ?? [];
+	}, e), v = n.notify_targets ?? [];
 	return /* @__PURE__ */ (0, $.jsxs)("div", {
 		className: "settings-grid",
 		children: [
+			c && /* @__PURE__ */ (0, $.jsx)("div", {
+				className: "modal",
+				role: "dialog",
+				"aria-modal": "true",
+				onClick: m,
+				children: /* @__PURE__ */ (0, $.jsxs)("div", {
+					className: "modal-box",
+					onClick: (e) => e.stopPropagation(),
+					children: [/* @__PURE__ */ (0, $.jsx)("button", {
+						className: "btn ghost modal-x",
+						"aria-label": t.close,
+						onClick: m,
+						children: "✕"
+					}), /* @__PURE__ */ (0, $.jsx)("iframe", {
+						src: c.url,
+						title: "BankID"
+					})]
+				})
+			}),
 			/* @__PURE__ */ (0, $.jsxs)("section", {
 				className: "card",
 				children: [/* @__PURE__ */ (0, $.jsx)("h2", { children: t.settings_lang }), /* @__PURE__ */ (0, $.jsx)("div", {
-					className: "seg wrap",
+					className: "langs",
+					role: "radiogroup",
+					"aria-label": t.settings_lang,
 					children: [
 						"auto",
 						"en",
@@ -28263,11 +28756,29 @@ function VR({ hass: e, t, opts: n, setOpts: r }) {
 						"da",
 						"fi",
 						"is"
-					].map((e) => /* @__PURE__ */ (0, $.jsx)("button", {
-						className: (n.language ?? "auto") === e ? "on" : "",
-						onClick: () => c({ language: e }),
-						children: e === "auto" ? t.lang_auto : wR[e]
-					}, e))
+					].map((r) => {
+						let i = (n.language ?? "auto") === r, a = HR(e.locale?.language ?? e.language, "auto").code;
+						return /* @__PURE__ */ (0, $.jsxs)("button", {
+							role: "radio",
+							"aria-checked": i,
+							className: `lang ${i ? "on" : ""} ${r === "auto" ? "auto" : ""}`,
+							onClick: () => g({ language: r }),
+							children: [
+								/* @__PURE__ */ (0, $.jsx)("span", {
+									className: "flag",
+									children: r === "auto" ? "🏠" : rz[r]
+								}),
+								/* @__PURE__ */ (0, $.jsxs)("span", {
+									className: "lname",
+									children: [r === "auto" ? t.lang_auto : VR[r], r === "auto" && /* @__PURE__ */ (0, $.jsx)("small", { children: VR[a] ?? a })]
+								}),
+								i && /* @__PURE__ */ (0, $.jsx)("span", {
+									className: "check",
+									children: "✓"
+								})
+							]
+						}, r);
+					})
 				})]
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28288,11 +28799,16 @@ function VR({ hass: e, t, opts: n, setOpts: r }) {
 							className: "switch",
 							children: [/* @__PURE__ */ (0, $.jsx)("input", {
 								type: "checkbox",
-								checked: u.includes(e),
-								onChange: (t) => c({ notify_targets: t.target.checked ? [...u, e] : u.filter((t) => t !== e) })
+								checked: v.includes(e),
+								onChange: (t) => g({ notify_targets: t.target.checked ? [...v, e] : v.filter((t) => t !== e) })
 							}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 						})]
 					}, e)),
+					!v.some((e) => i.includes(e)) && /* @__PURE__ */ (0, $.jsx)("div", {
+						className: "muted",
+						style: { marginTop: 6 },
+						children: t.no_targets
+					}),
 					/* @__PURE__ */ (0, $.jsx)("div", {
 						className: "label",
 						style: { margin: "12px 0 6px" },
@@ -28303,7 +28819,7 @@ function VR({ hass: e, t, opts: n, setOpts: r }) {
 						"notify_overdue",
 						"notify_han_change",
 						"notify_auth"
-					].map(l)
+					].map(_)
 				]
 			}),
 			/* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28312,10 +28828,24 @@ function VR({ hass: e, t, opts: n, setOpts: r }) {
 					/* @__PURE__ */ (0, $.jsx)("h2", { children: t.settings_account }),
 					/* @__PURE__ */ (0, $.jsxs)("div", {
 						className: "setting",
-						children: [/* @__PURE__ */ (0, $.jsxs)("span", { children: [t.relogin, /* @__PURE__ */ (0, $.jsx)(NR, { text: t.relogin_info })] }), /* @__PURE__ */ (0, $.jsx)("button", {
+						children: [/* @__PURE__ */ (0, $.jsxs)("span", { children: [t.relogin, /* @__PURE__ */ (0, $.jsx)(XR, { text: t.relogin_info })] }), /* @__PURE__ */ (0, $.jsx)("button", {
 							className: "btn",
+							disabled: u || !!c,
 							onClick: async () => {
-								await e.connection.sendMessagePromise({ type: "malarenergi/reauth" }), s(t.relogin_started);
+								d(!0);
+								try {
+									let n = await e.connection.sendMessagePromise({ type: "malarenergi/reauth" });
+									if (!h.current) {
+										n?.flow_id && p(n.flow_id);
+										return;
+									}
+									n?.url && n?.flow_id ? l({
+										url: n.url,
+										flow: n.flow_id
+									}) : s(t.relogin_started);
+								} finally {
+									h.current && d(!1);
+								}
 							},
 							children: "BankID"
 						})]
@@ -28325,7 +28855,7 @@ function VR({ hass: e, t, opts: n, setOpts: r }) {
 						children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t.invoices_per_page }), /* @__PURE__ */ (0, $.jsx)("select", {
 							className: "sel",
 							value: n.invoices_per_page ?? 12,
-							onChange: (e) => c({ invoices_per_page: Number(e.target.value) }),
+							onChange: (e) => g({ invoices_per_page: Number(e.target.value) }),
 							children: [
 								6,
 								12,
@@ -28348,7 +28878,7 @@ function VR({ hass: e, t, opts: n, setOpts: r }) {
 }
 //#endregion
 //#region src/styles.css?inline
-var HR = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--card-background-color,#fff);--me-text:var(--primary-text-color,#1d2330);--me-muted:var(--secondary-text-color,#6b7484);--me-line:color-mix(in srgb, var(--me-muted) 18%, transparent);--me-accent:var(--primary-color,#03a9f4);--me-pos:#2ec27e;--me-neg:#e5484d;--me-radius:16px;display:block}*{box-sizing:border-box}.page{max-width:1480px;min-height:100vh;color:var(--me-text);font:14px/1.45 var(--paper-font-body1_-_font-family,Inter, Roboto, system-ui, sans-serif);background:var(--me-bg);margin:0 auto;padding:20px 28px 56px}.page.narrow{padding:10px 10px 40px}header{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;display:flex}.brand{align-items:center;gap:8px;display:flex}h1{letter-spacing:-.02em;margin:0;font-size:26px;font-weight:600}h2{align-items:center;gap:6px;margin:0;font-size:15px;font-weight:600;display:flex}.menu{color:inherit;cursor:pointer;background:0 0;border:0;font-size:22px}.tabs,.seg{background:var(--me-card);border:1px solid var(--me-line);border-radius:999px;gap:2px;max-width:100%;padding:4px;display:inline-flex;overflow-x:auto}.tabs button,.seg button{color:var(--me-muted);font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:7px 14px;font-weight:500;transition:background .15s,color .15s}.tabs button:hover,.seg button:hover{color:var(--me-text)}.tabs button.on,.seg button.on{background:var(--me-accent);color:var(--text-primary-color,#fff)}.card{background:var(--me-card);border-radius:var(--me-radius);border:1px solid var(--me-line);margin-bottom:16px;padding:18px;box-shadow:0 1px 2px #0000000a,0 8px 24px -12px #0000001f}.card.error{color:var(--me-neg)}.card-head{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;display:flex}.grid-overview{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:16px;display:grid}.narrow .grid-overview,.narrow .two{grid-template-columns:1fr}@media (width<=1000px){.grid-overview,.two{grid-template-columns:1fr}}.side .card{margin-bottom:16px}.two{grid-template-columns:1fr 1fr;gap:16px;display:grid}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px;display:grid}.kpis>.stat{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.kpis.compact{margin-bottom:4px}.kpis.compact>.stat{padding:8px 12px}.stats-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}.settings-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:start;gap:16px;display:grid}.settings-grid .card{margin-bottom:0}.label{color:var(--me-muted);align-items:center;gap:4px;font-size:12px;font-weight:500;display:flex}.value{letter-spacing:-.02em;margin:2px 0;font-size:26px;font-weight:600}.value:first-letter{text-transform:uppercase}.pos{color:var(--me-pos)}.neg{color:var(--me-neg)}.muted{color:var(--me-muted);font-size:12.5px}.big{letter-spacing:-.02em;margin-bottom:10px;font-size:30px;font-weight:600}.big small{color:var(--me-muted);font-size:15px;font-weight:500}.row-between{flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:8px;display:flex}.badge{background:color-mix(in srgb, var(--me-accent) 15%, transparent);color:var(--me-accent);border-radius:999px;align-items:center;gap:4px;padding:3px 4px 3px 10px;font-size:12px;font-weight:500;display:inline-flex}.plan-chip{background:color-mix(in srgb, var(--me-accent) 8%, transparent);border-radius:12px;align-items:center;gap:8px;margin:14px 0 4px;padding:10px 12px;font-size:13.5px;display:flex}.legend{color:var(--me-muted);flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:12px;display:flex}.dot{border-radius:50%;flex:none;width:9px;height:9px;margin-right:6px;display:inline-block}table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;font-size:13.5px}th{text-align:left;color:var(--me-muted);font-size:12px;font-weight:500}th,td{border-bottom:1px solid var(--me-line);padding:8px 6px}tr:last-child td{border-bottom:0}.money td:not(:first-child),.money th:not(:first-child){text-align:right}.money.compact{margin-top:12px}.meter{background:var(--me-line);border-radius:999px;height:10px;overflow:hidden}.meter>div{border-radius:999px;height:100%;transition:width .4s}.info{display:inline-flex;position:relative}.info-btn{border:1px solid var(--me-muted);width:17px;height:17px;color:var(--me-muted);cursor:pointer;opacity:.7;background:0 0;border-radius:50%;place-items:center;padding:0;font:italic 600 10px/1 Georgia,serif;display:inline-grid}.info-btn:hover{opacity:1;color:var(--me-accent);border-color:var(--me-accent)}.pop{z-index:20;background:var(--me-card);width:min(300px,80vw);color:var(--me-text);border:1px solid var(--me-line);text-transform:none;letter-spacing:0;border-radius:12px;padding:12px 14px;font-size:12.5px;font-weight:400;line-height:1.5;position:absolute;top:24px;left:50%;transform:translate(-50%);box-shadow:0 12px 32px -8px #00000059}.setting{border-bottom:1px solid var(--me-line);justify-content:space-between;align-items:center;gap:12px;padding:9px 0;display:flex}.setting:last-child{border-bottom:0}.num{align-items:center;gap:6px;display:inline-flex}.num em{color:var(--me-muted);min-width:52px;font-size:12px;font-style:normal}.num input{width:96px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);text-align:right;border-radius:10px;padding:6px 10px}.num input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.switch{flex:none;width:40px;height:22px;position:relative}.switch input{opacity:0;width:0;height:0}.switch span{background:var(--me-line);cursor:pointer;border-radius:999px;transition:all .2s;position:absolute;inset:0}.switch span:before{content:\"\";background:#fff;border-radius:50%;width:16px;height:16px;transition:all .2s;position:absolute;top:3px;left:3px;box-shadow:0 1px 3px #0000004d}.switch input:checked+span{background:var(--me-accent)}.switch input:checked+span:before{transform:translate(18px)}.flow-card{padding:8px}.flow{width:100%;height:auto;display:block}.flow-line{fill:none;stroke:var(--me-muted);stroke-width:3px;stroke-linecap:round}.house-shape{fill:color-mix(in srgb, var(--me-accent) 5%, transparent);stroke:var(--me-line);stroke-width:2px;stroke-linejoin:round}.node-bg{fill:var(--me-card);stroke-width:2px;stroke-opacity:.35}.node-val{text-anchor:middle;fill:var(--me-text);font-size:15px;font-weight:600}.node-sub{text-anchor:middle;fill:var(--me-muted);font-size:10.5px}.node-label{text-anchor:middle;fill:var(--me-muted);font-size:12.5px;font-weight:500}.recharts-cartesian-axis-tick-value{fill:var(--me-muted)}.recharts-legend-item-text{color:var(--me-muted)!important}.settings-grid .seg{border-radius:14px;flex-wrap:wrap}.range{width:100%;accent-color:var(--me-accent);margin:10px 0 14px}.be{grid-template-columns:1fr 1fr;gap:16px;display:grid}.phases{gap:10px;display:grid}.phases .row-between{margin:0 0 4px}.stack{border-top:1px solid var(--me-line);gap:6px;margin-top:14px;padding-top:12px;display:grid}.row{align-items:center;gap:8px;display:flex}.btn{border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;cursor:pointer;border-radius:10px;padding:6px 12px}.btn.primary{background:var(--me-accent);color:var(--text-primary-color,#fff);border-color:#0000}.btn:disabled{opacity:.45;cursor:default}.btn.ghost{color:var(--me-muted);background:0 0;border:0}table.edit input{width:100%;min-width:80px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);border-radius:8px;padding:6px 8px}table.edit input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.tabs,.seg{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.seg::-webkit-scrollbar{display:none}.narrow .node-val{font-size:22px}.narrow .node-sub{font-size:15px}.narrow .node-label{font-size:17px}.narrow .flow-card{padding:4px}.narrow .kpis{gap:10px}.narrow .value{font-size:22px}.narrow header{margin-bottom:12px}.narrow .tabs{width:100%}.chips{flex-wrap:wrap;gap:8px;display:flex}.chip{border:1px solid var(--me-line);color:var(--me-muted);border-radius:999px;padding:4px 10px;font-size:12px}.chip.ok{color:var(--me-pos);border-color:color-mix(in srgb, var(--me-pos) 40%, transparent)}.kpi{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.table-wrap{overflow-x:auto}td.r,th.r{text-align:right}.dot.production{background:#f5b301}.dot.consumption{background:#3daee9}.badge.ok{background:color-mix(in srgb, var(--me-pos) 15%, transparent);color:var(--me-pos);padding:3px 8px}.badge.warn{color:#e5a50a;background:#e5a50a2e;padding:3px 8px}h2{margin-bottom:12px}td,th{white-space:nowrap}.page{container-type:inline-size}@container (width<=760px){.wide{display:none}}.pager{color:var(--me-muted);flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:13px;display:flex}.pager label{align-items:center;gap:8px;display:inline-flex}.pager select{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:8px;padding:4px 8px}.pages{align-items:center;gap:10px;display:inline-flex}.brand{flex-wrap:wrap;align-items:center;gap:14px;display:flex}.toolbar{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;display:flex}.range-label{text-align:center;text-transform:capitalize;min-width:150px}.seg.wrap{border-radius:14px;flex-wrap:wrap}.foot{margin-top:8px}.contracts{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;display:grid}.contract{border:1px solid var(--me-line);background:var(--me-bg);border-radius:14px;gap:4px;padding:14px;display:grid}.contract.old{opacity:.6}.c-name{font-size:16px;font-weight:600}.sel{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:10px;padding:6px 10px}.toast{background:var(--me-accent);color:#fff;z-index:50;border-radius:999px;padding:10px 18px;font-weight:500;position:fixed;bottom:24px;left:50%;transform:translate(-50%);box-shadow:0 8px 24px -8px #0006}.recharts-brush-texts text{fill:var(--me-muted);font-size:10px}", UR = class extends HTMLElement {
+var lz = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--card-background-color,#fff);--me-text:var(--primary-text-color,#1d2330);--me-muted:var(--secondary-text-color,#6b7484);--me-line:color-mix(in srgb, var(--me-muted) 18%, transparent);--me-accent:var(--primary-color,#03a9f4);--me-pos:#2ec27e;--me-neg:#e5484d;--me-radius:16px;display:block}*{box-sizing:border-box}.page{max-width:1480px;min-height:100vh;color:var(--me-text);font:14px/1.45 var(--paper-font-body1_-_font-family,Inter, Roboto, system-ui, sans-serif);background:var(--me-bg);margin:0 auto;padding:20px 28px 56px}.page.narrow{padding:10px 10px 40px}header{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;display:flex}.brand{align-items:center;gap:8px;display:flex}h1{letter-spacing:-.02em;margin:0;font-size:26px;font-weight:600}h2{align-items:center;gap:6px;margin:0;font-size:15px;font-weight:600;display:flex}.menu{color:inherit;cursor:pointer;background:0 0;border:0;font-size:22px}.tabs,.seg{background:var(--me-card);border:1px solid var(--me-line);border-radius:999px;gap:2px;max-width:100%;padding:4px;display:inline-flex;overflow-x:auto}.tabs button,.seg button{color:var(--me-muted);font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:7px 14px;font-weight:500;transition:background .15s,color .15s}.tabs button:hover,.seg button:hover{color:var(--me-text)}.tabs button.on,.seg button.on{background:var(--me-accent);color:var(--text-primary-color,#fff)}.card{background:var(--me-card);border-radius:var(--me-radius);border:1px solid var(--me-line);margin-bottom:16px;padding:18px;box-shadow:0 1px 2px #0000000a,0 8px 24px -12px #0000001f}.card.error{color:var(--me-neg)}.card-head{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;display:flex}.grid-overview{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:16px;display:grid}.narrow .grid-overview,.narrow .two{grid-template-columns:1fr}@media (width<=1000px){.grid-overview,.two{grid-template-columns:1fr}}.side .card{margin-bottom:16px}.two{grid-template-columns:1fr 1fr;gap:16px;display:grid}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px;display:grid}.kpis>.stat{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.kpis.compact{margin-bottom:4px}.kpis.compact>.stat{padding:8px 12px}.stats-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}.settings-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:start;gap:16px;display:grid}.settings-grid .card{margin-bottom:0}.label{color:var(--me-muted);align-items:center;gap:4px;font-size:12px;font-weight:500;display:flex}.value{letter-spacing:-.02em;margin:2px 0;font-size:26px;font-weight:600}.value:first-letter{text-transform:uppercase}.pos{color:var(--me-pos)}.neg{color:var(--me-neg)}.muted{color:var(--me-muted);font-size:12.5px}.big{letter-spacing:-.02em;margin-bottom:10px;font-size:30px;font-weight:600}.big small{color:var(--me-muted);font-size:15px;font-weight:500}.row-between{flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:8px;display:flex}.badge{background:color-mix(in srgb, var(--me-accent) 15%, transparent);color:var(--me-accent);border-radius:999px;align-items:center;gap:4px;padding:3px 4px 3px 10px;font-size:12px;font-weight:500;display:inline-flex}.plan-chip{background:color-mix(in srgb, var(--me-accent) 8%, transparent);border-radius:12px;align-items:center;gap:8px;margin:14px 0 4px;padding:10px 12px;font-size:13.5px;display:flex}.legend{color:var(--me-muted);flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:12px;display:flex}.dot{border-radius:50%;flex:none;width:9px;height:9px;margin-right:6px;display:inline-block}table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;font-size:13.5px}th{text-align:left;color:var(--me-muted);font-size:12px;font-weight:500}th,td{border-bottom:1px solid var(--me-line);padding:8px 6px}tr:last-child td{border-bottom:0}.money td:not(:first-child),.money th:not(:first-child){text-align:right}.money.compact{margin-top:12px}.meter{background:var(--me-line);border-radius:999px;height:10px;overflow:hidden}.meter>div{border-radius:999px;height:100%;transition:width .4s}.info{display:inline-flex;position:relative}.info-btn{border:1px solid var(--me-muted);width:17px;height:17px;color:var(--me-muted);cursor:pointer;opacity:.7;background:0 0;border-radius:50%;place-items:center;padding:0;font:italic 600 10px/1 Georgia,serif;display:inline-grid}.info-btn:hover{opacity:1;color:var(--me-accent);border-color:var(--me-accent)}.pop{z-index:20;background:var(--me-card);width:min(300px,80vw);color:var(--me-text);border:1px solid var(--me-line);text-transform:none;letter-spacing:0;border-radius:12px;padding:12px 14px;font-size:12.5px;font-weight:400;line-height:1.5;position:absolute;top:24px;left:50%;transform:translate(-50%);box-shadow:0 12px 32px -8px #00000059}.setting{border-bottom:1px solid var(--me-line);justify-content:space-between;align-items:center;gap:12px;padding:9px 0;display:flex}.setting:last-child{border-bottom:0}.num{align-items:center;gap:6px;display:inline-flex}.num em{color:var(--me-muted);min-width:52px;font-size:12px;font-style:normal}.num input{width:96px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);text-align:right;border-radius:10px;padding:6px 10px}.num input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.switch{flex:none;width:40px;height:22px;position:relative}.switch input{opacity:0;width:0;height:0}.switch span{background:var(--me-line);cursor:pointer;border-radius:999px;transition:all .2s;position:absolute;inset:0}.switch span:before{content:\"\";background:#fff;border-radius:50%;width:16px;height:16px;transition:all .2s;position:absolute;top:3px;left:3px;box-shadow:0 1px 3px #0000004d}.switch input:checked+span{background:var(--me-accent)}.switch input:checked+span:before{transform:translate(18px)}.flow-card{padding:8px}.flow{width:100%;height:auto;display:block}.flow-line{fill:none;stroke:var(--me-muted);stroke-width:3px;stroke-linecap:round}.house-shape{fill:color-mix(in srgb, var(--me-accent) 5%, transparent);stroke:var(--me-line);stroke-width:2px;stroke-linejoin:round}.node-bg{fill:var(--me-card);stroke-width:2px;stroke-opacity:.35}.node-val{text-anchor:middle;fill:var(--me-text);font-size:15px;font-weight:600}.node-sub{text-anchor:middle;fill:var(--me-muted);font-size:10.5px}.node-label{text-anchor:middle;fill:var(--me-muted);font-size:12.5px;font-weight:500}.recharts-cartesian-axis-tick-value{fill:var(--me-muted)}.recharts-legend-item-text{color:var(--me-muted)!important}.settings-grid .seg{border-radius:14px;flex-wrap:wrap}.range{width:100%;accent-color:var(--me-accent);margin:10px 0 14px}.be{grid-template-columns:1fr 1fr;gap:16px;display:grid}.phases{gap:10px;display:grid}.phases .row-between{margin:0 0 4px}.stack{border-top:1px solid var(--me-line);gap:6px;margin-top:14px;padding-top:12px;display:grid}.row{align-items:center;gap:8px;display:flex}.btn{border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;cursor:pointer;border-radius:10px;padding:6px 12px}.btn.primary{background:var(--me-accent);color:var(--text-primary-color,#fff);border-color:#0000}.btn:disabled{opacity:.45;cursor:default}.btn.ghost{color:var(--me-muted);background:0 0;border:0}table.edit input{width:100%;min-width:80px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);border-radius:8px;padding:6px 8px}table.edit input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.tabs,.seg{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.seg::-webkit-scrollbar{display:none}.narrow .node-val{font-size:22px}.narrow .node-sub{font-size:15px}.narrow .node-label{font-size:17px}.narrow .flow-card{padding:4px}.narrow .kpis{gap:10px}.narrow .value{font-size:22px}.narrow header{margin-bottom:12px}.narrow .tabs{width:100%}.chips{flex-wrap:wrap;gap:8px;display:flex}.chip{border:1px solid var(--me-line);color:var(--me-muted);border-radius:999px;padding:4px 10px;font-size:12px}.chip.ok{color:var(--me-pos);border-color:color-mix(in srgb, var(--me-pos) 40%, transparent)}.kpi{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.table-wrap{overflow-x:auto}td.r,th.r{text-align:right}.dot.production{background:#f5b301}.dot.consumption{background:#3daee9}.badge.ok{background:color-mix(in srgb, var(--me-pos) 15%, transparent);color:var(--me-pos);padding:3px 8px}.badge.warn{color:#e5a50a;background:#e5a50a2e;padding:3px 8px}h2{margin-bottom:12px}td,th{white-space:nowrap}.page{container-type:inline-size}@container (width<=760px){.wide{display:none}}.pager{color:var(--me-muted);flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:13px;display:flex}.pager label{align-items:center;gap:8px;display:inline-flex}.pager select{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:8px;padding:4px 8px}.pages{align-items:center;gap:10px;display:inline-flex}.brand{flex-wrap:wrap;align-items:center;gap:14px;display:flex}.toolbar{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;display:flex}.range-label{text-align:center;text-transform:capitalize;min-width:150px}.seg.wrap{border-radius:14px;flex-wrap:wrap}.foot{margin-top:8px}.contracts{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;display:grid}.contract{border:1px solid var(--me-line);background:var(--me-bg);border-radius:14px;gap:4px;padding:14px;display:grid}.contract.old{opacity:.6}.c-name{font-size:16px;font-weight:600}.sel{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:10px;padding:6px 10px}.toast{background:var(--me-accent);color:#fff;z-index:50;border-radius:999px;padding:10px 18px;font-weight:500;position:fixed;bottom:24px;left:50%;transform:translate(-50%);box-shadow:0 8px 24px -8px #0006}.recharts-brush-texts text{fill:var(--me-muted);font-size:10px}tr.clickable{cursor:pointer}tr.clickable:hover td{background:color-mix(in srgb, var(--me-accent) 5%, transparent)}.chev{width:14px;color:var(--me-muted);transition:transform .15s;display:inline-block}.chev.open{transform:rotate(90deg)}.lines-row td{background:var(--me-bg);padding:10px 16px}.lines{gap:6px;max-width:520px;display:grid}.line{grid-template-columns:1fr auto 110px;align-items:center;gap:12px;font-size:13px;display:grid}.line b{text-align:right;font-variant-numeric:tabular-nums}.langs{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;display:grid}.lang{cursor:pointer;text-align:left;border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;border-radius:12px;align-items:center;gap:10px;padding:10px 12px;transition:border-color .15s,background .15s;display:flex}.lang:hover{border-color:color-mix(in srgb, var(--me-accent) 50%, transparent)}.lang.on{border-color:var(--me-accent);background:color-mix(in srgb, var(--me-accent) 14%, transparent)}.lang.auto{grid-column:1/-1}.lang .flag{font-size:20px;line-height:1}.lang .lname{flex-direction:column;flex:1;display:flex}.lang .lname small{color:var(--me-muted);font-size:12px}.lang .check{color:var(--me-accent);font-weight:700}.hint{margin-top:6px;font-size:12px}table.sum tfoot th{border-top:2px solid var(--me-line)}table.sum td,table.sum th{white-space:nowrap}a.btn{text-decoration:none;display:inline-block}.modal{z-index:10;background:#0000008c;place-items:center;padding:16px;display:grid;position:fixed;inset:0}.modal-box{background:#0f1724;border-radius:18px;width:min(420px,100%);height:min(640px,92vh);position:relative;overflow:hidden;box-shadow:0 20px 60px #0006}.modal-box iframe{border:0;width:100%;height:100%}.modal-x{z-index:1;color:#e8eef6;position:absolute;top:8px;right:8px}", uz = class extends HTMLElement {
 	root;
 	_hass;
 	_narrow = !1;
@@ -28360,20 +28890,22 @@ var HR = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--
 	}
 	connectedCallback() {
 		if (this.root) return;
-		let e = this.attachShadow({ mode: "open" }), t = document.createElement("style");
-		t.textContent = HR;
+		let e = this.shadowRoot ?? this.attachShadow({ mode: "open" });
+		e.replaceChildren();
+		let t = document.createElement("style");
+		t.textContent = lz;
 		let n = document.createElement("div");
-		e.append(t, n), this.root = (0, xR.createRoot)(n), this.render();
+		e.append(t, n), this.root = (0, RR.createRoot)(n), this.render();
 	}
 	disconnectedCallback() {
 		this.root?.unmount(), this.root = void 0;
 	}
 	render() {
-		this.root && this._hass && this.root.render(/* @__PURE__ */ (0, $.jsx)(FR, {
+		this.root && this._hass && this.root.render(/* @__PURE__ */ (0, $.jsx)(QR, {
 			hass: this._hass,
 			narrow: this._narrow
 		}));
 	}
 };
-customElements.get("malarenergi-panel") || customElements.define("malarenergi-panel", UR);
+customElements.get("malarenergi-panel") || customElements.define("malarenergi-panel", uz);
 //#endregion
