@@ -21,7 +21,7 @@
 const q = new URLSearchParams(location.search);
 // fixed clock (?now=ISO to change it) so regenerated screenshots are identical; the panel reads the time too,
 // so Date itself is pinned before the bundle loads
-const FIXED = new Date(q.get("now") || "2026-10-05T12:00:00").getTime();
+const FIXED = new Date(q.get("now") || "2026-10-05T12:00:00+02:00").getTime();
 const RealDate = Date;
 globalThis.Date = class extends RealDate {
   constructor(...a) { super(...(a.length ? a : [FIXED])); }
@@ -35,6 +35,8 @@ localStorage.setItem("me_tab", tab);
 let seed = 7;
 const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 const iso = (d) => d.toISOString();
+// date-only fields from local dates (toISOString would shift local midnights to the previous UTC day)
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const day0 = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const now = new Date();
 const spot = (h) => 0.35 + 0.5 * Math.max(0, Math.sin(((h - 6) / 24) * 2 * Math.PI)) + rnd() * 0.15;
@@ -74,7 +76,11 @@ function series(res, start, end) {
       const d = new Date(s.getFullYear(), m, 1);
       if (d > now) break;
       let cons = 0, prod = 0, cost = 0, comp = 0;
-      for (let k = 0; k < 30; k++) { const v = dayValues(new Date(d.getFullYear(), m, k + 1)); cons += v.cons; prod += v.prod; cost += v.cost; comp += v.comp; }
+      for (let k = 0; k < 30; k++) {
+        const dk = new Date(d.getFullYear(), m, k + 1);
+        if (dk > now) break;  // the current month only up to today
+        const v = dayValues(dk); cons += v.cons; prod += v.prod; cost += v.cost; comp += v.comp;
+      }
       c.consumption.push([iso(d), cons]); c.cost.push([iso(d), cost]); p.production.push([iso(d), prod]); p.compensation.push([iso(d), comp]);
     }
   }
@@ -95,16 +101,16 @@ function invoices() {
       { category: "supply_fixed", name: "Fast avgift elhandel", kwh: 0, amount: 49 },
     ];
     const amount = Math.round(lines.reduce((a, l) => a + l.amount, 0));
-    out.push({ invoice_id: `demo-c${k}`, kind: "consumption", issue_date: iso(new Date(pe.getTime() + 864e5 * 5)).slice(0, 10),
-      due_date: iso(due).slice(0, 10), period_start: iso(ps).slice(0, 10), period_end: iso(pe).slice(0, 10), amount, amount_ex_vat: amount * 0.8,
+    out.push({ invoice_id: `demo-c${k}`, kind: "consumption", issue_date: ymd(new Date(pe.getTime() + 864e5 * 5)),
+      due_date: ymd(due), period_start: ymd(ps), period_end: ymd(pe), amount, amount_ex_vat: amount * 0.8,
       status: k === 1 ? "ACCOUNTED" : "PAID", closed: k > 1, kwh, fixed: 444, power_fee: 0, other: 0, utilities: ["ELNAT", "ELHANDEL"], lines });
     const pk = Math.round(v.prod * 30);
     if (pk > 20) {
       const pl = [{ category: "production_spot", name: "Ersättning producerad el", kwh: pk, amount: -pk * (0.5 + rnd() * 0.4) },
         { category: "production_grid", name: "Nätnytta", kwh: pk, amount: -pk * 0.05 }];
       const pa = Math.round(pl.reduce((a, l) => a + l.amount, 0));
-      out.push({ invoice_id: `demo-p${k}`, kind: "production", issue_date: iso(new Date(pe.getTime() + 864e5 * 5)).slice(0, 10),
-        due_date: iso(due).slice(0, 10), period_start: iso(ps).slice(0, 10), period_end: iso(pe).slice(0, 10), amount: pa, amount_ex_vat: pa,
+      out.push({ invoice_id: `demo-p${k}`, kind: "production", issue_date: ymd(new Date(pe.getTime() + 864e5 * 5)),
+        due_date: ymd(due), period_start: ymd(ps), period_end: ymd(pe), amount: pa, amount_ex_vat: pa,
         status: "PAID", closed: true, kwh: pk, fixed: 0, power_fee: 0, other: 0, utilities: ["ELPROD"], lines: pl });
     }
   }
@@ -119,9 +125,9 @@ const data = {
   PRODUCTION: { point: POINT_P, daily: daily(new Date(now.getTime() - 31 * 864e5), now) },
 };
 const contracts = [
-  { utility: "Elnät", product: "Säkringsabonnemang", contract: "active", start: "2024-03-01", end: null, fuse: "20A", area: "VLS", yearly_kwh: 14200 },
-  { utility: "Elhandel", product: "Kvartspris", contract: "active", start: "2024-03-01", end: null, fuse: null, area: "VLS", yearly_kwh: 14200 },
-  { utility: "Elhandel produktion", product: "Ersättning", contract: "active", start: "2024-05-15", end: null, fuse: null, area: "VLS", yearly_kwh: -9800 },
+  { utility: "Elnät", product: "Säkringsabonnemang", contract: "active", start: "2024-03-01", end: "", fuse: "20A", area: "VLS", yearly_kwh: 14200 },
+  { utility: "Elhandel", product: "Kvartspris", contract: "active", start: "2024-03-01", end: "", fuse: null, area: "VLS", yearly_kwh: 14200 },
+  { utility: "Elhandel produktion", product: "Ersättning", contract: "active", start: "2024-05-15", end: "", fuse: null, area: "VLS", yearly_kwh: -9800 },
   { utility: "Elhandel", product: "Fastpris 1 år", contract: "ended", start: "2023-03-01", end: "2024-02-29", fuse: null, area: "VLS", yearly_kwh: 15100 },
 ];
 

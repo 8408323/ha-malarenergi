@@ -120,6 +120,7 @@ def main() -> None:
                 f"--user-data-dir={profile}",
                 "about:blank",
             ],
+            env={**os.environ, "TZ": os.environ.get("DEMO_TZ", "Europe/Stockholm")},  # same dates on every host
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
