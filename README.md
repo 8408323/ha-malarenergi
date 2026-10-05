@@ -4,12 +4,24 @@ Home Assistant custom integration for [Mälarenergi](https://www.malarenergi.se)
 electricity grid owner and supplier for Västerås and the Mälardalen area. Logs in to
 **Mitt Mälarenergi** with BankID and brings your account into Home Assistant.
 
-> **Status**: 0.4 — BankID login with automatic token refresh, sensors, invoices with line items and PDF download,
-> HAN port control and a sidebar dashboard. Tested against a real private customer account.
+> **Status**: 0.6 — BankID login with automatic token refresh, sensors, invoices with line items and PDF download,
+> HAN port control, a sidebar dashboard and optional [PowerHub](https://github.com/8408323/ha-malarenergi-powerhub)
+> live data and settings. Tested against a real private customer account.
 
 Not an official API. Reverse-engineered from the public Mitt Mälarenergi web app — see
 the docstring in [`api.py`](custom_components/malarenergi/api.py) for the login flow and
 endpoints. It can break whenever Mälarenergi changes their site.
+
+## Screenshots
+
+The sidebar dashboard, shown with **made-up demo data** (no real account): see
+[`docs/demo/demo.html`](docs/demo/demo.html), which feeds the real panel bundle generated numbers.
+
+| Overview | History |
+|---|---|
+| ![Overview: this month's KPIs, last 30 days and live PowerHub power per phase](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_overview.png) | ![History: a year per month, with zoom and period totals](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_history.png) |
+| **Invoices** | **Settings** |
+| ![Invoices: year totals, line items of an invoice and PDF download](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_invoices.png) | ![Settings: language, notifications, account and PowerHub](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_settings.png) |
 
 ## Support
 
@@ -65,7 +77,12 @@ Your personal number is never entered or stored — BankID handles identificatio
     energy tax, spot, supplier fees, broadband, …), one-click PDF download
   - *Contracts*: active and ended contracts (grid, supply, production, broadband) with fuse size and grid area
   - *Settings*: language (English, Svenska, Norsk, Dansk, Suomi, Íslenska — default follows Home Assistant),
-    notification targets and events, BankID re-login, invoices per page
+    notification targets and events, BankID re-login, invoices per page, and PowerHub (below)
+- **PowerHub (optional)**: [Mälarenergi PowerHub](https://github.com/8408323/ha-malarenergi-powerhub) is a
+  separate integration for the HAN-port reader. When it is installed and its meter belongs to this facility,
+  the Overview shows live grid power and per-phase load against the main fuse, and *Settings → PowerHub*
+  shows its status and edits its settings (home, fuse and alert limits, alert rules). Without it, the card
+  links to HACS or starts PowerHub's setup. Each integration also works on its own.
 - Notifications (opt-in, to any `notify` service): new invoice, overdue invoice, HAN port changed, login expired
 - Sensors: consumption and production (yesterday / this month), cost (energy + grid) and production
   compensation this month, monthly power peak, latest invoice (24-invoice history attribute), unpaid
@@ -99,6 +116,7 @@ uv run pytest tests/
 (cd frontend && npm ci && npm run build)  # rebuilds custom_components/malarenergi/www/panel.js
 uv run ruff check custom_components/ tests/
 uv run ruff format custom_components/ tests/
+uv run python scripts/screenshots.py      # README screenshots from docs/demo (needs Chrome/Chromium)
 ```
 
 ## Contributing
