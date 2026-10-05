@@ -23,6 +23,7 @@ def _load():
         "homeassistant.helpers.event",
         "homeassistant.helpers.storage",
         "homeassistant.helpers.update_coordinator",
+        "homeassistant.loader",
         "homeassistant.util",
     ):
         sys.modules.setdefault(name, MagicMock())
@@ -67,3 +68,29 @@ def test_notify_survives_a_failing_target():
     self.options["notify_targets"] = ["broken"]
     asyncio.run(mod.MalarenergiCoordinator.notify(self, "notify_new_invoice", "t", "m"))
     mod.persistent_notification.async_create.assert_called_once()  # nothing delivered: fall back to HA's panel
+
+
+def test_powerhub_state():
+    mod = _load()
+
+    class NotFound(Exception):
+        pass
+
+    mod.IntegrationNotFound = NotFound
+
+    def hass(entries):
+        return types.SimpleNamespace(config_entries=types.SimpleNamespace(async_entries=lambda d: entries))
+
+    async def found(h, d):
+        return object()
+
+    async def gone(h, d):
+        raise NotFound(d)
+
+    mod.async_get_integration = gone
+    assert asyncio.run(mod._powerhub_state(hass([]))) == "missing"
+    mod.async_get_integration = found
+    assert asyncio.run(mod._powerhub_state(hass([]))) == "installed"
+    assert asyncio.run(mod._powerhub_state(hass(["entry"]))) == "configured"
+    mod.async_get_integration = gone
+    assert asyncio.run(mod._powerhub_state(hass(["entry"]))) == "missing"  # stale entry after uninstall
