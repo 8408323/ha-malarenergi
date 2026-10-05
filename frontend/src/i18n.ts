@@ -24,7 +24,7 @@ const en = {
   notify_auth: "Login expired", settings_account: "Account", relogin: "Log in again with BankID",
   relogin_info: "Starts a new BankID login in a dialog here: scan the QR code, or choose BankID on this device on a phone.",
   relogin_started: "Login started — open Settings → Devices & services in Home Assistant.", saved: "Saved", none_found: "No notify services found",
-  invoices_per_page: "Invoices per page",
+  invoices_per_page: "Invoices per page", live: "Right now", live_info: "Live grid power and phase load from your PowerHub integration (the same HAN meter). Bars show each phase against the fuse.", importing: "Buying from the grid", exporting: "Selling to the grid", show_powerhub: "Show live PowerHub data",
   c_grid_fixed: "Grid fixed fee (fuse)", c_grid_transfer: "Grid transfer", c_power_fee: "Power fee", c_energy_tax: "Energy tax",
   c_spot_energy: "Electricity (spot)", c_supply_markup: "Supplier markup", c_supply_fixed: "Supplier fixed fee", c_broadband: "Broadband",
   c_production_spot: "Sold electricity (spot)", c_production_bonus: "Production bonus", c_production_grid: "Grid benefit", c_production_other: "Other production payout", c_other: "Other",
@@ -57,7 +57,7 @@ const sv: Dict = {
   notify_auth: "Inloggning utgången", settings_account: "Konto", relogin: "Logga in igen med BankID",
   relogin_info: "Startar en ny BankID-inloggning i en ruta här: skanna QR-koden, eller välj BankID på den här enheten på mobilen.",
   relogin_started: "Inloggning startad — öppna Inställningar → Enheter och tjänster i Home Assistant.", saved: "Sparat", none_found: "Inga notify-tjänster hittades",
-  invoices_per_page: "Fakturor per sida",
+  invoices_per_page: "Fakturor per sida", live: "Just nu", live_info: "Effekt mot nätet och fasbelastning från PowerHub-integrationen (samma HAN-mätare). Staplarna visar varje fas mot säkringen.", importing: "Köper från nätet", exporting: "Säljer till nätet", show_powerhub: "Visa PowerHub-data i realtid",
   c_grid_fixed: "Elnät fast avgift (säkring)", c_grid_transfer: "Elöverföring", c_power_fee: "Effektavgift", c_energy_tax: "Energiskatt",
   c_spot_energy: "El (spotpris)", c_supply_markup: "Elhandel påslag", c_supply_fixed: "Elhandel fast avgift", c_broadband: "Bredband",
   c_production_spot: "Såld el (spotpris)", c_production_bonus: "Produktionsersättning", c_production_grid: "Nätnytta", c_production_other: "Övrig produktionsersättning", c_other: "Övrigt",
@@ -78,7 +78,7 @@ const nb: Dict = {
   u_EL: "Strømnett", u_ELEXT: "Strømavtale", u_ELPROD: "Nett produksjon", u_BB: "Bredbånd", u_FV: "Fjernvarme",
   settings_lang: "Språk", lang_auto: "Som Home Assistant", settings_notify: "Varsler", notify_targets: "Send til", no_targets: "Ingen mottaker valgt: varsler vises i Home Assistants varselpanel.",
   notify_new_invoice: "Ny faktura", notify_overdue: "Forfalt faktura", notify_han_change: "HAN-port endret", notify_auth: "Innlogging utløpt",
-  settings_account: "Konto", relogin: "Logg inn igjen med BankID", saved: "Lagret", invoices_per_page: "Fakturaer per side",
+  settings_account: "Konto", relogin: "Logg inn igjen med BankID", saved: "Lagret", invoices_per_page: "Fakturaer per side", live: "Akkurat nå", live_info: "Effekt mot nettet og fasebelastning fra PowerHub-integrasjonen (samme HAN-måler). Søylene viser hver fase mot sikringen.", importing: "Kjøper fra nettet", exporting: "Selger til nettet", show_powerhub: "Vis PowerHub-data i sanntid",
 };
 
 const da: Dict = {
@@ -95,7 +95,7 @@ const da: Dict = {
   u_EL: "Elnet", u_ELEXT: "Elaftale", u_ELPROD: "Elnet produktion", u_BB: "Bredbånd", u_FV: "Fjernvarme",
   settings_lang: "Sprog", lang_auto: "Som Home Assistant", settings_notify: "Notifikationer", notify_targets: "Send til", no_targets: "Ingen modtager valgt: notifikationer vises i Home Assistants notifikationspanel.",
   notify_new_invoice: "Ny faktura", notify_overdue: "Forfalden faktura", notify_han_change: "HAN-port ændret", notify_auth: "Login udløbet",
-  settings_account: "Konto", relogin: "Log ind igen med BankID", saved: "Gemt", invoices_per_page: "Fakturaer pr. side",
+  settings_account: "Konto", relogin: "Log ind igen med BankID", saved: "Gemt", invoices_per_page: "Fakturaer pr. side", live: "Lige nu", live_info: "Effekt mod nettet og fasebelastning fra PowerHub-integrationen (samme HAN-måler). Søjlerne viser hver fase mod sikringen.", importing: "Køber fra nettet", exporting: "Sælger til nettet", show_powerhub: "Vis PowerHub-data live",
 };
 
 const fi: Dict = {
@@ -112,7 +112,7 @@ const fi: Dict = {
   u_EL: "Sähköverkko", u_ELEXT: "Sähkösopimus", u_ELPROD: "Verkko tuotanto", u_BB: "Laajakaista", u_FV: "Kaukolämpö",
   settings_lang: "Kieli", lang_auto: "Kuten Home Assistant", settings_notify: "Ilmoitukset", notify_targets: "Lähetä", no_targets: "Vastaanottajaa ei ole valittu: ilmoitukset näkyvät Home Assistantin ilmoituspaneelissa.",
   notify_new_invoice: "Uusi lasku", notify_overdue: "Erääntynyt lasku", notify_han_change: "HAN-portti muuttui", notify_auth: "Kirjautuminen vanhentui",
-  settings_account: "Tili", relogin: "Kirjaudu uudelleen BankID:llä", saved: "Tallennettu", invoices_per_page: "Laskuja sivulla",
+  settings_account: "Tili", relogin: "Kirjaudu uudelleen BankID:llä", saved: "Tallennettu", invoices_per_page: "Laskuja sivulla", live: "Juuri nyt", live_info: "Verkkoteho ja vaihekuormitus PowerHub-integraatiosta (sama HAN-mittari). Palkit näyttävät jokaisen vaiheen suhteessa sulakkeeseen.", importing: "Ostetaan verkosta", exporting: "Myydään verkkoon", show_powerhub: "Näytä PowerHub-tiedot reaaliajassa",
 };
 
 const is: Dict = {
@@ -121,7 +121,7 @@ const is: Dict = {
   wallet_info: "Sýnt frá veskinu þínu: + (grænt) eru peningar til þín, − eru peningar sem þú greiðir. Upphæðir með VSK; greiðsla fyrir framleiðslu er án VSK.", wallet_net_info: "Nettó ársins: greiðslur fyrir framleiðslu að frádregnum reikningum fyrir notkun. Neikvætt (rautt) þýðir að þú hefur greitt meira en þú fékkst.", tab_overview: "Yfirlit", tab_history: "Saga", tab_invoices: "Reikningar", tab_contracts: "Samningar", tab_settings: "Stillingar",
   month: "Þessi mánuður", consumption: "Notkun", production: "Framleiðsla", cost: "Kostnaður", compensation: "Endurgreiðsla",
   peak: "Aflstoppur", net: "Nettó", daily: "Síðustu 30 dagar", invoices: "Reikningar", period: "Tímabil", amount: "Upphæð", due: "Gjalddagi",
-  paid: "Greitt", open: "Ógreitt", credit: "Útgreiðsla", han: "HAN-tengi", fuse: "Öryggi", none: "Engin gögn enn", loading: "Hleð…",
+  paid: "Greitt", open: "Ógreitt", credit: "Útgreiðsla", han: "HAN-tengi", fuse: "Öryggi", live: "Núna", live_info: "Afl á netinu og álag á fasa úr PowerHub-samþættingunni (sami HAN-mælir). Súlurnar sýna hvern fasa miðað við öryggið.", importing: "Kaupir af netinu", exporting: "Selur inn á netið", show_powerhub: "Sýna PowerHub-gögn í rauntíma", none: "Engin gögn enn", loading: "Hleð…",
   updated: "Uppfært", fixed: "Föst", power_fee: "Afl", other: "Annað", per_page: "Á síðu", of: "af", all: "Allt",
   res_hour: "Dagur", res_day: "Mánuður", res_month: "Ár", total: "Samtals", prev: "Fyrri", next: "Næsta", today: "Núna",
   contracts: "Samningar", until_further: "Ótímabundið", active: "Virkir", ended: "Lokið",

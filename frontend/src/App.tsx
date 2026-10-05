@@ -87,7 +87,7 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
       {err && <div className="card error">{err}</div>}
       {!d && tab !== "settings" ? <div className="card">{err ? t.none : t.loading}</div> : (
         <>
-          {tab === "overview" && d && <Overview {...ctx} d={d} />}
+          {tab === "overview" && d && <Overview {...ctx} d={d} live={opts?.show_powerhub !== false} />}
           {tab === "history" && <History {...ctx} />}
           {tab === "invoices" && d && <Invoices {...ctx} invoices={d.invoices ?? []} perPage0={opts?.invoices_per_page ?? 12} />}
           {tab === "contracts" && <Contracts {...ctx} />}
@@ -100,7 +100,38 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
 }
 
 /* ---------------- Overview ---------------- */
-function Overview({ t, locale, narrow, d }: Ctx & { d: Data }) {
+// Live power from the PowerHub integration (same HAN meter), found by its entity ids; no second login.
+function PowerHub({ hass, t }: Ctx) {
+  const st = hass.states as Record<string, any>;
+  const id = Object.keys(st).map((e) => /^sensor\.powerhub_(.+)_power_import$/.exec(e)?.[1]).find(Boolean);
+  if (!id) return null;
+  const num = (e: string) => { const v = parseFloat(st[e]?.state); return Number.isFinite(v) ? v : null; };
+  const imp = num(`sensor.powerhub_${id}_power_import`), exp = num(`sensor.powerhub_${id}_power_export`);
+  const fuse = num(`number.powerhub_${id}_fuse_limit`);
+  if (imp == null && exp == null) return null;
+  const net = (imp ?? 0) - (exp ?? 0);
+  return (
+    <section className="card">
+      <h2>{t.live}<Info text={t.live_info} /></h2>
+      <div className="row-between"><span className="muted">{net >= 0 ? t.importing : t.exporting}</span>
+        <b className={net < 0 ? "pos" : ""}>{fmt(Math.abs(net), 2, "kW")}</b></div>
+      <div className="phases" style={{ marginTop: 12 }}>
+        {[1, 2, 3].map((n) => {
+          const a = num(`sensor.powerhub_${id}_current_l${n}`);
+          const pct = a != null && fuse ? Math.min(100, (a / fuse) * 100) : 0;
+          return (
+            <div key={n}>
+              <div className="row-between"><span className="muted">L{n}</span><span>{fmt(a, 1, "A")}{fuse ? ` / ${fuse} A` : ""}</span></div>
+              <div className="meter"><div style={{ width: `${pct}%`, background: pct > 85 ? "var(--me-neg)" : pct > 60 ? "#f5a524" : "var(--me-accent)" }} /></div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function Overview({ hass, t, locale, narrow, d, live }: Ctx & { d: Data; live: boolean }) {
   const days = useMemo(() => {
     const m = new Map<string, any>();
     const add = (rows: [string, number][] | undefined, key: string) =>
@@ -128,6 +159,7 @@ function Overview({ t, locale, narrow, d }: Ctx & { d: Data }) {
         <h2>{t.daily}<Info text={t.daily_info} /></h2>
         <EnergyChart rows={days} t={t} height={narrow ? 240 : 300} tick={(k) => String(k).slice(5)} />
       </section>
+      {live && <PowerHub hass={hass} t={t} locale={locale} narrow={narrow} />}
     </>
   );
 }
@@ -530,6 +562,7 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
               if (r?.url && r?.flow_id) setLogin({ url: r.url, flow: r.flow_id }); else setMsg(t.relogin_started);
             } finally { if (mounted.current) setStarting(false); }
           }}>BankID</button></div>
+        {toggle("show_powerhub")}
         <div className="setting"><span>{t.invoices_per_page}</span>
           <select className="sel" value={opts.invoices_per_page ?? 12} onChange={(e) => save({ invoices_per_page: Number(e.target.value) })}>
             {[6, 12, 24, 48].map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
