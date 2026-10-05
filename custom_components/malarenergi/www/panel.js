@@ -27993,7 +27993,8 @@ var $R = {
 	kW: 1,
 	MW: 1e3,
 	GW: 1e6,
-	TW: 1e9
+	TW: 1e9,
+	"BTU/h": .00029307107
 }, ez = {
 	μA: 1e-6,
 	µA: 1e-6,
@@ -28009,7 +28010,7 @@ function tz({ hass: e, t, d: n }) {
 	}, c = (e, t, n) => {
 		let i = s(e), a = t[r[e]?.attributes?.unit_of_measurement ?? n ?? ""];
 		return i == null || a == null ? null : i * a;
-	}, l = (e) => c(e, $R), u = l(`sensor.${o}power_import`), d = l(`sensor.${o}power_export`), f = c(`number.${o}fuse_limit`, ez) ?? c(`number.${o}fuse_limit_set`, ez) ?? c(`select.${o}fuse_size`, ez, "A");
+	}, l = (e) => c(e, $R), u = l(`sensor.${o}power_import`), d = l(`sensor.${o}power_export`), f = c(`select.${o}fuse_size`, ez, "A") ?? c(`number.${o}fuse_limit`, ez) ?? c(`number.${o}fuse_limit_set`, ez);
 	if (u == null || d == null) return null;
 	let p = u - d;
 	return /* @__PURE__ */ (0, $.jsxs)("section", {

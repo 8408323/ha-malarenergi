@@ -100,7 +100,7 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
 }
 
 /* ---------------- Overview ---------------- */
-const KW: Record<string, number> = { mW: 1e-6, W: 1e-3, kW: 1, MW: 1e3, GW: 1e6, TW: 1e9 };  // HA power units → kW
+const KW: Record<string, number> = { mW: 1e-6, W: 1e-3, kW: 1, MW: 1e3, GW: 1e6, TW: 1e9, "BTU/h": 0.00029307107 };  // HA power units → kW
 const AMP: Record<string, number> = { "μA": 1e-6, "µA": 1e-6, mA: 1e-3, A: 1 };  // HA current units → A
 
 // Live power from the PowerHub integration (same HAN meter), found by its entity ids; no second login.
@@ -120,7 +120,8 @@ function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
   };
   const kw = (e: string) => conv(e, KW);
   const imp = kw(`sensor.${p}power_import`), exp = kw(`sensor.${p}power_export`);
-  const fuse = conv(`number.${p}fuse_limit`, AMP) ?? conv(`number.${p}fuse_limit_set`, AMP) ?? conv(`select.${p}fuse_size`, AMP, "A");
+  // the installed main fuse first; fuse_limit_set is PowerHub's soft alert limit, only a fallback
+  const fuse = conv(`select.${p}fuse_size`, AMP, "A") ?? conv(`number.${p}fuse_limit`, AMP) ?? conv(`number.${p}fuse_limit_set`, AMP);
   if (imp == null || exp == null) return null;  // a missing side isn't a zero reading
   const net = imp - exp;
   return (
