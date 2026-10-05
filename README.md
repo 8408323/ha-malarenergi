@@ -12,17 +12,6 @@ Not an official API. Reverse-engineered from the public Mitt Mälarenergi web ap
 the docstring in [`api.py`](custom_components/malarenergi/api.py) for the login flow and
 endpoints. It can break whenever Mälarenergi changes their site.
 
-## Screenshots
-
-The sidebar dashboard, shown with **made-up demo data** (no real account): see
-[`docs/demo/demo.html`](docs/demo/demo.html), which feeds the real panel bundle generated numbers.
-
-| Overview | History |
-|---|---|
-| ![Overview: this month's KPIs, last 30 days and live PowerHub power per phase](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_overview.png) | ![History: a year per month, with zoom and period totals](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_history.png) |
-| **Invoices** | **Settings** |
-| ![Invoices: year totals, line items of an invoice and PDF download](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_invoices.png) | ![Settings: language, notifications, account and PowerHub](https://raw.githubusercontent.com/8408323/ha-malarenergi/main/docs/images/panel_settings.png) |
-
 ## Support
 
 If you find this integration useful, you can buy me a coffee ☕
@@ -46,6 +35,17 @@ Not (yet) in the HACS default store, so add it as a custom repository:
 
 1. Copy `custom_components/malarenergi/` to your HA `config/custom_components/` directory.
 2. Restart Home Assistant.
+
+## Screenshots
+
+The sidebar dashboard, shown with **made-up demo data** (no real account): see
+[`docs/demo/demo.html`](docs/demo/demo.html), which feeds the real panel bundle generated numbers.
+
+| Overview | History |
+|---|---|
+| ![Overview: this month's KPIs, last 30 days and live PowerHub power per phase](docs/images/panel_overview.png) | ![History: a year per month, with zoom and period totals](docs/images/panel_history.png) |
+| **Invoices** | **Settings** |
+| ![Invoices: year totals, line items of an invoice and PDF download](docs/images/panel_invoices.png) | ![Settings: language, notifications, account and PowerHub](docs/images/panel_settings.png) |
 
 ## Configuration
 
