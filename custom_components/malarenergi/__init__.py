@@ -38,6 +38,7 @@ DEFAULT_OPTIONS = {
     "notify_han_change": True,
     "notify_auth": True,
     "invoices_per_page": 12,
+    "show_powerhub": True,  # live card from a PowerHub integration, when one is installed
 }
 
 
