@@ -20,6 +20,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.loader import IntegrationNotFound, async_get_integration
 from homeassistant.util import dt as dt_util
 
 from . import parse
@@ -379,9 +380,23 @@ async def ws_contracts(hass, connection, msg):
         connection.send_error(msg["id"], "api_error", str(err))
 
 
+POWERHUB = "malarenergi_powerhub"  # the separate PowerHub integration; the panel can configure it
+
+
+async def _powerhub_state(hass) -> str:
+    """missing / installed (no config entry yet) / configured."""
+    if hass.config_entries.async_entries(POWERHUB):
+        return "configured"
+    try:
+        await async_get_integration(hass, POWERHUB)
+    except IntegrationNotFound:
+        return "missing"
+    return "installed"
+
+
 @websocket_api.websocket_command({vol.Required("type"): "malarenergi/settings/get"})
-@callback
-def ws_settings_get(hass, connection, msg):
+@websocket_api.async_response
+async def ws_settings_get(hass, connection, msg):
     coord = _coord(hass)
     services = sorted(hass.services.async_services().get("notify", {}).keys())
     connection.send_result(
@@ -390,6 +405,7 @@ def ws_settings_get(hass, connection, msg):
             "options": coord.options if coord else DEFAULT_OPTIONS,
             "notify_services": [s for s in services if s not in NOT_TARGETS],
             "languages": list(LANGS),
+            "powerhub": await _powerhub_state(hass),
         },
     )
 

@@ -91,7 +91,7 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
           {tab === "history" && <History {...ctx} />}
           {tab === "invoices" && d && <Invoices {...ctx} invoices={d.invoices ?? []} perPage0={opts?.invoices_per_page ?? 12} />}
           {tab === "contracts" && <Contracts {...ctx} />}
-          {tab === "settings" && opts && <Settings {...ctx} opts={opts} setOpts={setOpts} />}
+          {tab === "settings" && opts && <Settings {...ctx} opts={opts} setOpts={setOpts} d={d} />}
         </>
       )}
       {d?.updated && tab !== "settings" && <div className="muted foot">{t.updated} {new Date(d.updated).toLocaleString(locale)}</div>}
@@ -103,14 +103,19 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
 const KW: Record<string, number> = { mW: 1e-6, W: 1e-3, kW: 1, MW: 1e3, GW: 1e6, TW: 1e9, "BTU/h": 0.00029307107 };  // HA power units → kW
 const AMP: Record<string, number> = { "μA": 1e-6, "µA": 1e-6, mA: 1e-3, A: 1 };  // HA current units → A
 
+// The PowerHub integration's entity prefix for the displayed facility. Entity ids are "powerhub_<name>" (docs)
+// or "powerhub_<facility>_<name>" (device-named installs); PowerHub's meter_id must be one of this facility's
+// metering points, so another property's hub is never shown or configured here.
+function powerhubPrefix(st: Record<string, any>, d: Data | null): string | undefined {
+  const all = Object.keys(st).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean) as string[];
+  const mps = new Set([d?.CONSUMPTION?.point, d?.PRODUCTION?.point].filter(Boolean).map(String));
+  return all.find((x) => mps.has(st[`sensor.${x}meter_id`]?.state));
+}
+
 // Live power from the PowerHub integration (same HAN meter), found by its entity ids; no second login.
 function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
   const st = hass.states as Record<string, any>;
-  // entity ids are "powerhub_<name>" (docs) or "powerhub_<facility>_<name>" (device-named installs)
-  const all = Object.keys(st).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean) as string[];
-  // bind to the displayed facility: PowerHub's meter_id must be one of its metering points
-  const mps = new Set([d.CONSUMPTION?.point, d.PRODUCTION?.point].filter(Boolean).map(String));
-  const p = all.find((x) => mps.has(st[`sensor.${x}meter_id`]?.state));
+  const p = powerhubPrefix(st, d);
   if (!p) return null;
   const num = (e: string) => { const v = parseFloat(String(st[e]?.state).replace(/^A/, "")); return Number.isFinite(v) ? v : null; };
   // HA converts to the user's display unit; normalise (an unknown unit gives null, never a wrong number)
@@ -477,8 +482,9 @@ function Contracts({ hass, t, locale }: Ctx) {
 }
 
 /* ---------------- Settings ---------------- */
-function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o: Options) => void }) {
+function Settings({ hass, t, locale, narrow, opts, setOpts, d }: Ctx & { opts: Options; setOpts: (o: Options) => void; d: Data | null }) {
   const [services, setServices] = useState<string[]>([]);
+  const [ph, setPh] = useState<string | null>(null);  // PowerHub integration: missing / installed / configured
   const [msg, setMsg] = useState<string | null>(null);
   // BankID page shown in a dialog over the panel; flow = the reauth flow behind it
   const [login, setLogin] = useState<{ url: string; flow: string } | null>(null);
@@ -514,7 +520,9 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);
   }, [login]);
-  useEffect(() => { hass.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((r: any) => setServices(r.notify_services)); }, []);
+  useEffect(() => {
+    hass.connection.sendMessagePromise({ type: "malarenergi/settings/get" }).then((r: any) => { setServices(r.notify_services); setPh(r.powerhub); });
+  }, []);
   const save = async (patch: Options) => {
     const r = await hass.connection.sendMessagePromise({ type: "malarenergi/settings/set", options: patch });
     setOpts(r.options); setMsg(t.saved); setTimeout(() => setMsg(null), 1500);
@@ -576,12 +584,85 @@ function Settings({ hass, t, opts, setOpts }: Ctx & { opts: Options; setOpts: (o
               if (r?.url && r?.flow_id) setLogin({ url: r.url, flow: r.flow_id }); else setMsg(t.relogin_started);
             } finally { if (mounted.current) setStarting(false); }
           }}>BankID</button></div>
-        {toggle("show_powerhub")}
         <div className="setting"><span>{t.invoices_per_page}</span>
           <select className="sel" value={opts.invoices_per_page ?? 12} onChange={(e) => save({ invoices_per_page: Number(e.target.value) })}>
             {[6, 12, 24, 48].map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
       </section>
+      {ph && <PowerHubSettings hass={hass} t={t} locale={locale} narrow={narrow} d={d} state={ph}
+        live={opts.show_powerhub !== false} setLive={(on) => save({ show_powerhub: on })} />}
       {msg && <div className="toast">{msg}</div>}
     </div>
+  );
+}
+
+const PH_REPO = "https://my.home-assistant.io/redirect/hacs_repository/?owner=8408323&repository=ha-malarenergi-powerhub&category=integration";
+// PowerHub's own settings, grouped; each is one of its entities, written through HA's services
+const PH_GROUPS: [string, string[]][] = [
+  ["ph_home", ["select:facility_type", "select:heating_type", "number:area", "number:occupants", "switch:has_solar", "switch:has_battery", "select:ev_charger_type"]],
+  ["ph_grid", ["select:fuse_size", "number:fuse_limit", "number:fuse_limit_set", "number:power_limit"]],
+  ["ph_alerts", ["switch:notify_total_power_exceeded", "switch:notify_phase_load_exceeded", "switch:notify_power_limit_alert_control_on",
+    "switch:notify_power_limit_alert_control_off", "switch:notify_phase_limit_alert_control_on", "switch:notify_phase_limit_alert_control_off"]],
+];
+const PH_STATUS = ["han_port_state", "firmware_version", "wi_fi_signal", "latest_notification"];
+
+function PhRow({ hass, t, id, name }: { hass: any; t: T; id: string; name: string }) {
+  const s = hass.states[id];
+  if (!s) return null;
+  const dom = id.split(".")[0], off = s.state === "unavailable" || s.state === "unknown", a = s.attributes ?? {};
+  const label = (t as any)[`ph_${name}`] ?? a.friendly_name ?? name;
+  const call = (svc: string, data: any) => hass.callService(dom, svc, { entity_id: id, ...data });
+  let control: any;
+  if (dom === "switch") {
+    control = <label className="switch"><input type="checkbox" checked={s.state === "on"} disabled={off}
+      onChange={(e) => call(e.target.checked ? "turn_on" : "turn_off", {})} /><span /></label>;
+  } else if (dom === "select") {
+    const optLabel = (o: string) => (t as any)[`ph_opt_${o}`] ?? (/^A\d+$/.test(o) ? `${o.slice(1)} A` : o.replace(/_/g, " ").toLowerCase());
+    control = <select className="sel" value={s.state} disabled={off} onChange={(e) => call("select_option", { option: e.target.value })}>
+      {off && <option value={s.state}>–</option>}
+      {(a.options ?? []).map((o: string) => <option key={o} value={o}>{optLabel(o)}</option>)}</select>;
+  } else {
+    // commit on blur/Enter only, so typing "16" doesn't send 1 first; HA clamps to min/max
+    const commit = (el: HTMLInputElement) => {
+      const v = parseFloat(el.value);
+      if (Number.isFinite(v) && String(v) !== String(parseFloat(s.state))) call("set_value", { value: v });
+      else el.value = s.state;
+    };
+    control = <span className="row"><input key={s.state} className="sel" type="number" style={{ width: 90 }} defaultValue={s.state} disabled={off}
+      min={a.min} max={a.max} step={a.step} onBlur={(e) => commit(e.currentTarget)}
+      onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} />{a.unit_of_measurement && <span className="muted">{a.unit_of_measurement}</span>}</span>;
+  }
+  return <div className="setting"><span>{label}</span>{control}</div>;
+}
+
+function PowerHubSettings({ hass, t, d, state, live, setLive }: Ctx & { d: Data | null; state: string; live: boolean; setLive: (on: boolean) => void }) {
+  const st = hass.states as Record<string, any>;
+  const p = state === "configured" ? powerhubPrefix(st, d) : undefined;
+  return (
+    <section className="card">
+      <h2>PowerHub<Info text={t.ph_info} /></h2>
+      {state === "missing" && <>
+        <p className="muted">{t.ph_missing}</p>
+        <a className="btn primary" href={PH_REPO} target="_blank" rel="noreferrer">{t.ph_install}</a>
+      </>}
+      {state === "installed" && <>
+        <p className="muted">{t.ph_installed}</p>
+        <a className="btn primary" href="/config/integrations/dashboard/add?domain=malarenergi_powerhub" target="_top">{t.ph_setup}</a>
+      </>}
+      {state === "configured" && !p && <p className="muted">{d ? t.ph_nomatch : t.loading}</p>}
+      {p && <>
+        <div className="setting"><span>{t.show_powerhub}</span>
+          <label className="switch"><input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} /><span /></label></div>
+        {PH_STATUS.map((k) => st[`sensor.${p}${k}`] && (
+          <div className="setting" key={k}><span>{(t as any)[`ph_${k}`] ?? k}</span>
+            <span className="muted">{st[`sensor.${p}${k}`].state}{st[`sensor.${p}${k}`].attributes?.unit_of_measurement ? ` ${st[`sensor.${p}${k}`].attributes.unit_of_measurement}` : ""}</span></div>
+        ))}
+        {PH_GROUPS.map(([g, keys]) => (
+          <div key={g}>
+            <div className="label" style={{ margin: "12px 0 4px" }}>{(t as any)[g]}</div>
+            {keys.map((k) => { const [dom, name] = k.split(":"); return <PhRow key={k} hass={hass} t={t} id={`${dom}.${p}${name}`} name={name} />; })}
+          </div>
+        ))}
+      </>}
+    </section>
   );
 }
