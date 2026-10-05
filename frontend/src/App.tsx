@@ -103,11 +103,12 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
 // Live power from the PowerHub integration (same HAN meter), found by its entity ids; no second login.
 function PowerHub({ hass, t }: Ctx) {
   const st = hass.states as Record<string, any>;
-  const id = Object.keys(st).map((e) => /^sensor\.powerhub_(.+)_power_import$/.exec(e)?.[1]).find(Boolean);
-  if (!id) return null;
-  const num = (e: string) => { const v = parseFloat(st[e]?.state); return Number.isFinite(v) ? v : null; };
-  const imp = num(`sensor.powerhub_${id}_power_import`), exp = num(`sensor.powerhub_${id}_power_export`);
-  const fuse = num(`number.powerhub_${id}_fuse_limit`);
+  // entity ids are "powerhub_<name>" (docs) or "powerhub_<facility>_<name>" (device-named installs)
+  const p = Object.keys(st).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).find(Boolean);
+  if (!p) return null;
+  const num = (e: string) => { const v = parseFloat(String(st[e]?.state).replace(/^A/, "")); return Number.isFinite(v) ? v : null; };
+  const imp = num(`sensor.${p}power_import`), exp = num(`sensor.${p}power_export`);
+  const fuse = num(`number.${p}fuse_limit`) ?? num(`number.${p}fuse_limit_set`) ?? num(`select.${p}fuse_size`);
   if (imp == null && exp == null) return null;
   const net = (imp ?? 0) - (exp ?? 0);
   return (
@@ -117,7 +118,7 @@ function PowerHub({ hass, t }: Ctx) {
         <b className={net < 0 ? "pos" : ""}>{fmt(Math.abs(net), 2, "kW")}</b></div>
       <div className="phases" style={{ marginTop: 12 }}>
         {[1, 2, 3].map((n) => {
-          const a = num(`sensor.powerhub_${id}_current_l${n}`);
+          const a = num(`sensor.${p}current_l${n}`);
           const pct = a != null && fuse ? Math.min(100, (a / fuse) * 100) : 0;
           return (
             <div key={n}>

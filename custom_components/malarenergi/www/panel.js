@@ -27988,12 +27988,12 @@ function QR({ hass: e, narrow: t }) {
 	});
 }
 function $R({ hass: e, t }) {
-	let n = e.states, r = Object.keys(n).map((e) => /^sensor\.powerhub_(.+)_power_import$/.exec(e)?.[1]).find(Boolean);
+	let n = e.states, r = Object.keys(n).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).find(Boolean);
 	if (!r) return null;
 	let i = (e) => {
-		let t = parseFloat(n[e]?.state);
+		let t = parseFloat(String(n[e]?.state).replace(/^A/, ""));
 		return Number.isFinite(t) ? t : null;
-	}, a = i(`sensor.powerhub_${r}_power_import`), o = i(`sensor.powerhub_${r}_power_export`), s = i(`number.powerhub_${r}_fuse_limit`);
+	}, a = i(`sensor.${r}power_import`), o = i(`sensor.${r}power_export`), s = i(`number.${r}fuse_limit`) ?? i(`number.${r}fuse_limit_set`) ?? i(`select.${r}fuse_size`);
 	if (a == null && o == null) return null;
 	let c = (a ?? 0) - (o ?? 0);
 	return /* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28018,7 +28018,7 @@ function $R({ hass: e, t }) {
 					2,
 					3
 				].map((e) => {
-					let t = i(`sensor.powerhub_${r}_current_l${e}`), n = t != null && s ? Math.min(100, t / s * 100) : 0;
+					let t = i(`sensor.${r}current_l${e}`), n = t != null && s ? Math.min(100, t / s * 100) : 0;
 					return /* @__PURE__ */ (0, $.jsxs)("div", { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 						className: "row-between",
 						children: [/* @__PURE__ */ (0, $.jsxs)("span", {
