@@ -12,6 +12,7 @@ import http.server
 import os
 import pathlib
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -23,7 +24,6 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 TABS = ("overview", "history", "invoices", "settings")
 LANG = os.environ.get("LANG_CODE", "en")
 WIDTH, HEIGHT = 1280, int(os.environ.get("HEIGHT", "1000"))
-DEBUG_PORT = 9334
 
 # wait until the tab's content is there (cards, and charts where the tab has them)
 READY = """(() => { const sr = document.querySelector("malarenergi-panel")?.shadowRoot;
@@ -36,6 +36,13 @@ PREP = {
 }
 
 
+def free_port() -> int:
+    """A port nobody listens on, so Chrome's debugging endpoint is ours and not another session's."""
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
 def serve() -> int:
     handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT))
     handler.log_message = lambda *a: None
@@ -44,14 +51,16 @@ def serve() -> int:
     return srv.server_address[1]
 
 
-async def shoot(port: int) -> None:
+async def shoot(port: int, debug_port: int) -> None:
     async with aiohttp.ClientSession() as s:
-        for _ in range(50):  # Chrome needs a moment to open the debugging port
+        for _ in range(100):  # Chrome needs a moment to open the debugging port
             try:
-                tabs = await (await s.get(f"http://127.0.0.1:{DEBUG_PORT}/json")).json()
+                tabs = await (await s.get(f"http://127.0.0.1:{debug_port}/json")).json()
                 break
             except aiohttp.ClientError:
                 await asyncio.sleep(0.2)
+        else:
+            sys.exit("Chrome did not open its debugging port within 20 s")
         page = next(t for t in tabs if t["type"] == "page")
         async with s.ws_connect(page["webSocketDebuggerUrl"], max_msg_size=0) as ws:
             n = 0
@@ -75,8 +84,10 @@ async def shoot(port: int) -> None:
             )
             for tab in TABS:
                 await call("Page.navigate", url=f"http://127.0.0.1:{port}/docs/demo/demo.html?tab={tab}&lang={LANG}")
+                # the previous tab already satisfies READY: only accept it on the newly loaded document
+                ready = f"location.search.includes('tab={tab}&') && document.readyState === 'complete' && {READY}"
                 for _ in range(100):
-                    if await evaluate(READY):
+                    if await evaluate(ready):
                         break
                     await asyncio.sleep(0.1)
                 else:
@@ -97,7 +108,7 @@ def main() -> None:
     if not chrome:
         sys.exit("Chrome/Chromium not found (set CHROME=...)")
     (ROOT / "docs" / "images").mkdir(parents=True, exist_ok=True)
-    port = serve()
+    port, debug_port = serve(), free_port()
     with tempfile.TemporaryDirectory() as profile:
         proc = subprocess.Popen(
             [
@@ -105,7 +116,7 @@ def main() -> None:
                 "--headless=new",
                 "--disable-gpu",
                 "--hide-scrollbars",
-                f"--remote-debugging-port={DEBUG_PORT}",
+                f"--remote-debugging-port={debug_port}",
                 f"--user-data-dir={profile}",
                 "about:blank",
             ],
@@ -113,7 +124,7 @@ def main() -> None:
             stderr=subprocess.DEVNULL,
         )
         try:
-            asyncio.run(shoot(port))
+            asyncio.run(shoot(port, debug_port))
         finally:
             proc.terminate()
             proc.wait()

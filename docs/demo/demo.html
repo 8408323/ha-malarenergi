@@ -19,11 +19,19 @@
 <body>
 <script type="module">
 const q = new URLSearchParams(location.search);
+// fixed clock (?now=ISO to change it) so regenerated screenshots are identical; the panel reads the time too,
+// so Date itself is pinned before the bundle loads
+const FIXED = new Date(q.get("now") || "2026-10-05T12:00:00").getTime();
+const RealDate = Date;
+globalThis.Date = class extends RealDate {
+  constructor(...a) { super(...(a.length ? a : [FIXED])); }
+  static now() { return FIXED; }
+};
 const tab = q.get("tab") || "overview", lang = q.get("lang") || "en";
 document.body.className = q.get("theme") || "dark";
 localStorage.setItem("me_tab", tab);
 
-// deterministic pseudo-random so every run produces the same pictures
+// deterministic pseudo-random + the fixed clock above: every run produces the same pictures
 let seed = 7;
 const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 const iso = (d) => d.toISOString();
