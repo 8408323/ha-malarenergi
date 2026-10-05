@@ -27365,12 +27365,13 @@ var PR = AR({
 	ph_installed: "PowerHub is installed but not set up yet.",
 	ph_setup: "Set up PowerHub",
 	ph_nomatch: "No PowerHub belongs to this facility.",
+	ph_nomatch_meter: "PowerHub is set up, but none could be matched to this facility. Make sure PowerHub's meter ID sensor is enabled.",
 	ph_home: "Home",
 	ph_grid: "Fuse and limits",
 	ph_alerts: "PowerHub alerts",
 	ph_han_port_state: "HAN port",
-	ph_firmware_version: "Firmware",
-	ph_wi_fi_signal: "Wi-Fi signal",
+	ph_sw_version: "Firmware",
+	ph_wifi_rssi: "Wi-Fi signal",
 	ph_latest_notification: "Latest alert",
 	ph_facility_type: "Type of home",
 	ph_heating_type: "Heating",
@@ -27378,17 +27379,16 @@ var PR = AR({
 	ph_occupants: "Occupants",
 	ph_has_solar: "Solar panels",
 	ph_has_battery: "Home battery",
-	ph_ev_charger_type: "EV charger",
+	ph_ev_type: "EV charger",
 	ph_fuse_size: "Main fuse",
-	ph_fuse_limit: "Alert limit per phase",
 	ph_fuse_limit_set: "Alert limit per phase",
-	ph_power_limit: "Power alert limit",
-	ph_notify_total_power_exceeded: "Total power exceeded",
-	ph_notify_phase_load_exceeded: "Phase load exceeded",
-	ph_notify_power_limit_alert_control_on: "Power limit (load control on)",
-	ph_notify_power_limit_alert_control_off: "Power limit (load control off)",
-	ph_notify_phase_limit_alert_control_on: "Phase limit (load control on)",
-	ph_notify_phase_limit_alert_control_off: "Phase limit (load control off)",
+	ph_power_limit_set: "Power alert limit",
+	ph_notify_total_power: "Total power exceeded",
+	ph_notify_phase_load: "Phase load exceeded",
+	ph_notify_control_enabled_exceeded_power: "Power limit (load control on)",
+	ph_notify_control_disabled_exceeded_power: "Power limit (load control off)",
+	ph_notify_control_enabled_exceeded_phase: "Phase limit (load control on)",
+	ph_notify_control_disabled_exceeded_phase: "Phase limit (load control off)",
 	ph_opt_VILLA: "House",
 	ph_opt_APARTMENT: "Apartment",
 	ph_opt_TOWNHOUSE: "Townhouse",
@@ -27522,12 +27522,13 @@ var PR = AR({
 		ph_installed: "PowerHub är installerad men inte inställd än.",
 		ph_setup: "Ställ in PowerHub",
 		ph_nomatch: "Ingen PowerHub hör till den här anläggningen.",
+		ph_nomatch_meter: "PowerHub är inställd, men ingen kunde kopplas till den här anläggningen. Kontrollera att PowerHubs mätar-ID-sensor är aktiverad.",
 		ph_home: "Bostad",
 		ph_grid: "Säkring och gränser",
 		ph_alerts: "PowerHub-larm",
 		ph_han_port_state: "HAN-port",
-		ph_firmware_version: "Firmware",
-		ph_wi_fi_signal: "Wi-Fi-signal",
+		ph_sw_version: "Firmware",
+		ph_wifi_rssi: "Wi-Fi-signal",
 		ph_latest_notification: "Senaste larm",
 		ph_facility_type: "Bostadstyp",
 		ph_heating_type: "Uppvärmning",
@@ -27535,17 +27536,16 @@ var PR = AR({
 		ph_occupants: "Antal boende",
 		ph_has_solar: "Solceller",
 		ph_has_battery: "Hembatteri",
-		ph_ev_charger_type: "Elbilsladdare",
+		ph_ev_type: "Elbilsladdare",
 		ph_fuse_size: "Huvudsäkring",
-		ph_fuse_limit: "Larmgräns per fas",
 		ph_fuse_limit_set: "Larmgräns per fas",
-		ph_power_limit: "Larmgräns effekt",
-		ph_notify_total_power_exceeded: "Total effekt överskriden",
-		ph_notify_phase_load_exceeded: "Fasbelastning överskriden",
-		ph_notify_power_limit_alert_control_on: "Effektgräns (med styrning)",
-		ph_notify_power_limit_alert_control_off: "Effektgräns (utan styrning)",
-		ph_notify_phase_limit_alert_control_on: "Fasgräns (med styrning)",
-		ph_notify_phase_limit_alert_control_off: "Fasgräns (utan styrning)",
+		ph_power_limit_set: "Larmgräns effekt",
+		ph_notify_total_power: "Total effekt överskriden",
+		ph_notify_phase_load: "Fasbelastning överskriden",
+		ph_notify_control_enabled_exceeded_power: "Effektgräns (med styrning)",
+		ph_notify_control_disabled_exceeded_power: "Effektgräns (utan styrning)",
+		ph_notify_control_enabled_exceeded_phase: "Fasgräns (med styrning)",
+		ph_notify_control_disabled_exceeded_phase: "Fasgräns (utan styrning)",
 		ph_opt_VILLA: "Villa",
 		ph_opt_APARTMENT: "Lägenhet",
 		ph_opt_TOWNHOUSE: "Radhus",
@@ -28091,19 +28091,24 @@ var $R = {
 	A: 1
 };
 function tz(e, t) {
-	let n = Object.keys(e).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean), r = new Set([t?.CONSUMPTION?.point, t?.PRODUCTION?.point].filter(Boolean).map(String));
-	return n.find((t) => r.has(e[`sensor.${t}meter_id`]?.state));
+	let n = {};
+	for (let t of Object.values(e.entities ?? {})) t.platform === "malarenergi_powerhub" && t.device_id && t.translation_key && ((n[t.device_id] ??= {})[t.translation_key] = t.entity_id);
+	let r = new Set([t?.CONSUMPTION?.point, t?.PRODUCTION?.point].filter(Boolean).map(String));
+	return {
+		ents: Object.values(n).find((t) => r.has(e.states[t.meter_id]?.state)),
+		hubs: Object.keys(n).length
+	};
 }
 function nz({ hass: e, t, d: n }) {
-	let r = e.states, i = tz(r, n);
+	let r = e.states, i = tz(e, n).ents;
 	if (!i) return null;
 	let a = (e) => {
-		let t = parseFloat(String(r[e]?.state).replace(/^A/, ""));
+		let t = parseFloat(String(e && r[e]?.state).replace(/^A/, ""));
 		return Number.isFinite(t) ? t : null;
 	}, o = (e, t, n) => {
-		let i = a(e), o = t[r[e]?.attributes?.unit_of_measurement ?? n ?? ""];
+		let i = a(e), o = t[(e && r[e]?.attributes?.unit_of_measurement) ?? n ?? ""];
 		return i == null || o == null ? null : i * o;
-	}, s = (e) => o(e, $R), c = s(`sensor.${i}power_import`), l = s(`sensor.${i}power_export`), u = o(`select.${i}fuse_size`, ez, "A") ?? o(`number.${i}fuse_limit`, ez) ?? o(`number.${i}fuse_limit_set`, ez);
+	}, s = (e) => o(e, $R), c = s(i.power_import), l = s(i.power_export), u = o(i.fuse_size, ez, "A") ?? o(i.fuse_limit_set, ez);
 	if (c == null || l == null) return null;
 	let d = c - l;
 	return /* @__PURE__ */ (0, $.jsxs)("section", {
@@ -28128,7 +28133,7 @@ function nz({ hass: e, t, d: n }) {
 					2,
 					3
 				].map((e) => {
-					let t = o(`sensor.${i}current_l${e}`, ez), n = t != null && u ? Math.min(100, t / u * 100) : 0;
+					let t = o(i[`current_l${e}`], ez), n = t != null && u ? Math.min(100, t / u * 100) : 0;
 					return /* @__PURE__ */ (0, $.jsxs)("div", { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 						className: "row-between",
 						children: [/* @__PURE__ */ (0, $.jsxs)("span", {
@@ -29091,32 +29096,31 @@ function fz({ hass: e, t, locale: n, narrow: r, opts: i, setOpts: a, d: o }) {
 }
 var pz = "https://my.home-assistant.io/redirect/hacs_repository/?owner=8408323&repository=ha-malarenergi-powerhub&category=integration", mz = [
 	["ph_home", [
-		"select:facility_type",
-		"select:heating_type",
-		"number:area",
-		"number:occupants",
-		"switch:has_solar",
-		"switch:has_battery",
-		"select:ev_charger_type"
+		"facility_type",
+		"heating_type",
+		"area",
+		"occupants",
+		"has_solar",
+		"has_battery",
+		"ev_type"
 	]],
 	["ph_grid", [
-		"select:fuse_size",
-		"number:fuse_limit",
-		"number:fuse_limit_set",
-		"number:power_limit"
+		"fuse_size",
+		"fuse_limit_set",
+		"power_limit_set"
 	]],
 	["ph_alerts", [
-		"switch:notify_total_power_exceeded",
-		"switch:notify_phase_load_exceeded",
-		"switch:notify_power_limit_alert_control_on",
-		"switch:notify_power_limit_alert_control_off",
-		"switch:notify_phase_limit_alert_control_on",
-		"switch:notify_phase_limit_alert_control_off"
+		"notify_total_power",
+		"notify_phase_load",
+		"notify_control_enabled_exceeded_power",
+		"notify_control_disabled_exceeded_power",
+		"notify_control_enabled_exceeded_phase",
+		"notify_control_disabled_exceeded_phase"
 	]]
 ], hz = [
 	"han_port_state",
-	"firmware_version",
-	"wi_fi_signal",
+	"sw_version",
+	"wifi_rssi",
 	"latest_notification"
 ];
 function gz({ hass: e, t, id: n, name: r }) {
@@ -29182,7 +29186,10 @@ function gz({ hass: e, t, id: n, name: r }) {
 	});
 }
 function _z({ hass: e, t, d: n, state: r, live: i, setLive: a }) {
-	let o = e.states, s = r === "configured" ? tz(o, n) : void 0;
+	let o = e.states, { ents: s, hubs: c } = r === "configured" ? tz(e, n) : {
+		ents: void 0,
+		hubs: 0
+	};
 	return /* @__PURE__ */ (0, $.jsxs)("section", {
 		className: "card",
 		children: [
@@ -29208,7 +29215,7 @@ function _z({ hass: e, t, d: n, state: r, live: i, setLive: a }) {
 			})] }),
 			r === "configured" && !s && /* @__PURE__ */ (0, $.jsx)("p", {
 				className: "muted",
-				children: n ? t.ph_nomatch : t.loading
+				children: n ? c ? t.ph_nomatch_meter : t.ph_nomatch : t.loading
 			}),
 			s && /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [
 				/* @__PURE__ */ (0, $.jsxs)("div", {
@@ -29222,26 +29229,23 @@ function _z({ hass: e, t, d: n, state: r, live: i, setLive: a }) {
 						}), /* @__PURE__ */ (0, $.jsx)("span", {})]
 					})]
 				}),
-				hz.map((e) => o[`sensor.${s}${e}`] && /* @__PURE__ */ (0, $.jsxs)("div", {
+				hz.map((e) => s[e] && o[s[e]] && /* @__PURE__ */ (0, $.jsxs)("div", {
 					className: "setting",
 					children: [/* @__PURE__ */ (0, $.jsx)("span", { children: t[`ph_${e}`] ?? e }), /* @__PURE__ */ (0, $.jsxs)("span", {
 						className: "muted",
-						children: [o[`sensor.${s}${e}`].state, o[`sensor.${s}${e}`].attributes?.unit_of_measurement ? ` ${o[`sensor.${s}${e}`].attributes.unit_of_measurement}` : ""]
+						children: [o[s[e]].state, o[s[e]].attributes?.unit_of_measurement ? ` ${o[s[e]].attributes.unit_of_measurement}` : ""]
 					})]
 				}, e)),
 				mz.map(([n, r]) => /* @__PURE__ */ (0, $.jsxs)("div", { children: [/* @__PURE__ */ (0, $.jsx)("div", {
 					className: "label",
 					style: { margin: "12px 0 4px" },
 					children: t[n]
-				}), r.map((n) => {
-					let [r, i] = n.split(":");
-					return /* @__PURE__ */ (0, $.jsx)(gz, {
-						hass: e,
-						t,
-						id: `${r}.${s}${i}`,
-						name: i
-					}, n);
-				})] }, n))
+				}), r.map((n) => s[n] && /* @__PURE__ */ (0, $.jsx)(gz, {
+					hass: e,
+					t,
+					id: s[n],
+					name: n
+				}, n))] }, n))
 			] })
 		]
 	});

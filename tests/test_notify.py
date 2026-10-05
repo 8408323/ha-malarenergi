@@ -92,3 +92,5 @@ def test_powerhub_state():
     mod.async_get_integration = found
     assert asyncio.run(mod._powerhub_state(hass([]))) == "installed"
     assert asyncio.run(mod._powerhub_state(hass(["entry"]))) == "configured"
+    mod.async_get_integration = gone
+    assert asyncio.run(mod._powerhub_state(hass(["entry"]))) == "missing"  # stale entry after uninstall

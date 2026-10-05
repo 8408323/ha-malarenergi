@@ -384,14 +384,13 @@ POWERHUB = "malarenergi_powerhub"  # the separate PowerHub integration; the pane
 
 
 async def _powerhub_state(hass) -> str:
-    """missing / installed (no config entry yet) / configured."""
-    if hass.config_entries.async_entries(POWERHUB):
-        return "configured"
+    """missing / installed (no config entry yet) / configured. Installed is checked first: an entry left
+    behind after PowerHub was removed must offer the reinstall, not count as configured."""
     try:
         await async_get_integration(hass, POWERHUB)
     except IntegrationNotFound:
         return "missing"
-    return "installed"
+    return "configured" if hass.config_entries.async_entries(POWERHUB) else "installed"
 
 
 @websocket_api.websocket_command({vol.Required("type"): "malarenergi/settings/get"})

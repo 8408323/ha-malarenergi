@@ -103,30 +103,37 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
 const KW: Record<string, number> = { mW: 1e-6, W: 1e-3, kW: 1, MW: 1e3, GW: 1e6, TW: 1e9, "BTU/h": 0.00029307107 };  // HA power units → kW
 const AMP: Record<string, number> = { "μA": 1e-6, "µA": 1e-6, mA: 1e-3, A: 1 };  // HA current units → A
 
-// The PowerHub integration's entity prefix for the displayed facility. Entity ids are "powerhub_<name>" (docs)
-// or "powerhub_<facility>_<name>" (device-named installs); PowerHub's meter_id must be one of this facility's
-// metering points, so another property's hub is never shown or configured here.
-function powerhubPrefix(st: Record<string, any>, d: Data | null): string | undefined {
-  const all = Object.keys(st).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean) as string[];
+// The PowerHub integration's entities for the displayed facility, as translation_key -> entity_id. Found
+// through HA's entity registry (platform + device), so it works whatever the entity ids are (they come from
+// translated names and differ between installs/versions) and doesn't depend on any one optional sensor.
+// The device is bound through its meter_id, which must be one of this facility's metering points, so another
+// property's hub is never shown or configured here.
+type PhLookup = { ents?: Record<string, string>; hubs: number };
+function powerhubEntities(hass: any, d: Data | null): PhLookup {
+  const byDev: Record<string, Record<string, string>> = {};
+  for (const e of Object.values((hass.entities ?? {}) as Record<string, any>)) {
+    if (e.platform === "malarenergi_powerhub" && e.device_id && e.translation_key) (byDev[e.device_id] ??= {})[e.translation_key] = e.entity_id;
+  }
   const mps = new Set([d?.CONSUMPTION?.point, d?.PRODUCTION?.point].filter(Boolean).map(String));
-  return all.find((x) => mps.has(st[`sensor.${x}meter_id`]?.state));
+  const ents = Object.values(byDev).find((m) => mps.has(hass.states[m.meter_id]?.state));
+  return { ents, hubs: Object.keys(byDev).length };
 }
 
 // Live power from the PowerHub integration (same HAN meter), found by its entity ids; no second login.
 function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
   const st = hass.states as Record<string, any>;
-  const p = powerhubPrefix(st, d);
-  if (!p) return null;
-  const num = (e: string) => { const v = parseFloat(String(st[e]?.state).replace(/^A/, "")); return Number.isFinite(v) ? v : null; };
+  const ph = powerhubEntities(hass, d).ents;
+  if (!ph) return null;
+  const num = (e?: string) => { const v = parseFloat(String(e && st[e]?.state).replace(/^A/, "")); return Number.isFinite(v) ? v : null; };
   // HA converts to the user's display unit; normalise (an unknown unit gives null, never a wrong number)
-  const conv = (e: string, t: Record<string, number>, dflt?: string) => {
-    const v = num(e), f = t[st[e]?.attributes?.unit_of_measurement ?? dflt ?? ""];
+  const conv = (e: string | undefined, t: Record<string, number>, dflt?: string) => {
+    const v = num(e), f = t[(e && st[e]?.attributes?.unit_of_measurement) ?? dflt ?? ""];
     return v == null || f == null ? null : v * f;
   };
-  const kw = (e: string) => conv(e, KW);
-  const imp = kw(`sensor.${p}power_import`), exp = kw(`sensor.${p}power_export`);
+  const kw = (e?: string) => conv(e, KW);
+  const imp = kw(ph.power_import), exp = kw(ph.power_export);
   // the installed main fuse first; fuse_limit_set is PowerHub's soft alert limit, only a fallback
-  const fuse = conv(`select.${p}fuse_size`, AMP, "A") ?? conv(`number.${p}fuse_limit`, AMP) ?? conv(`number.${p}fuse_limit_set`, AMP);
+  const fuse = conv(ph.fuse_size, AMP, "A") ?? conv(ph.fuse_limit_set, AMP);
   if (imp == null || exp == null) return null;  // a missing side isn't a zero reading
   const net = imp - exp;
   return (
@@ -136,7 +143,7 @@ function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
         <b className={net < 0 ? "pos" : ""}>{fmt(Math.abs(net), 2, "kW")}</b></div>
       <div className="phases" style={{ marginTop: 12 }}>
         {[1, 2, 3].map((n) => {
-          const a = conv(`sensor.${p}current_l${n}`, AMP);
+          const a = conv(ph[`current_l${n}`], AMP);
           const pct = a != null && fuse ? Math.min(100, (a / fuse) * 100) : 0;
           return (
             <div key={n}>
@@ -597,13 +604,14 @@ function Settings({ hass, t, locale, narrow, opts, setOpts, d }: Ctx & { opts: O
 
 const PH_REPO = "https://my.home-assistant.io/redirect/hacs_repository/?owner=8408323&repository=ha-malarenergi-powerhub&category=integration";
 // PowerHub's own settings, grouped; each is one of its entities, written through HA's services
+// PowerHub's own settings by translation key, grouped; each is one of its entities, written through HA's services
 const PH_GROUPS: [string, string[]][] = [
-  ["ph_home", ["select:facility_type", "select:heating_type", "number:area", "number:occupants", "switch:has_solar", "switch:has_battery", "select:ev_charger_type"]],
-  ["ph_grid", ["select:fuse_size", "number:fuse_limit", "number:fuse_limit_set", "number:power_limit"]],
-  ["ph_alerts", ["switch:notify_total_power_exceeded", "switch:notify_phase_load_exceeded", "switch:notify_power_limit_alert_control_on",
-    "switch:notify_power_limit_alert_control_off", "switch:notify_phase_limit_alert_control_on", "switch:notify_phase_limit_alert_control_off"]],
+  ["ph_home", ["facility_type", "heating_type", "area", "occupants", "has_solar", "has_battery", "ev_type"]],
+  ["ph_grid", ["fuse_size", "fuse_limit_set", "power_limit_set"]],
+  ["ph_alerts", ["notify_total_power", "notify_phase_load", "notify_control_enabled_exceeded_power",
+    "notify_control_disabled_exceeded_power", "notify_control_enabled_exceeded_phase", "notify_control_disabled_exceeded_phase"]],
 ];
-const PH_STATUS = ["han_port_state", "firmware_version", "wi_fi_signal", "latest_notification"];
+const PH_STATUS = ["han_port_state", "sw_version", "wifi_rssi", "latest_notification"];
 
 function PhRow({ hass, t, id, name }: { hass: any; t: T; id: string; name: string }) {
   const s = hass.states[id];
@@ -636,7 +644,7 @@ function PhRow({ hass, t, id, name }: { hass: any; t: T; id: string; name: strin
 
 function PowerHubSettings({ hass, t, d, state, live, setLive }: Ctx & { d: Data | null; state: string; live: boolean; setLive: (on: boolean) => void }) {
   const st = hass.states as Record<string, any>;
-  const p = state === "configured" ? powerhubPrefix(st, d) : undefined;
+  const { ents: ph, hubs } = state === "configured" ? powerhubEntities(hass, d) : { ents: undefined, hubs: 0 };
   return (
     <section className="card">
       <h2>PowerHub<Info text={t.ph_info} /></h2>
@@ -648,18 +656,19 @@ function PowerHubSettings({ hass, t, d, state, live, setLive }: Ctx & { d: Data 
         <p className="muted">{t.ph_installed}</p>
         <a className="btn primary" href="/config/integrations/dashboard/add?domain=malarenergi_powerhub" target="_top">{t.ph_setup}</a>
       </>}
-      {state === "configured" && !p && <p className="muted">{d ? t.ph_nomatch : t.loading}</p>}
-      {p && <>
+      {/* hubs but none bound: its meter-ID entity is disabled/unavailable, or it belongs to another facility */}
+      {state === "configured" && !ph && <p className="muted">{!d ? t.loading : hubs ? t.ph_nomatch_meter : t.ph_nomatch}</p>}
+      {ph && <>
         <div className="setting"><span>{t.show_powerhub}</span>
           <label className="switch"><input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} /><span /></label></div>
-        {PH_STATUS.map((k) => st[`sensor.${p}${k}`] && (
+        {PH_STATUS.map((k) => ph[k] && st[ph[k]] && (
           <div className="setting" key={k}><span>{(t as any)[`ph_${k}`] ?? k}</span>
-            <span className="muted">{st[`sensor.${p}${k}`].state}{st[`sensor.${p}${k}`].attributes?.unit_of_measurement ? ` ${st[`sensor.${p}${k}`].attributes.unit_of_measurement}` : ""}</span></div>
+            <span className="muted">{st[ph[k]].state}{st[ph[k]].attributes?.unit_of_measurement ? ` ${st[ph[k]].attributes.unit_of_measurement}` : ""}</span></div>
         ))}
         {PH_GROUPS.map(([g, keys]) => (
           <div key={g}>
             <div className="label" style={{ margin: "12px 0 4px" }}>{(t as any)[g]}</div>
-            {keys.map((k) => { const [dom, name] = k.split(":"); return <PhRow key={k} hass={hass} t={t} id={`${dom}.${p}${name}`} name={name} />; })}
+            {keys.map((k) => ph[k] && <PhRow key={k} hass={hass} t={t} id={ph[k]} name={k} />)}
           </div>
         ))}
       </>}
