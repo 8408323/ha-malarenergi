@@ -27987,15 +27987,22 @@ function QR({ hass: e, narrow: t }) {
 		]
 	});
 }
-function $R({ hass: e, t }) {
-	let n = e.states, r = Object.keys(n).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).find(Boolean);
-	if (!r) return null;
-	let i = (e) => {
-		let t = parseFloat(String(n[e]?.state).replace(/^A/, ""));
+function $R({ hass: e, t, d: n }) {
+	let r = e.states, i = Object.keys(r).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean), a = new Set([
+		...Object.keys(n.han ?? {}),
+		n.CONSUMPTION?.peak?.meteringPointId,
+		n.PRODUCTION?.peak?.meteringPointId
+	].filter(Boolean).map(String)), o = i.find((e) => a.has(r[`sensor.${e}meter_id`]?.state)) ?? (i.length === 1 ? i[0] : void 0);
+	if (!o) return null;
+	let s = (e) => {
+		let t = parseFloat(String(r[e]?.state).replace(/^A/, ""));
 		return Number.isFinite(t) ? t : null;
-	}, a = i(`sensor.${r}power_import`), o = i(`sensor.${r}power_export`), s = i(`number.${r}fuse_limit`) ?? i(`number.${r}fuse_limit_set`) ?? i(`select.${r}fuse_size`);
-	if (a == null && o == null) return null;
-	let c = (a ?? 0) - (o ?? 0);
+	}, c = (e) => {
+		let t = s(e), n = r[e]?.attributes?.unit_of_measurement;
+		return t == null ? null : n === "W" ? t / 1e3 : n === "MW" ? t * 1e3 : t;
+	}, l = c(`sensor.${o}power_import`), u = c(`sensor.${o}power_export`), d = s(`number.${o}fuse_limit`) ?? s(`number.${o}fuse_limit_set`) ?? s(`select.${o}fuse_size`);
+	if (l == null && u == null) return null;
+	let f = (l ?? 0) - (u ?? 0);
 	return /* @__PURE__ */ (0, $.jsxs)("section", {
 		className: "card",
 		children: [
@@ -28004,10 +28011,10 @@ function $R({ hass: e, t }) {
 				className: "row-between",
 				children: [/* @__PURE__ */ (0, $.jsx)("span", {
 					className: "muted",
-					children: c >= 0 ? t.importing : t.exporting
+					children: f >= 0 ? t.importing : t.exporting
 				}), /* @__PURE__ */ (0, $.jsx)("b", {
-					className: c < 0 ? "pos" : "",
-					children: KR(Math.abs(c), 2, "kW")
+					className: f < 0 ? "pos" : "",
+					children: KR(Math.abs(f), 2, "kW")
 				})]
 			}),
 			/* @__PURE__ */ (0, $.jsx)("div", {
@@ -28018,13 +28025,13 @@ function $R({ hass: e, t }) {
 					2,
 					3
 				].map((e) => {
-					let t = i(`sensor.${r}current_l${e}`), n = t != null && s ? Math.min(100, t / s * 100) : 0;
+					let t = s(`sensor.${o}current_l${e}`), n = t != null && d ? Math.min(100, t / d * 100) : 0;
 					return /* @__PURE__ */ (0, $.jsxs)("div", { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 						className: "row-between",
 						children: [/* @__PURE__ */ (0, $.jsxs)("span", {
 							className: "muted",
 							children: ["L", e]
-						}), /* @__PURE__ */ (0, $.jsxs)("span", { children: [KR(t, 1, "A"), s ? ` / ${s} A` : ""] })]
+						}), /* @__PURE__ */ (0, $.jsxs)("span", { children: [KR(t, 1, "A"), d ? ` / ${d} A` : ""] })]
 					}), /* @__PURE__ */ (0, $.jsx)("div", {
 						className: "meter",
 						children: /* @__PURE__ */ (0, $.jsx)("div", { style: {
@@ -28092,7 +28099,8 @@ function ez({ hass: e, t, locale: n, narrow: r, d: i, live: a }) {
 			hass: e,
 			t,
 			locale: n,
-			narrow: r
+			narrow: r,
+			d: i
 		})
 	] });
 }

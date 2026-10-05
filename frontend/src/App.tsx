@@ -9,8 +9,8 @@ type Invoice = {
   lines?: { category: string; name: string; kwh: number; amount: number }[];
 };
 type Data = {
-  CONSUMPTION?: { daily: Series; peak?: { peakPowerConsumption?: number; dateTime?: string } | null };
-  PRODUCTION?: { daily: Series };
+  CONSUMPTION?: { daily: Series; peak?: { peakPowerConsumption?: number; dateTime?: string; meteringPointId?: string } | null };
+  PRODUCTION?: { daily: Series; peak?: { meteringPointId?: string } | null };
   invoices?: Invoice[]; han?: Record<string, string>; fuse?: string | null; updated?: string;
 };
 type Options = Record<string, any>;
@@ -101,13 +101,18 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
 
 /* ---------------- Overview ---------------- */
 // Live power from the PowerHub integration (same HAN meter), found by its entity ids; no second login.
-function PowerHub({ hass, t }: Ctx) {
+function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
   const st = hass.states as Record<string, any>;
   // entity ids are "powerhub_<name>" (docs) or "powerhub_<facility>_<name>" (device-named installs)
-  const p = Object.keys(st).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).find(Boolean);
+  const all = Object.keys(st).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean) as string[];
+  // bind to this facility: PowerHub's meter_id is one of its metering points; a lone PowerHub is taken as-is
+  const mps = new Set([...Object.keys(d.han ?? {}), d.CONSUMPTION?.peak?.meteringPointId, d.PRODUCTION?.peak?.meteringPointId].filter(Boolean).map(String));
+  const p = all.find((x) => mps.has(st[`sensor.${x}meter_id`]?.state)) ?? (all.length === 1 ? all[0] : undefined);
   if (!p) return null;
   const num = (e: string) => { const v = parseFloat(String(st[e]?.state).replace(/^A/, "")); return Number.isFinite(v) ? v : null; };
-  const imp = num(`sensor.${p}power_import`), exp = num(`sensor.${p}power_export`);
+  // HA converts to the user's display unit; normalise to kW
+  const kw = (e: string) => { const v = num(e), u = st[e]?.attributes?.unit_of_measurement; return v == null ? null : u === "W" ? v / 1000 : u === "MW" ? v * 1000 : v; };
+  const imp = kw(`sensor.${p}power_import`), exp = kw(`sensor.${p}power_export`);
   const fuse = num(`number.${p}fuse_limit`) ?? num(`number.${p}fuse_limit_set`) ?? num(`select.${p}fuse_size`);
   if (imp == null && exp == null) return null;
   const net = (imp ?? 0) - (exp ?? 0);
@@ -160,7 +165,7 @@ function Overview({ hass, t, locale, narrow, d, live }: Ctx & { d: Data; live: b
         <h2>{t.daily}<Info text={t.daily_info} /></h2>
         <EnergyChart rows={days} t={t} height={narrow ? 240 : 300} tick={(k) => String(k).slice(5)} />
       </section>
-      {live && <PowerHub hass={hass} t={t} locale={locale} narrow={narrow} />}
+      {live && <PowerHub hass={hass} t={t} locale={locale} narrow={narrow} d={d} />}
     </>
   );
 }
