@@ -27996,7 +27996,7 @@ var $R = {
 	TW: 1e9
 };
 function ez({ hass: e, t, d: n }) {
-	let r = e.states, i = Object.keys(r).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean), a = new Set([n.CONSUMPTION?.point, n.PRODUCTION?.point].filter(Boolean).map(String)), o = i.find((e) => a.has(r[`sensor.${e}meter_id`]?.state)) ?? (i.length === 1 ? i[0] : void 0);
+	let r = e.states, i = Object.keys(r).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean), a = new Set([n.CONSUMPTION?.point, n.PRODUCTION?.point].filter(Boolean).map(String)), o = i.find((e) => a.has(r[`sensor.${e}meter_id`]?.state));
 	if (!o) return null;
 	let s = (e) => {
 		let t = parseFloat(String(r[e]?.state).replace(/^A/, ""));
@@ -28029,18 +28029,18 @@ function ez({ hass: e, t, d: n }) {
 					2,
 					3
 				].map((e) => {
-					let t = s(`sensor.${o}current_l${e}`), n = t != null && d ? Math.min(100, t / d * 100) : 0;
+					let t = `sensor.${o}current_l${e}`, n = s(t) == null ? null : s(t) / (r[t]?.attributes?.unit_of_measurement === "mA" ? 1e3 : 1), i = n != null && d ? Math.min(100, n / d * 100) : 0;
 					return /* @__PURE__ */ (0, $.jsxs)("div", { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 						className: "row-between",
 						children: [/* @__PURE__ */ (0, $.jsxs)("span", {
 							className: "muted",
 							children: ["L", e]
-						}), /* @__PURE__ */ (0, $.jsxs)("span", { children: [KR(t, 1, "A"), d ? ` / ${d} A` : ""] })]
+						}), /* @__PURE__ */ (0, $.jsxs)("span", { children: [KR(n, 1, "A"), d ? ` / ${d} A` : ""] })]
 					}), /* @__PURE__ */ (0, $.jsx)("div", {
 						className: "meter",
 						children: /* @__PURE__ */ (0, $.jsx)("div", { style: {
-							width: `${n}%`,
-							background: n > 85 ? "var(--me-neg)" : n > 60 ? "#f5a524" : "var(--me-accent)"
+							width: `${i}%`,
+							background: i > 85 ? "var(--me-neg)" : i > 60 ? "#f5a524" : "var(--me-accent)"
 						} })
 					})] }, e);
 				})

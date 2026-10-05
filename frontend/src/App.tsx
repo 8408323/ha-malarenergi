@@ -107,9 +107,9 @@ function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
   const st = hass.states as Record<string, any>;
   // entity ids are "powerhub_<name>" (docs) or "powerhub_<facility>_<name>" (device-named installs)
   const all = Object.keys(st).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean) as string[];
-  // bind to the displayed facility: PowerHub's meter_id is one of its metering points; a lone PowerHub is taken as-is
+  // bind to the displayed facility: PowerHub's meter_id must be one of its metering points
   const mps = new Set([d.CONSUMPTION?.point, d.PRODUCTION?.point].filter(Boolean).map(String));
-  const p = all.find((x) => mps.has(st[`sensor.${x}meter_id`]?.state)) ?? (all.length === 1 ? all[0] : undefined);
+  const p = all.find((x) => mps.has(st[`sensor.${x}meter_id`]?.state));
   if (!p) return null;
   const num = (e: string) => { const v = parseFloat(String(st[e]?.state).replace(/^A/, "")); return Number.isFinite(v) ? v : null; };
   // HA converts to the user's display unit; normalise to kW
@@ -125,7 +125,7 @@ function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
         <b className={net < 0 ? "pos" : ""}>{fmt(Math.abs(net), 2, "kW")}</b></div>
       <div className="phases" style={{ marginTop: 12 }}>
         {[1, 2, 3].map((n) => {
-          const a = num(`sensor.${p}current_l${n}`);
+          const e = `sensor.${p}current_l${n}`, a = num(e) == null ? null : num(e)! / (st[e]?.attributes?.unit_of_measurement === "mA" ? 1000 : 1);
           const pct = a != null && fuse ? Math.min(100, (a / fuse) * 100) : 0;
           return (
             <div key={n}>
