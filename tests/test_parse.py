@@ -281,3 +281,25 @@ def test_zero_elprod_invoice_is_production():
         }
     )
     assert inv[0]["kind"] == "production"
+
+
+def test_negative_invoice_without_utility_metadata_is_production():
+    inv = parse.invoices(
+        {
+            "data": [
+                {
+                    "items": [
+                        {
+                            "invoiceId": "2",
+                            "invoicedAmount": -150.0,
+                            "issueDate": "2026-09-05",
+                            "billingPeriodStartDate": "2026-08-01",
+                            "invoiceDetails": [{"productType": "Ny ersättning", "costVariableMonth": -150.0}],
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+    assert inv[0]["kind"] == "production"
+    assert inv[0]["lines"][0]["category"] == "production_other" and inv[0]["lines"][0]["amount"] == -150.0
