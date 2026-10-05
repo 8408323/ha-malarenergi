@@ -29157,7 +29157,13 @@ function gz({ hass: e, t, id: n, name: r }) {
 	} else {
 		let e = (e) => {
 			let t = parseFloat(e.value);
-			Number.isFinite(t) && String(t) !== String(parseFloat(i.state)) ? l("set_value", { value: t }) : e.value = i.state;
+			if (!(Number.isFinite(t) && (s.min == null || t >= s.min) && (s.max == null || t <= s.max)) || String(t) === String(parseFloat(i.state))) {
+				e.value = i.state;
+				return;
+			}
+			l("set_value", { value: t }).catch(() => {
+				e.value = i.state;
+			});
 		};
 		u = /* @__PURE__ */ (0, $.jsxs)("span", {
 			className: "row",

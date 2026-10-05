@@ -629,11 +629,13 @@ function PhRow({ hass, t, id, name }: { hass: any; t: T; id: string; name: strin
       {off && <option value={s.state}>–</option>}
       {(a.options ?? []).map((o: string) => <option key={o} value={o}>{optLabel(o)}</option>)}</select>;
   } else {
-    // commit on blur/Enter only, so typing "16" doesn't send 1 first; HA clamps to min/max
+    // commit on blur/Enter only, so typing "16" doesn't send 1 first. HA rejects out-of-range values,
+    // so check min/max here, and put the saved value back if the call fails
     const commit = (el: HTMLInputElement) => {
       const v = parseFloat(el.value);
-      if (Number.isFinite(v) && String(v) !== String(parseFloat(s.state))) call("set_value", { value: v });
-      else el.value = s.state;
+      const ok = Number.isFinite(v) && (a.min == null || v >= a.min) && (a.max == null || v <= a.max);
+      if (!ok || String(v) === String(parseFloat(s.state))) { el.value = s.state; return; }
+      call("set_value", { value: v }).catch(() => { el.value = s.state; });
     };
     control = <span className="row"><input key={s.state} className="sel" type="number" style={{ width: 90 }} defaultValue={s.state} disabled={off}
       min={a.min} max={a.max} step={a.step} onBlur={(e) => commit(e.currentTarget)}
