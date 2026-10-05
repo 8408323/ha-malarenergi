@@ -101,6 +101,7 @@ export default function App({ hass, narrow }: { hass: any; narrow: boolean }) {
 
 /* ---------------- Overview ---------------- */
 const KW: Record<string, number> = { mW: 1e-6, W: 1e-3, kW: 1, MW: 1e3, GW: 1e6, TW: 1e9 };  // HA power units → kW
+const AMP: Record<string, number> = { "μA": 1e-6, "µA": 1e-6, mA: 1e-3, A: 1 };  // HA current units → A
 
 // Live power from the PowerHub integration (same HAN meter), found by its entity ids; no second login.
 function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
@@ -112,12 +113,16 @@ function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
   const p = all.find((x) => mps.has(st[`sensor.${x}meter_id`]?.state));
   if (!p) return null;
   const num = (e: string) => { const v = parseFloat(String(st[e]?.state).replace(/^A/, "")); return Number.isFinite(v) ? v : null; };
-  // HA converts to the user's display unit; normalise to kW
-  const kw = (e: string) => { const v = num(e), f = KW[st[e]?.attributes?.unit_of_measurement]; return v == null || f == null ? null : v * f; };
+  // HA converts to the user's display unit; normalise (an unknown unit gives null, never a wrong number)
+  const conv = (e: string, t: Record<string, number>, dflt?: string) => {
+    const v = num(e), f = t[st[e]?.attributes?.unit_of_measurement ?? dflt ?? ""];
+    return v == null || f == null ? null : v * f;
+  };
+  const kw = (e: string) => conv(e, KW);
   const imp = kw(`sensor.${p}power_import`), exp = kw(`sensor.${p}power_export`);
-  const fuse = num(`number.${p}fuse_limit`) ?? num(`number.${p}fuse_limit_set`) ?? num(`select.${p}fuse_size`);
-  if (imp == null && exp == null) return null;
-  const net = (imp ?? 0) - (exp ?? 0);
+  const fuse = conv(`number.${p}fuse_limit`, AMP) ?? conv(`number.${p}fuse_limit_set`, AMP) ?? conv(`select.${p}fuse_size`, AMP, "A");
+  if (imp == null || exp == null) return null;  // a missing side isn't a zero reading
+  const net = imp - exp;
   return (
     <section className="card">
       <h2>{t.live}<Info text={t.live_info} /></h2>
@@ -125,7 +130,7 @@ function PowerHub({ hass, t, d }: Ctx & { d: Data }) {
         <b className={net < 0 ? "pos" : ""}>{fmt(Math.abs(net), 2, "kW")}</b></div>
       <div className="phases" style={{ marginTop: 12 }}>
         {[1, 2, 3].map((n) => {
-          const e = `sensor.${p}current_l${n}`, a = num(e) == null ? null : num(e)! / (st[e]?.attributes?.unit_of_measurement === "mA" ? 1000 : 1);
+          const a = conv(`sensor.${p}current_l${n}`, AMP);
           const pct = a != null && fuse ? Math.min(100, (a / fuse) * 100) : 0;
           return (
             <div key={n}>

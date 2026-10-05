@@ -27958,19 +27958,19 @@ function QR({ hass: e, narrow: t }) {
 				className: "card",
 				children: c ? u.none : u.loading
 			}) : /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [
-				i === "overview" && o && /* @__PURE__ */ (0, $.jsx)(tz, {
+				i === "overview" && o && /* @__PURE__ */ (0, $.jsx)(nz, {
 					...h,
 					d: o,
 					live: n?.show_powerhub !== !1
 				}),
-				i === "history" && /* @__PURE__ */ (0, $.jsx)(iz, { ...h }),
-				i === "invoices" && o && /* @__PURE__ */ (0, $.jsx)(cz, {
+				i === "history" && /* @__PURE__ */ (0, $.jsx)(az, { ...h }),
+				i === "invoices" && o && /* @__PURE__ */ (0, $.jsx)(lz, {
 					...h,
 					invoices: o.invoices ?? [],
 					perPage0: n?.invoices_per_page ?? 12
 				}),
-				i === "contracts" && /* @__PURE__ */ (0, $.jsx)(lz, { ...h }),
-				i === "settings" && n && /* @__PURE__ */ (0, $.jsx)(uz, {
+				i === "contracts" && /* @__PURE__ */ (0, $.jsx)(uz, { ...h }),
+				i === "settings" && n && /* @__PURE__ */ (0, $.jsx)(dz, {
 					...h,
 					opts: n,
 					setOpts: r
@@ -27994,19 +27994,24 @@ var $R = {
 	MW: 1e3,
 	GW: 1e6,
 	TW: 1e9
+}, ez = {
+	μA: 1e-6,
+	µA: 1e-6,
+	mA: .001,
+	A: 1
 };
-function ez({ hass: e, t, d: n }) {
+function tz({ hass: e, t, d: n }) {
 	let r = e.states, i = Object.keys(r).map((e) => /^sensor\.(powerhub_(?:.+_)?)power_import$/.exec(e)?.[1]).filter(Boolean), a = new Set([n.CONSUMPTION?.point, n.PRODUCTION?.point].filter(Boolean).map(String)), o = i.find((e) => a.has(r[`sensor.${e}meter_id`]?.state));
 	if (!o) return null;
 	let s = (e) => {
 		let t = parseFloat(String(r[e]?.state).replace(/^A/, ""));
 		return Number.isFinite(t) ? t : null;
-	}, c = (e) => {
-		let t = s(e), n = $R[r[e]?.attributes?.unit_of_measurement];
-		return t == null || n == null ? null : t * n;
-	}, l = c(`sensor.${o}power_import`), u = c(`sensor.${o}power_export`), d = s(`number.${o}fuse_limit`) ?? s(`number.${o}fuse_limit_set`) ?? s(`select.${o}fuse_size`);
-	if (l == null && u == null) return null;
-	let f = (l ?? 0) - (u ?? 0);
+	}, c = (e, t, n) => {
+		let i = s(e), a = t[r[e]?.attributes?.unit_of_measurement ?? n ?? ""];
+		return i == null || a == null ? null : i * a;
+	}, l = (e) => c(e, $R), u = l(`sensor.${o}power_import`), d = l(`sensor.${o}power_export`), f = c(`number.${o}fuse_limit`, ez) ?? c(`number.${o}fuse_limit_set`, ez) ?? c(`select.${o}fuse_size`, ez, "A");
+	if (u == null || d == null) return null;
+	let p = u - d;
 	return /* @__PURE__ */ (0, $.jsxs)("section", {
 		className: "card",
 		children: [
@@ -28015,10 +28020,10 @@ function ez({ hass: e, t, d: n }) {
 				className: "row-between",
 				children: [/* @__PURE__ */ (0, $.jsx)("span", {
 					className: "muted",
-					children: f >= 0 ? t.importing : t.exporting
+					children: p >= 0 ? t.importing : t.exporting
 				}), /* @__PURE__ */ (0, $.jsx)("b", {
-					className: f < 0 ? "pos" : "",
-					children: KR(Math.abs(f), 2, "kW")
+					className: p < 0 ? "pos" : "",
+					children: KR(Math.abs(p), 2, "kW")
 				})]
 			}),
 			/* @__PURE__ */ (0, $.jsx)("div", {
@@ -28029,18 +28034,18 @@ function ez({ hass: e, t, d: n }) {
 					2,
 					3
 				].map((e) => {
-					let t = `sensor.${o}current_l${e}`, n = s(t) == null ? null : s(t) / (r[t]?.attributes?.unit_of_measurement === "mA" ? 1e3 : 1), i = n != null && d ? Math.min(100, n / d * 100) : 0;
+					let t = c(`sensor.${o}current_l${e}`, ez), n = t != null && f ? Math.min(100, t / f * 100) : 0;
 					return /* @__PURE__ */ (0, $.jsxs)("div", { children: [/* @__PURE__ */ (0, $.jsxs)("div", {
 						className: "row-between",
 						children: [/* @__PURE__ */ (0, $.jsxs)("span", {
 							className: "muted",
 							children: ["L", e]
-						}), /* @__PURE__ */ (0, $.jsxs)("span", { children: [KR(n, 1, "A"), d ? ` / ${d} A` : ""] })]
+						}), /* @__PURE__ */ (0, $.jsxs)("span", { children: [KR(t, 1, "A"), f ? ` / ${f} A` : ""] })]
 					}), /* @__PURE__ */ (0, $.jsx)("div", {
 						className: "meter",
 						children: /* @__PURE__ */ (0, $.jsx)("div", { style: {
-							width: `${i}%`,
-							background: i > 85 ? "var(--me-neg)" : i > 60 ? "#f5a524" : "var(--me-accent)"
+							width: `${n}%`,
+							background: n > 85 ? "var(--me-neg)" : n > 60 ? "#f5a524" : "var(--me-accent)"
 						} })
 					})] }, e);
 				})
@@ -28048,7 +28053,7 @@ function ez({ hass: e, t, d: n }) {
 		]
 	});
 }
-function tz({ hass: e, t, locale: n, narrow: r, d: i, live: a }) {
+function nz({ hass: e, t, locale: n, narrow: r, d: i, live: a }) {
 	let o = (0, S.useMemo)(() => {
 		let e = /* @__PURE__ */ new Map(), t = (t, n) => (t ?? []).forEach(([t, r]) => {
 			let i = qR(t);
@@ -28073,7 +28078,7 @@ function tz({ hass: e, t, locale: n, narrow: r, d: i, live: a }) {
 				/* @__PURE__ */ (0, $.jsx)(ZR, {
 					label: `${t.net} · ${t.month}`,
 					info: t.net_info,
-					value: oz(-d, GR(d)),
+					value: sz(-d, GR(d)),
 					tone: d <= 0 ? "pos" : "neg",
 					sub: `${t.energy} ${KR(l(i.CONSUMPTION?.daily?.costEL), 0)} · ${t.grid} ${KR(l(i.CONSUMPTION?.daily?.costELEXT), 0)}`
 				}),
@@ -28092,14 +28097,14 @@ function tz({ hass: e, t, locale: n, narrow: r, d: i, live: a }) {
 		}),
 		/* @__PURE__ */ (0, $.jsxs)("section", {
 			className: "card",
-			children: [/* @__PURE__ */ (0, $.jsxs)("h2", { children: [t.daily, /* @__PURE__ */ (0, $.jsx)(XR, { text: t.daily_info })] }), /* @__PURE__ */ (0, $.jsx)(nz, {
+			children: [/* @__PURE__ */ (0, $.jsxs)("h2", { children: [t.daily, /* @__PURE__ */ (0, $.jsx)(XR, { text: t.daily_info })] }), /* @__PURE__ */ (0, $.jsx)(rz, {
 				rows: o,
 				t,
 				height: r ? 240 : 300,
 				tick: (e) => String(e).slice(5)
 			})]
 		}),
-		a && /* @__PURE__ */ (0, $.jsx)(ez, {
+		a && /* @__PURE__ */ (0, $.jsx)(tz, {
 			hass: e,
 			t,
 			locale: n,
@@ -28108,7 +28113,7 @@ function tz({ hass: e, t, locale: n, narrow: r, d: i, live: a }) {
 		})
 	] });
 }
-function nz({ rows: e, t, height: n, tick: r, brush: i, zoom: a, setZoom: o }) {
+function rz({ rows: e, t, height: n, tick: r, brush: i, zoom: a, setZoom: o }) {
 	let [s, c] = (0, S.useState)(null), l = (t) => e.findIndex((e) => e.k === t);
 	return /* @__PURE__ */ (0, $.jsx)(El, {
 		width: "100%",
@@ -28244,7 +28249,7 @@ function nz({ rows: e, t, height: n, tick: r, brush: i, zoom: a, setZoom: o }) {
 		})
 	});
 }
-function rz({ rows: e, t, label: n, title: r }) {
+function iz({ rows: e, t, label: n, title: r }) {
 	let i = (t) => e.reduce((e, n) => e + (n[t] ?? 0), 0), a = [
 		[
 			"cons",
@@ -28297,7 +28302,7 @@ function rz({ rows: e, t, label: n, title: r }) {
 						}, t)),
 						/* @__PURE__ */ (0, $.jsx)("td", {
 							className: `r ${o(e) >= 0 ? "pos" : "neg"}`,
-							children: oz(o(e))
+							children: sz(o(e))
 						})
 					] }, e.k)) }),
 					/* @__PURE__ */ (0, $.jsx)("tfoot", { children: /* @__PURE__ */ (0, $.jsxs)("tr", { children: [
@@ -28308,7 +28313,7 @@ function rz({ rows: e, t, label: n, title: r }) {
 						}, e)),
 						/* @__PURE__ */ (0, $.jsx)("th", {
 							className: `r ${i("comp") - i("cost") >= 0 ? "pos" : "neg"}`,
-							children: oz(i("comp") - i("cost"))
+							children: sz(i("comp") - i("cost"))
 						})
 					] }) })
 				]
@@ -28316,7 +28321,7 @@ function rz({ rows: e, t, label: n, title: r }) {
 		})]
 	});
 }
-function iz({ hass: e, t, locale: n, narrow: r }) {
+function az({ hass: e, t, locale: n, narrow: r }) {
 	let [i, a] = (0, S.useState)("day"), [o, s] = (0, S.useState)(0), [c, l] = (0, S.useState)(null), [u, d] = (0, S.useState)(null), [f, p] = (0, S.useState)(null), m = (0, S.useMemo)(() => {
 		let e = /* @__PURE__ */ new Date(), t, n;
 		return i === "hour" ? (t = new Date(e.getFullYear(), e.getMonth(), e.getDate() + o), n = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1)) : i === "day" ? (t = new Date(e.getFullYear(), e.getMonth() + o, 1), n = new Date(t.getFullYear(), t.getMonth() + 1, 1)) : (t = new Date(e.getFullYear() + o, 0, 1), n = new Date(t.getFullYear() + 1, 0, 1)), {
@@ -28428,7 +28433,7 @@ function iz({ hass: e, t, locale: n, narrow: r }) {
 				/* @__PURE__ */ (0, $.jsx)(ZR, {
 					label: `${t.net} · ${t.total}`,
 					info: t.net_info,
-					value: oz(_("comp") - _("cost")),
+					value: sz(_("comp") - _("cost")),
 					tone: _("comp") - _("cost") >= 0 ? "pos" : "neg"
 				})
 			]
@@ -28440,7 +28445,7 @@ function iz({ hass: e, t, locale: n, narrow: r }) {
 				u ? /* @__PURE__ */ (0, $.jsx)("div", {
 					className: "muted",
 					children: u
-				}) : c ? c.length ? /* @__PURE__ */ (0, $.jsx)(nz, {
+				}) : c ? c.length ? /* @__PURE__ */ (0, $.jsx)(rz, {
 					rows: c,
 					t,
 					height: r ? 260 : 340,
@@ -28461,13 +28466,13 @@ function iz({ hass: e, t, locale: n, narrow: r }) {
 				})
 			]
 		}),
-		c && c.length > 0 && f && f.b < c.length && /* @__PURE__ */ (0, $.jsx)(rz, {
+		c && c.length > 0 && f && f.b < c.length && /* @__PURE__ */ (0, $.jsx)(iz, {
 			rows: c.slice(f.a, f.b + 1),
 			t,
 			label: v,
 			title: `${t.table_zoom}: ${v(c[f.a].k)} – ${v(c[f.b].k)}`
 		}),
-		c && c.length > 0 && /* @__PURE__ */ (0, $.jsx)(rz, {
+		c && c.length > 0 && /* @__PURE__ */ (0, $.jsx)(iz, {
 			rows: c,
 			t,
 			label: v,
@@ -28475,15 +28480,15 @@ function iz({ hass: e, t, locale: n, narrow: r }) {
 		})
 	] });
 }
-var az = {
+var oz = {
 	en: "🇬🇧",
 	sv: "🇸🇪",
 	nb: "🇳🇴",
 	da: "🇩🇰",
 	fi: "🇫🇮",
 	is: "🇮🇸"
-}, oz = (e, t = 0) => e == null ? "–" : `${e > 0 ? "+" : e < 0 ? "−" : ""}${KR(Math.abs(e), t, "kr")}`;
-function sz(e) {
+}, sz = (e, t = 0) => e == null ? "–" : `${e > 0 ? "+" : e < 0 ? "−" : ""}${KR(Math.abs(e), t, "kr")}`;
+function cz(e) {
 	let t = {};
 	for (let n of e) {
 		let e = t[n.category] ??= {
@@ -28495,7 +28500,7 @@ function sz(e) {
 	}
 	return t;
 }
-function cz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
+function lz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 	let [a, o] = (0, S.useState)(() => Number(localStorage.getItem("me_per_page")) || i), [s, c] = (0, S.useState)(0), [l, u] = (0, S.useState)(null), [d, f] = (0, S.useState)({}), p = a ? Math.max(1, Math.ceil(r.length / a)) : 1, m = (e) => (/* @__PURE__ */ new Date(`${e}-15`)).toLocaleDateString(n, {
 		month: "short",
 		year: "numeric"
@@ -28524,18 +28529,18 @@ function cz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${t.consumption} · ${_}`,
 				info: t.wallet_info,
-				value: oz(-y("consumption"))
+				value: sz(-y("consumption"))
 			}),
 			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${t.production} · ${_}`,
 				info: t.wallet_info,
-				value: oz(-y("production")),
+				value: sz(-y("production")),
 				tone: -y("production") >= 0 ? "pos" : "neg"
 			}),
 			/* @__PURE__ */ (0, $.jsx)(ZR, {
 				label: `${t.net} · ${_}`,
 				info: t.wallet_net_info,
-				value: oz(-(y("consumption") + y("production"))),
+				value: sz(-(y("consumption") + y("production"))),
 				tone: y("consumption") + y("production") <= 0 ? "pos" : "neg"
 			})
 		]
@@ -28597,7 +28602,7 @@ function cz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 							})] }),
 							/* @__PURE__ */ (0, $.jsx)("td", {
 								className: `r ${e.amount < 0 ? "pos" : ""}`,
-								children: oz(e.amount == null ? null : -e.amount)
+								children: sz(e.amount == null ? null : -e.amount)
 							}),
 							/* @__PURE__ */ (0, $.jsx)("td", {
 								className: "r wide",
@@ -28605,15 +28610,15 @@ function cz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 							}),
 							/* @__PURE__ */ (0, $.jsx)("td", {
 								className: "r wide",
-								children: e.fixed ? oz(-e.fixed) : "–"
+								children: e.fixed ? sz(-e.fixed) : "–"
 							}),
 							/* @__PURE__ */ (0, $.jsx)("td", {
 								className: "r wide",
-								children: e.power_fee ? oz(-e.power_fee) : "–"
+								children: e.power_fee ? sz(-e.power_fee) : "–"
 							}),
 							/* @__PURE__ */ (0, $.jsx)("td", {
 								className: "r wide",
-								children: e.other ? oz(-e.other) : "–"
+								children: e.other ? sz(-e.other) : "–"
 							}),
 							/* @__PURE__ */ (0, $.jsx)("td", { children: h(e.due_date) }),
 							/* @__PURE__ */ (0, $.jsx)("td", { children: /* @__PURE__ */ (0, $.jsx)("span", {
@@ -28639,7 +28644,7 @@ function cz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 							colSpan: 10,
 							children: /* @__PURE__ */ (0, $.jsx)("div", {
 								className: "lines",
-								children: Object.entries(sz(e.lines ?? [])).sort((e, t) => Math.abs(t[1].amount) - Math.abs(e[1].amount)).map(([e, n]) => /* @__PURE__ */ (0, $.jsxs)("div", {
+								children: Object.entries(cz(e.lines ?? [])).sort((e, t) => Math.abs(t[1].amount) - Math.abs(e[1].amount)).map(([e, n]) => /* @__PURE__ */ (0, $.jsxs)("div", {
 									className: "line",
 									children: [
 										/* @__PURE__ */ (0, $.jsx)("span", { children: t[`c_${e}`] ?? e }),
@@ -28649,7 +28654,7 @@ function cz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 										}),
 										/* @__PURE__ */ (0, $.jsx)("b", {
 											className: n.amount < 0 ? "pos" : "",
-											children: oz(-n.amount, 2)
+											children: sz(-n.amount, 2)
 										})
 									]
 								}, e))
@@ -28706,7 +28711,7 @@ function cz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 		]
 	})] });
 }
-function lz({ hass: e, t, locale: n }) {
+function uz({ hass: e, t, locale: n }) {
 	let [r, i] = (0, S.useState)(null);
 	if ((0, S.useEffect)(() => {
 		e.connection.sendMessagePromise({ type: "malarenergi/contracts" }).then(i).catch(() => i([]));
@@ -28772,7 +28777,7 @@ function lz({ hass: e, t, locale: n }) {
 		})]
 	}, String(e))) });
 }
-function uz({ hass: e, t, opts: n, setOpts: r }) {
+function dz({ hass: e, t, opts: n, setOpts: r }) {
 	let [i, a] = (0, S.useState)([]), [o, s] = (0, S.useState)(null), [c, l] = (0, S.useState)(null), [u, d] = (0, S.useState)(!1), f = (0, S.useRef)(null);
 	f.current = c;
 	let p = (t) => e.connection.sendMessagePromise({
@@ -28868,7 +28873,7 @@ function uz({ hass: e, t, opts: n, setOpts: r }) {
 							children: [
 								/* @__PURE__ */ (0, $.jsx)("span", {
 									className: "flag",
-									children: r === "auto" ? "🏠" : az[r]
+									children: r === "auto" ? "🏠" : oz[r]
 								}),
 								/* @__PURE__ */ (0, $.jsxs)("span", {
 									className: "lname",
@@ -28981,7 +28986,7 @@ function uz({ hass: e, t, opts: n, setOpts: r }) {
 }
 //#endregion
 //#region src/styles.css?inline
-var dz = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--card-background-color,#fff);--me-text:var(--primary-text-color,#1d2330);--me-muted:var(--secondary-text-color,#6b7484);--me-line:color-mix(in srgb, var(--me-muted) 18%, transparent);--me-accent:var(--primary-color,#03a9f4);--me-pos:#2ec27e;--me-neg:#e5484d;--me-radius:16px;display:block}*{box-sizing:border-box}.page{max-width:1480px;min-height:100vh;color:var(--me-text);font:14px/1.45 var(--paper-font-body1_-_font-family,Inter, Roboto, system-ui, sans-serif);background:var(--me-bg);margin:0 auto;padding:20px 28px 56px}.page.narrow{padding:10px 10px 40px}header{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;display:flex}.brand{align-items:center;gap:8px;display:flex}h1{letter-spacing:-.02em;margin:0;font-size:26px;font-weight:600}h2{align-items:center;gap:6px;margin:0;font-size:15px;font-weight:600;display:flex}.menu{color:inherit;cursor:pointer;background:0 0;border:0;font-size:22px}.tabs,.seg{background:var(--me-card);border:1px solid var(--me-line);border-radius:999px;gap:2px;max-width:100%;padding:4px;display:inline-flex;overflow-x:auto}.tabs button,.seg button{color:var(--me-muted);font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:7px 14px;font-weight:500;transition:background .15s,color .15s}.tabs button:hover,.seg button:hover{color:var(--me-text)}.tabs button.on,.seg button.on{background:var(--me-accent);color:var(--text-primary-color,#fff)}.card{background:var(--me-card);border-radius:var(--me-radius);border:1px solid var(--me-line);margin-bottom:16px;padding:18px;box-shadow:0 1px 2px #0000000a,0 8px 24px -12px #0000001f}.card.error{color:var(--me-neg)}.card-head{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;display:flex}.grid-overview{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:16px;display:grid}.narrow .grid-overview,.narrow .two{grid-template-columns:1fr}@media (width<=1000px){.grid-overview,.two{grid-template-columns:1fr}}.side .card{margin-bottom:16px}.two{grid-template-columns:1fr 1fr;gap:16px;display:grid}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px;display:grid}.kpis>.stat{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.kpis.compact{margin-bottom:4px}.kpis.compact>.stat{padding:8px 12px}.stats-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}.settings-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:start;gap:16px;display:grid}.settings-grid .card{margin-bottom:0}.label{color:var(--me-muted);align-items:center;gap:4px;font-size:12px;font-weight:500;display:flex}.value{letter-spacing:-.02em;margin:2px 0;font-size:26px;font-weight:600}.value:first-letter{text-transform:uppercase}.pos{color:var(--me-pos)}.neg{color:var(--me-neg)}.muted{color:var(--me-muted);font-size:12.5px}.big{letter-spacing:-.02em;margin-bottom:10px;font-size:30px;font-weight:600}.big small{color:var(--me-muted);font-size:15px;font-weight:500}.row-between{flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:8px;display:flex}.badge{background:color-mix(in srgb, var(--me-accent) 15%, transparent);color:var(--me-accent);border-radius:999px;align-items:center;gap:4px;padding:3px 4px 3px 10px;font-size:12px;font-weight:500;display:inline-flex}.plan-chip{background:color-mix(in srgb, var(--me-accent) 8%, transparent);border-radius:12px;align-items:center;gap:8px;margin:14px 0 4px;padding:10px 12px;font-size:13.5px;display:flex}.legend{color:var(--me-muted);flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:12px;display:flex}.dot{border-radius:50%;flex:none;width:9px;height:9px;margin-right:6px;display:inline-block}table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;font-size:13.5px}th{text-align:left;color:var(--me-muted);font-size:12px;font-weight:500}th,td{border-bottom:1px solid var(--me-line);padding:8px 6px}tr:last-child td{border-bottom:0}.money td:not(:first-child),.money th:not(:first-child){text-align:right}.money.compact{margin-top:12px}.meter{background:var(--me-line);border-radius:999px;height:10px;overflow:hidden}.meter>div{border-radius:999px;height:100%;transition:width .4s}.info{display:inline-flex;position:relative}.info-btn{border:1px solid var(--me-muted);width:17px;height:17px;color:var(--me-muted);cursor:pointer;opacity:.7;background:0 0;border-radius:50%;place-items:center;padding:0;font:italic 600 10px/1 Georgia,serif;display:inline-grid}.info-btn:hover{opacity:1;color:var(--me-accent);border-color:var(--me-accent)}.pop{z-index:20;background:var(--me-card);width:min(300px,80vw);color:var(--me-text);border:1px solid var(--me-line);text-transform:none;letter-spacing:0;border-radius:12px;padding:12px 14px;font-size:12.5px;font-weight:400;line-height:1.5;position:absolute;top:24px;left:50%;transform:translate(-50%);box-shadow:0 12px 32px -8px #00000059}.setting{border-bottom:1px solid var(--me-line);justify-content:space-between;align-items:center;gap:12px;padding:9px 0;display:flex}.setting:last-child{border-bottom:0}.num{align-items:center;gap:6px;display:inline-flex}.num em{color:var(--me-muted);min-width:52px;font-size:12px;font-style:normal}.num input{width:96px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);text-align:right;border-radius:10px;padding:6px 10px}.num input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.switch{flex:none;width:40px;height:22px;position:relative}.switch input{opacity:0;width:0;height:0}.switch span{background:var(--me-line);cursor:pointer;border-radius:999px;transition:all .2s;position:absolute;inset:0}.switch span:before{content:\"\";background:#fff;border-radius:50%;width:16px;height:16px;transition:all .2s;position:absolute;top:3px;left:3px;box-shadow:0 1px 3px #0000004d}.switch input:checked+span{background:var(--me-accent)}.switch input:checked+span:before{transform:translate(18px)}.flow-card{padding:8px}.flow{width:100%;height:auto;display:block}.flow-line{fill:none;stroke:var(--me-muted);stroke-width:3px;stroke-linecap:round}.house-shape{fill:color-mix(in srgb, var(--me-accent) 5%, transparent);stroke:var(--me-line);stroke-width:2px;stroke-linejoin:round}.node-bg{fill:var(--me-card);stroke-width:2px;stroke-opacity:.35}.node-val{text-anchor:middle;fill:var(--me-text);font-size:15px;font-weight:600}.node-sub{text-anchor:middle;fill:var(--me-muted);font-size:10.5px}.node-label{text-anchor:middle;fill:var(--me-muted);font-size:12.5px;font-weight:500}.recharts-cartesian-axis-tick-value{fill:var(--me-muted)}.recharts-legend-item-text{color:var(--me-muted)!important}.settings-grid .seg{border-radius:14px;flex-wrap:wrap}.range{width:100%;accent-color:var(--me-accent);margin:10px 0 14px}.be{grid-template-columns:1fr 1fr;gap:16px;display:grid}.phases{gap:10px;display:grid}.phases .row-between{margin:0 0 4px}.stack{border-top:1px solid var(--me-line);gap:6px;margin-top:14px;padding-top:12px;display:grid}.row{align-items:center;gap:8px;display:flex}.btn{border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;cursor:pointer;border-radius:10px;padding:6px 12px}.btn.primary{background:var(--me-accent);color:var(--text-primary-color,#fff);border-color:#0000}.btn:disabled{opacity:.45;cursor:default}.btn.ghost{color:var(--me-muted);background:0 0;border:0}table.edit input{width:100%;min-width:80px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);border-radius:8px;padding:6px 8px}table.edit input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.tabs,.seg{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.seg::-webkit-scrollbar{display:none}.narrow .node-val{font-size:22px}.narrow .node-sub{font-size:15px}.narrow .node-label{font-size:17px}.narrow .flow-card{padding:4px}.narrow .kpis{gap:10px}.narrow .value{font-size:22px}.narrow header{margin-bottom:12px}.narrow .tabs{width:100%}.chips{flex-wrap:wrap;gap:8px;display:flex}.chip{border:1px solid var(--me-line);color:var(--me-muted);border-radius:999px;padding:4px 10px;font-size:12px}.chip.ok{color:var(--me-pos);border-color:color-mix(in srgb, var(--me-pos) 40%, transparent)}.kpi{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.table-wrap{overflow-x:auto}td.r,th.r{text-align:right}.dot.production{background:#f5b301}.dot.consumption{background:#3daee9}.badge.ok{background:color-mix(in srgb, var(--me-pos) 15%, transparent);color:var(--me-pos);padding:3px 8px}.badge.warn{color:#e5a50a;background:#e5a50a2e;padding:3px 8px}h2{margin-bottom:12px}td,th{white-space:nowrap}.page{container-type:inline-size}@container (width<=760px){.wide{display:none}}.pager{color:var(--me-muted);flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:13px;display:flex}.pager label{align-items:center;gap:8px;display:inline-flex}.pager select{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:8px;padding:4px 8px}.pages{align-items:center;gap:10px;display:inline-flex}.brand{flex-wrap:wrap;align-items:center;gap:14px;display:flex}.toolbar{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;display:flex}.range-label{text-align:center;text-transform:capitalize;min-width:150px}.seg.wrap{border-radius:14px;flex-wrap:wrap}.foot{margin-top:8px}.contracts{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;display:grid}.contract{border:1px solid var(--me-line);background:var(--me-bg);border-radius:14px;gap:4px;padding:14px;display:grid}.contract.old{opacity:.6}.c-name{font-size:16px;font-weight:600}.sel{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:10px;padding:6px 10px}.toast{background:var(--me-accent);color:#fff;z-index:50;border-radius:999px;padding:10px 18px;font-weight:500;position:fixed;bottom:24px;left:50%;transform:translate(-50%);box-shadow:0 8px 24px -8px #0006}.recharts-brush-texts text{fill:var(--me-muted);font-size:10px}tr.clickable{cursor:pointer}tr.clickable:hover td{background:color-mix(in srgb, var(--me-accent) 5%, transparent)}.chev{width:14px;color:var(--me-muted);transition:transform .15s;display:inline-block}.chev.open{transform:rotate(90deg)}.lines-row td{background:var(--me-bg);padding:10px 16px}.lines{gap:6px;max-width:520px;display:grid}.line{grid-template-columns:1fr auto 110px;align-items:center;gap:12px;font-size:13px;display:grid}.line b{text-align:right;font-variant-numeric:tabular-nums}.langs{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;display:grid}.lang{cursor:pointer;text-align:left;border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;border-radius:12px;align-items:center;gap:10px;padding:10px 12px;transition:border-color .15s,background .15s;display:flex}.lang:hover{border-color:color-mix(in srgb, var(--me-accent) 50%, transparent)}.lang.on{border-color:var(--me-accent);background:color-mix(in srgb, var(--me-accent) 14%, transparent)}.lang.auto{grid-column:1/-1}.lang .flag{font-size:20px;line-height:1}.lang .lname{flex-direction:column;flex:1;display:flex}.lang .lname small{color:var(--me-muted);font-size:12px}.lang .check{color:var(--me-accent);font-weight:700}.hint{margin-top:6px;font-size:12px}table.sum tfoot th{border-top:2px solid var(--me-line)}table.sum td,table.sum th{white-space:nowrap}a.btn{text-decoration:none;display:inline-block}.modal{z-index:10;background:#0000008c;place-items:center;padding:16px;display:grid;position:fixed;inset:0}.modal-box{background:#0f1724;border-radius:18px;width:min(420px,100%);height:min(640px,92vh);position:relative;overflow:hidden;box-shadow:0 20px 60px #0006}.modal-box iframe{border:0;width:100%;height:100%}.modal-x{z-index:1;color:#e8eef6;position:absolute;top:8px;right:8px}", fz = class extends HTMLElement {
+var fz = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--card-background-color,#fff);--me-text:var(--primary-text-color,#1d2330);--me-muted:var(--secondary-text-color,#6b7484);--me-line:color-mix(in srgb, var(--me-muted) 18%, transparent);--me-accent:var(--primary-color,#03a9f4);--me-pos:#2ec27e;--me-neg:#e5484d;--me-radius:16px;display:block}*{box-sizing:border-box}.page{max-width:1480px;min-height:100vh;color:var(--me-text);font:14px/1.45 var(--paper-font-body1_-_font-family,Inter, Roboto, system-ui, sans-serif);background:var(--me-bg);margin:0 auto;padding:20px 28px 56px}.page.narrow{padding:10px 10px 40px}header{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;display:flex}.brand{align-items:center;gap:8px;display:flex}h1{letter-spacing:-.02em;margin:0;font-size:26px;font-weight:600}h2{align-items:center;gap:6px;margin:0;font-size:15px;font-weight:600;display:flex}.menu{color:inherit;cursor:pointer;background:0 0;border:0;font-size:22px}.tabs,.seg{background:var(--me-card);border:1px solid var(--me-line);border-radius:999px;gap:2px;max-width:100%;padding:4px;display:inline-flex;overflow-x:auto}.tabs button,.seg button{color:var(--me-muted);font:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:999px;padding:7px 14px;font-weight:500;transition:background .15s,color .15s}.tabs button:hover,.seg button:hover{color:var(--me-text)}.tabs button.on,.seg button.on{background:var(--me-accent);color:var(--text-primary-color,#fff)}.card{background:var(--me-card);border-radius:var(--me-radius);border:1px solid var(--me-line);margin-bottom:16px;padding:18px;box-shadow:0 1px 2px #0000000a,0 8px 24px -12px #0000001f}.card.error{color:var(--me-neg)}.card-head{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;display:flex}.grid-overview{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:16px;display:grid}.narrow .grid-overview,.narrow .two{grid-template-columns:1fr}@media (width<=1000px){.grid-overview,.two{grid-template-columns:1fr}}.side .card{margin-bottom:16px}.two{grid-template-columns:1fr 1fr;gap:16px;display:grid}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:16px;display:grid}.kpis>.stat{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.kpis.compact{margin-bottom:4px}.kpis.compact>.stat{padding:8px 12px}.stats-2{grid-template-columns:1fr 1fr;gap:12px;display:grid}.settings-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:start;gap:16px;display:grid}.settings-grid .card{margin-bottom:0}.label{color:var(--me-muted);align-items:center;gap:4px;font-size:12px;font-weight:500;display:flex}.value{letter-spacing:-.02em;margin:2px 0;font-size:26px;font-weight:600}.value:first-letter{text-transform:uppercase}.pos{color:var(--me-pos)}.neg{color:var(--me-neg)}.muted{color:var(--me-muted);font-size:12.5px}.big{letter-spacing:-.02em;margin-bottom:10px;font-size:30px;font-weight:600}.big small{color:var(--me-muted);font-size:15px;font-weight:500}.row-between{flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:8px;display:flex}.badge{background:color-mix(in srgb, var(--me-accent) 15%, transparent);color:var(--me-accent);border-radius:999px;align-items:center;gap:4px;padding:3px 4px 3px 10px;font-size:12px;font-weight:500;display:inline-flex}.plan-chip{background:color-mix(in srgb, var(--me-accent) 8%, transparent);border-radius:12px;align-items:center;gap:8px;margin:14px 0 4px;padding:10px 12px;font-size:13.5px;display:flex}.legend{color:var(--me-muted);flex-wrap:wrap;gap:14px;margin-bottom:8px;font-size:12px;display:flex}.dot{border-radius:50%;flex:none;width:9px;height:9px;margin-right:6px;display:inline-block}table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;font-size:13.5px}th{text-align:left;color:var(--me-muted);font-size:12px;font-weight:500}th,td{border-bottom:1px solid var(--me-line);padding:8px 6px}tr:last-child td{border-bottom:0}.money td:not(:first-child),.money th:not(:first-child){text-align:right}.money.compact{margin-top:12px}.meter{background:var(--me-line);border-radius:999px;height:10px;overflow:hidden}.meter>div{border-radius:999px;height:100%;transition:width .4s}.info{display:inline-flex;position:relative}.info-btn{border:1px solid var(--me-muted);width:17px;height:17px;color:var(--me-muted);cursor:pointer;opacity:.7;background:0 0;border-radius:50%;place-items:center;padding:0;font:italic 600 10px/1 Georgia,serif;display:inline-grid}.info-btn:hover{opacity:1;color:var(--me-accent);border-color:var(--me-accent)}.pop{z-index:20;background:var(--me-card);width:min(300px,80vw);color:var(--me-text);border:1px solid var(--me-line);text-transform:none;letter-spacing:0;border-radius:12px;padding:12px 14px;font-size:12.5px;font-weight:400;line-height:1.5;position:absolute;top:24px;left:50%;transform:translate(-50%);box-shadow:0 12px 32px -8px #00000059}.setting{border-bottom:1px solid var(--me-line);justify-content:space-between;align-items:center;gap:12px;padding:9px 0;display:flex}.setting:last-child{border-bottom:0}.num{align-items:center;gap:6px;display:inline-flex}.num em{color:var(--me-muted);min-width:52px;font-size:12px;font-style:normal}.num input{width:96px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);text-align:right;border-radius:10px;padding:6px 10px}.num input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.switch{flex:none;width:40px;height:22px;position:relative}.switch input{opacity:0;width:0;height:0}.switch span{background:var(--me-line);cursor:pointer;border-radius:999px;transition:all .2s;position:absolute;inset:0}.switch span:before{content:\"\";background:#fff;border-radius:50%;width:16px;height:16px;transition:all .2s;position:absolute;top:3px;left:3px;box-shadow:0 1px 3px #0000004d}.switch input:checked+span{background:var(--me-accent)}.switch input:checked+span:before{transform:translate(18px)}.flow-card{padding:8px}.flow{width:100%;height:auto;display:block}.flow-line{fill:none;stroke:var(--me-muted);stroke-width:3px;stroke-linecap:round}.house-shape{fill:color-mix(in srgb, var(--me-accent) 5%, transparent);stroke:var(--me-line);stroke-width:2px;stroke-linejoin:round}.node-bg{fill:var(--me-card);stroke-width:2px;stroke-opacity:.35}.node-val{text-anchor:middle;fill:var(--me-text);font-size:15px;font-weight:600}.node-sub{text-anchor:middle;fill:var(--me-muted);font-size:10.5px}.node-label{text-anchor:middle;fill:var(--me-muted);font-size:12.5px;font-weight:500}.recharts-cartesian-axis-tick-value{fill:var(--me-muted)}.recharts-legend-item-text{color:var(--me-muted)!important}.settings-grid .seg{border-radius:14px;flex-wrap:wrap}.range{width:100%;accent-color:var(--me-accent);margin:10px 0 14px}.be{grid-template-columns:1fr 1fr;gap:16px;display:grid}.phases{gap:10px;display:grid}.phases .row-between{margin:0 0 4px}.stack{border-top:1px solid var(--me-line);gap:6px;margin-top:14px;padding-top:12px;display:grid}.row{align-items:center;gap:8px;display:flex}.btn{border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;cursor:pointer;border-radius:10px;padding:6px 12px}.btn.primary{background:var(--me-accent);color:var(--text-primary-color,#fff);border-color:#0000}.btn:disabled{opacity:.45;cursor:default}.btn.ghost{color:var(--me-muted);background:0 0;border:0}table.edit input{width:100%;min-width:80px;font:inherit;color:inherit;background:var(--me-bg);border:1px solid var(--me-line);border-radius:8px;padding:6px 8px}table.edit input:focus{outline:2px solid var(--me-accent);outline-offset:-1px}.tabs,.seg{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.seg::-webkit-scrollbar{display:none}.narrow .node-val{font-size:22px}.narrow .node-sub{font-size:15px}.narrow .node-label{font-size:17px}.narrow .flow-card{padding:4px}.narrow .kpis{gap:10px}.narrow .value{font-size:22px}.narrow header{margin-bottom:12px}.narrow .tabs{width:100%}.chips{flex-wrap:wrap;gap:8px;display:flex}.chip{border:1px solid var(--me-line);color:var(--me-muted);border-radius:999px;padding:4px 10px;font-size:12px}.chip.ok{color:var(--me-pos);border-color:color-mix(in srgb, var(--me-pos) 40%, transparent)}.kpi{background:var(--me-card);border:1px solid var(--me-line);border-radius:var(--me-radius);padding:14px 16px}.table-wrap{overflow-x:auto}td.r,th.r{text-align:right}.dot.production{background:#f5b301}.dot.consumption{background:#3daee9}.badge.ok{background:color-mix(in srgb, var(--me-pos) 15%, transparent);color:var(--me-pos);padding:3px 8px}.badge.warn{color:#e5a50a;background:#e5a50a2e;padding:3px 8px}h2{margin-bottom:12px}td,th{white-space:nowrap}.page{container-type:inline-size}@container (width<=760px){.wide{display:none}}.pager{color:var(--me-muted);flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:13px;display:flex}.pager label{align-items:center;gap:8px;display:inline-flex}.pager select{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:8px;padding:4px 8px}.pages{align-items:center;gap:10px;display:inline-flex}.brand{flex-wrap:wrap;align-items:center;gap:14px;display:flex}.toolbar{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;display:flex}.range-label{text-align:center;text-transform:capitalize;min-width:150px}.seg.wrap{border-radius:14px;flex-wrap:wrap}.foot{margin-top:8px}.contracts{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;display:grid}.contract{border:1px solid var(--me-line);background:var(--me-bg);border-radius:14px;gap:4px;padding:14px;display:grid}.contract.old{opacity:.6}.c-name{font-size:16px;font-weight:600}.sel{background:var(--me-bg);color:var(--me-text);border:1px solid var(--me-line);font:inherit;border-radius:10px;padding:6px 10px}.toast{background:var(--me-accent);color:#fff;z-index:50;border-radius:999px;padding:10px 18px;font-weight:500;position:fixed;bottom:24px;left:50%;transform:translate(-50%);box-shadow:0 8px 24px -8px #0006}.recharts-brush-texts text{fill:var(--me-muted);font-size:10px}tr.clickable{cursor:pointer}tr.clickable:hover td{background:color-mix(in srgb, var(--me-accent) 5%, transparent)}.chev{width:14px;color:var(--me-muted);transition:transform .15s;display:inline-block}.chev.open{transform:rotate(90deg)}.lines-row td{background:var(--me-bg);padding:10px 16px}.lines{gap:6px;max-width:520px;display:grid}.line{grid-template-columns:1fr auto 110px;align-items:center;gap:12px;font-size:13px;display:grid}.line b{text-align:right;font-variant-numeric:tabular-nums}.langs{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;display:grid}.lang{cursor:pointer;text-align:left;border:1px solid var(--me-line);background:var(--me-bg);color:var(--me-text);font:inherit;border-radius:12px;align-items:center;gap:10px;padding:10px 12px;transition:border-color .15s,background .15s;display:flex}.lang:hover{border-color:color-mix(in srgb, var(--me-accent) 50%, transparent)}.lang.on{border-color:var(--me-accent);background:color-mix(in srgb, var(--me-accent) 14%, transparent)}.lang.auto{grid-column:1/-1}.lang .flag{font-size:20px;line-height:1}.lang .lname{flex-direction:column;flex:1;display:flex}.lang .lname small{color:var(--me-muted);font-size:12px}.lang .check{color:var(--me-accent);font-weight:700}.hint{margin-top:6px;font-size:12px}table.sum tfoot th{border-top:2px solid var(--me-line)}table.sum td,table.sum th{white-space:nowrap}a.btn{text-decoration:none;display:inline-block}.modal{z-index:10;background:#0000008c;place-items:center;padding:16px;display:grid;position:fixed;inset:0}.modal-box{background:#0f1724;border-radius:18px;width:min(420px,100%);height:min(640px,92vh);position:relative;overflow:hidden;box-shadow:0 20px 60px #0006}.modal-box iframe{border:0;width:100%;height:100%}.modal-x{z-index:1;color:#e8eef6;position:absolute;top:8px;right:8px}", pz = class extends HTMLElement {
 	root;
 	_hass;
 	_narrow = !1;
@@ -28996,7 +29001,7 @@ var dz = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--
 		let e = this.shadowRoot ?? this.attachShadow({ mode: "open" });
 		e.replaceChildren();
 		let t = document.createElement("style");
-		t.textContent = dz;
+		t.textContent = fz;
 		let n = document.createElement("div");
 		e.append(t, n), this.root = (0, RR.createRoot)(n), this.render();
 	}
@@ -29010,5 +29015,5 @@ var dz = ":host{--me-bg:var(--primary-background-color,#f4f6f9);--me-card:var(--
 		}));
 	}
 };
-customElements.get("malarenergi-panel") || customElements.define("malarenergi-panel", fz);
+customElements.get("malarenergi-panel") || customElements.define("malarenergi-panel", pz);
 //#endregion
