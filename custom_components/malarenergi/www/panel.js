@@ -28397,14 +28397,18 @@ function oz({ hass: e, t, locale: n, invoices: r, perPage0: i }) {
 		month: "short"
 	}) : "–", g = r.slice(s * a, a ? (s + 1) * a : void 0).map((e) => e.invoice_id).filter(Boolean);
 	(0, S.useEffect)(() => {
-		let t = () => Promise.all(g.map((t) => e.connection.sendMessagePromise({
+		let t = !0, n = () => Promise.all(g.map((t) => e.connection.sendMessagePromise({
 			type: "auth/sign_path",
 			path: `/api/malarenergi/invoice/${t}`,
 			expires: 3600
-		}).then((e) => [t, e.path]))).then((e) => f(Object.fromEntries(e))).catch(() => void 0);
-		t();
-		let n = setInterval(t, 18e5);
-		return () => clearInterval(n);
+		}).then((e) => [t, e.path]))).then((e) => {
+			t && f(Object.fromEntries(e));
+		}).catch(() => void 0);
+		n();
+		let r = setInterval(n, 18e5);
+		return () => {
+			t = !1, clearInterval(r);
+		};
 	}, [g.join(",")]);
 	let _ = (/* @__PURE__ */ new Date()).getFullYear(), v = (e) => e.startsWith("production_"), y = (e) => r.filter((e) => e.period_start.startsWith(String(_))).reduce((t, n) => n.lines?.length ? t + n.lines.filter((t) => v(t.category) === (e === "production")).reduce((e, t) => e + t.amount, 0) : t + (n.kind === e ? n.amount ?? 0 : 0), 0);
 	return /* @__PURE__ */ (0, $.jsxs)($.Fragment, { children: [/* @__PURE__ */ (0, $.jsxs)("div", {

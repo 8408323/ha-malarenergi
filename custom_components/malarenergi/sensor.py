@@ -50,8 +50,21 @@ def _latest_invoice(data: dict) -> dict | None:
     return inv[0] if inv else None
 
 
-def _latest_of(data: dict, kind: str) -> dict | None:
-    return next((i for i in data.get("invoices") or [] if i.get("kind") == kind), None)
+def _part(data: dict, production: bool) -> tuple[dict | None, float | None]:
+    """Newest invoice with a consumption (or production) part and that part's amount.
+
+    Itemised invoices count their matching lines; an invoice without usable lines falls back to its
+    whole invoicedAmount when its kind matches (the payout comes back positive, money paid to you).
+    """
+    for i in data.get("invoices") or []:
+        lines = i.get("lines") or []
+        if lines:
+            part = [line["amount"] for line in lines if (line["category"] in PRODUCTION) == production]
+            if part:
+                return i, round(-sum(part) if production else sum(part), 2) + 0.0
+        elif i.get("kind") == ("production" if production else "consumption") and i.get("amount") is not None:
+            return i, round(-i["amount"] if production else i["amount"], 2) + 0.0
+    return None, None
 
 
 def _latest_with(data: dict, cats: tuple[str, ...]) -> dict | None:
@@ -83,26 +96,12 @@ def _line_rate(data: dict, cat: str) -> float | None:
     return round(sum(line["amount"] for line in lines) / kwh, 4) if kwh else None
 
 
-def _latest_consumption(data: dict) -> dict | None:
-    return next(
-        (
-            i
-            for i in data.get("invoices") or []
-            if any(line["category"] not in PRODUCTION for line in i.get("lines") or [])
-        ),
-        None,
-    )
-
-
 def _consumption_total(data: dict) -> float | None:
-    inv = _latest_consumption(data)
-    if not inv:
-        return None
-    return round(sum(line["amount"] for line in inv["lines"] if line["category"] not in PRODUCTION), 2)
+    return _part(data, production=False)[1]
 
 
 def _consumption_attrs(data: dict) -> dict:
-    inv = _latest_consumption(data) or {}
+    inv = _part(data, production=False)[0] or {}
     attrs = {k: inv.get(k) for k in ("period_start", "period_end", "due_date", "status")}
     attrs["lines"] = [line for line in inv.get("lines") or [] if line["category"] not in PRODUCTION]
     return attrs
@@ -110,7 +109,7 @@ def _consumption_attrs(data: dict) -> dict:
 
 def _production_attrs(data: dict) -> dict:
     """Period, kWh and lines of the production part only (a mixed invoice also carries consumption)."""
-    inv = _latest_with(data, PRODUCTION) or {}
+    inv = _part(data, production=True)[0] or {}
     lines = [line for line in inv.get("lines") or [] if line["category"] in PRODUCTION]
     by_name: dict[str, float] = {}
     for line in lines:
@@ -199,7 +198,7 @@ SENSORS: tuple[MeSensor, ...] = (
         key="invoice_production_total",
         **SEK,
         # from production lines, so a payout netted into a consumption invoice still counts
-        value=lambda d: None if (v := _line_sum(d, PRODUCTION)) is None else -v + 0.0,  # 0 kr stays 0, not unknown
+        value=lambda d: _part(d, production=True)[1],  # lines, else the whole payout invoice; 0 kr stays 0
         attrs=lambda d: _production_attrs(d),
     ),
     *(

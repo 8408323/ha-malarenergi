@@ -303,12 +303,13 @@ function Invoices({ hass, t, locale, invoices, perPage0 }: Ctx & { invoices: Inv
   // plain link: phones and the HA app block window.open() after an await
   const visible = invoices.slice(page * perPage, perPage ? (page + 1) * perPage : undefined).map((i) => i.invoice_id).filter(Boolean);
   useEffect(() => {
+    let live = true;  // a slower response for the previous page must not overwrite this page's links
     const sign = () => Promise.all(visible.map((id) => hass.connection.sendMessagePromise({
       type: "auth/sign_path", path: `/api/malarenergi/invoice/${id}`, expires: 3600 }).then((r: any) => [id, r.path] as const)))
-      .then((pairs) => setSigned(Object.fromEntries(pairs))).catch(() => undefined);
+      .then((pairs) => { if (live) setSigned(Object.fromEntries(pairs)); }).catch(() => undefined);
     sign();
     const t = setInterval(sign, 30 * 60 * 1000);
-    return () => clearInterval(t);
+    return () => { live = false; clearInterval(t); };
   }, [visible.join(",")]);
   const year = new Date().getFullYear();
   // from the categorised lines, so a mixed invoice counts its consumption and production parts separately

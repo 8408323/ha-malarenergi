@@ -92,3 +92,14 @@ def test_zero_payout_stays_available():
     }
     desc = next(x for x in sensor.SENSORS if x.key == "invoice_production_total")
     assert desc.value(d) == 0.0
+
+
+def test_totals_fall_back_to_invoice_amount_without_lines():
+    d = {
+        "invoices": [
+            {"kind": "consumption", "period_start": "2026-09-01", "amount": 480.0, "lines": []},
+            {"kind": "production", "period_start": "2026-09-01", "amount": -900.0, "lines": []},
+        ]
+    }
+    assert sensor._consumption_total(d) == 480.0
+    assert sensor._part(d, production=True)[1] == 900.0
