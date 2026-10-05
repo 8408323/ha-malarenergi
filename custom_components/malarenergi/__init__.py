@@ -30,6 +30,8 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[str] = ["sensor", "switch"]
 EVENT_NEW_INVOICE = f"{DOMAIN}_new_invoice"
 LANGS = ("auto", "en", "sv", "nb", "da", "fi", "is")
+# notify services that aren't a device to send to (send_message needs an entity_id)
+NOT_TARGETS = ("notify", "persistent_notification", "send_message")
 DEFAULT_OPTIONS = {
     "language": "auto",
     "notify_targets": [],  # notify.<service> names, e.g. ["mobile_app_phone"]
@@ -145,10 +147,21 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         opts = self.options
         if not opts.get(kind):
             return
-        targets = [t for t in opts.get("notify_targets") or [] if self.hass.services.has_service("notify", t)]
-        for target in targets:
-            await self.hass.services.async_call("notify", target, {"title": title, "message": message})
-        if not targets:  # enabled but nowhere to send: show it in HA's notification panel instead of dropping it
+        targets = [
+            t
+            for t in opts.get("notify_targets") or []
+            if t not in NOT_TARGETS and self.hass.services.has_service("notify", t)
+        ]
+        sent = 0
+        for target in targets:  # one failing target must not stop the rest (or the caller's bookkeeping)
+            try:
+                await self.hass.services.async_call(
+                    "notify", target, {"title": title, "message": message}, blocking=True
+                )
+                sent += 1
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("notify.%s failed: %s", target, err)
+        if not sent:  # enabled but nowhere to send: show it in HA's notification panel instead of dropping it
             nid = f"{DOMAIN}_{self.config_entry.entry_id}_{kind}" + (f"_{key}" if key else "")
             persistent_notification.async_create(self.hass, message, title, nid)
 
@@ -375,7 +388,7 @@ def ws_settings_get(hass, connection, msg):
         msg["id"],
         {
             "options": coord.options if coord else DEFAULT_OPTIONS,
-            "notify_services": [s for s in services if s not in ("notify", "persistent_notification")],
+            "notify_services": [s for s in services if s not in NOT_TARGETS],
             "languages": list(LANGS),
         },
     )
