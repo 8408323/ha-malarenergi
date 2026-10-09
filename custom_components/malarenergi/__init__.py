@@ -260,6 +260,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+def _reauth_entry(hass: HomeAssistant) -> ConfigEntry:
+    """The account whose login expired (it has the repair), else the first one."""
+    entries = hass.config_entries.async_entries(DOMAIN)
+    issues = ir.async_get(hass)
+    return next((e for e in entries if issues.async_get_issue(DOMAIN, auth_issue_id(e.entry_id))), entries[0])
+
+
 def auth_issue_id(entry_id: str) -> str:
     return f"bankid_expired_{entry_id}"
 
@@ -498,7 +505,7 @@ async def ws_reauth(hass, connection, msg):
     from homeassistant.config_entries import SOURCE_REAUTH
 
     # by config entry, not coordinator: when the login expired at startup, setup failed and there's none
-    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    entry = _reauth_entry(hass)
     res = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}, data=dict(entry.data)
     )

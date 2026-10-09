@@ -127,3 +127,14 @@ def test_panel_commands_answer_cleanly_when_setup_failed():
     conn = MagicMock()
     mod.ws_settings_set(hass, conn, {"id": 2, "options": {}})
     assert conn.send_error.call_args.args[1] == "not_loaded"
+
+
+def test_reauth_targets_the_account_with_the_expired_login():
+    mod = _load()
+    mod.ir = MagicMock()
+    a, b = types.SimpleNamespace(entry_id="a"), types.SimpleNamespace(entry_id="b")
+    hass = types.SimpleNamespace(config_entries=types.SimpleNamespace(async_entries=lambda d: [a, b]))
+    mod.ir.async_get.return_value.async_get_issue.side_effect = lambda d, i: i == "bankid_expired_b"
+    assert mod._reauth_entry(hass) is b
+    mod.ir.async_get.return_value.async_get_issue.side_effect = lambda d, i: False
+    assert mod._reauth_entry(hass) is a
