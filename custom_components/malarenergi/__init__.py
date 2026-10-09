@@ -234,10 +234,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     client = MalarenergiClient(
         async_get_clientsession(hass), Tokens(t["access_token"], t["refresh_token"], t["expires_at"]), _save
     )
-    coord = MalarenergiCoordinator(hass, entry, client)
-    await coord.async_config_entry_first_refresh()
-    entry.runtime_data = coord
-    _register_services(hass)
+    # Before the first refresh: if the login already expired at startup that refresh raises, and the
+    # repair's Learn more link and the panel's re-login must still work.
     if not hass.data.get(f"{DOMAIN}_ws"):
         for cmd in (
             ws_data,
@@ -254,6 +252,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .panel import async_register_panel
 
     await async_register_panel(hass)
+    coord = MalarenergiCoordinator(hass, entry, client)
+    await coord.async_config_entry_first_refresh()
+    entry.runtime_data = coord
+    _register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -269,10 +271,11 @@ def async_create_auth_issue(hass: HomeAssistant, entry: ConfigEntry) -> None:
         DOMAIN,
         auth_issue_id(entry.entry_id),
         is_fixable=False,
-        severity=ir.IssueSeverity.WARNING,
+        severity=ir.IssueSeverity.ERROR,  # nothing updates until the login is renewed
         translation_key="bankid_expired",
         translation_placeholders={"title": entry.title},
-        learn_more_url="/malarenergi",
+        # homeassistant:// is the only non-http form the Repairs dialog accepts; it opens the panel in place
+        learn_more_url="homeassistant://malarenergi",
     )
 
 
@@ -388,6 +391,9 @@ def _coord(hass):
 @websocket_api.async_response
 async def ws_series(hass, connection, msg):
     coord = _coord(hass)
+    if coord is None:  # setup failed (e.g. the login expired at startup): only re-login works then
+        connection.send_error(msg["id"], "not_loaded", "Mälarenergi is not loaded; log in again with BankID")
+        return
     start = dt_util.as_local(dt_util.parse_datetime(msg["start"]))
     end = dt_util.as_local(dt_util.parse_datetime(msg["end"]))
     try:
@@ -399,8 +405,11 @@ async def ws_series(hass, connection, msg):
 @websocket_api.websocket_command({vol.Required("type"): "malarenergi/contracts"})
 @websocket_api.async_response
 async def ws_contracts(hass, connection, msg):
+    if (coord := _coord(hass)) is None:
+        connection.send_error(msg["id"], "not_loaded", "Mälarenergi is not loaded; log in again with BankID")
+        return
     try:
-        connection.send_result(msg["id"], await _coord(hass).contracts())
+        connection.send_result(msg["id"], await coord.contracts())
     except MalarenergiError as err:
         connection.send_error(msg["id"], "api_error", str(err))
 
@@ -439,6 +448,9 @@ async def ws_settings_get(hass, connection, msg):
 @callback
 def ws_settings_set(hass, connection, msg):
     coord = _coord(hass)
+    if coord is None:  # setup failed (e.g. the login expired at startup): only re-login works then
+        connection.send_error(msg["id"], "not_loaded", "Mälarenergi is not loaded; log in again with BankID")
+        return
     clean = {k: v for k, v in msg["options"].items() if k in DEFAULT_OPTIONS}
     if "language" in clean and clean["language"] not in LANGS:
         clean.pop("language")
@@ -485,7 +497,8 @@ async def ws_reauth(hass, connection, msg):
     show it in place (no detour via Settings → Devices & services)."""
     from homeassistant.config_entries import SOURCE_REAUTH
 
-    entry = _coord(hass).config_entry
+    # by config entry, not coordinator: when the login expired at startup, setup failed and there's none
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
     res = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}, data=dict(entry.data)
     )

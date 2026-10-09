@@ -103,8 +103,27 @@ def test_auth_issue_links_to_the_panel_and_is_removed_with_the_entry():
     mod.async_create_auth_issue("hass", entry)
     args, kwargs = mod.ir.async_create_issue.call_args
     assert args[1:] == ("malarenergi", "bankid_expired_e1")
-    assert kwargs["learn_more_url"] == "/malarenergi"
+    assert kwargs["learn_more_url"] == "homeassistant://malarenergi"
+    assert kwargs["severity"] == mod.ir.IssueSeverity.ERROR
     assert kwargs["translation_key"] == "bankid_expired"
 
     asyncio.run(mod.async_remove_entry("hass", entry))
     mod.ir.async_delete_issue.assert_called_once_with("hass", "malarenergi", "bankid_expired_e1")
+
+
+def test_panel_commands_answer_cleanly_when_setup_failed():
+    # the login expired at startup: no coordinator, but the panel is registered and must not crash
+    comps = sys.modules.setdefault("homeassistant.components", MagicMock())
+    ws = comps.websocket_api
+    ws.websocket_command = lambda schema: lambda f: f  # real handlers instead of mocks
+    ws.async_response = ws.require_admin = lambda f: f
+    sys.modules.setdefault("homeassistant.core", MagicMock()).callback = lambda f: f
+    mod = _load()
+    hass = types.SimpleNamespace(config_entries=types.SimpleNamespace(async_entries=lambda d: []))
+    for handler in (mod.ws_contracts, mod.ws_series):
+        conn = MagicMock()
+        asyncio.run(handler(hass, conn, {"id": 1}))
+        assert conn.send_error.call_args.args[1] == "not_loaded"
+    conn = MagicMock()
+    mod.ws_settings_set(hass, conn, {"id": 2, "options": {}})
+    assert conn.send_error.call_args.args[1] == "not_loaded"
