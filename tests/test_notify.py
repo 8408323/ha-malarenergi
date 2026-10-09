@@ -170,6 +170,7 @@ def test_panel_reauth_replaces_the_open_flow_and_judges_success_by_new_tokens():
     conn = MagicMock()
     asyncio.run(mod.ws_reauth(hass, conn, {"id": 1}))
     flow.async_abort.assert_called_once_with("old")  # HA's own flow is replaced, not duplicated
+    mod.ir.async_delete_issue.assert_called_once_with(hass, "homeassistant", "config_entry_reauth_malarenergi_e1")
     assert conn.send_result.call_args.args[1]["flow_id"] == "new"
 
     flow.async_get.side_effect = UnknownFlow  # the flow finished and the entry is reloading

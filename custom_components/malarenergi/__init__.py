@@ -518,6 +518,10 @@ async def ws_reauth(hass, connection, msg):
     )
     for flow in flows:
         hass.config_entries.flow.async_abort(flow["flow_id"])
+    if flows:
+        # HA 2025.x keeps its "reauthentication required" repair after an abort (2026 removes it itself);
+        # drop it so it doesn't point at a flow that's gone. Our own repair stays until the login works.
+        ir.async_delete_issue(hass, "homeassistant", f"config_entry_reauth_{DOMAIN}_{entry.entry_id}")
     res = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}, data=dict(entry.data)
     )
