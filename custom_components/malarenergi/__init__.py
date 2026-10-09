@@ -16,6 +16,7 @@ from homeassistant.components.http import KEY_HASS, HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
@@ -117,6 +118,7 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             out["unread"] = parse.unread_inbox(await self._get("/api/v3/customers/{cid}/inbox"))
             out["overdue"] = parse.overdue_invoices(await self._get("/api/v3/dashboard/{cid}/headsup"))
         except AuthError as err:
+            async_create_auth_issue(self.hass, self.config_entry)
             await self.notify(
                 "notify_auth", "Mälarenergi", "Inloggningen har gått ut. Logga in med BankID igen i Home Assistant."
             )
@@ -135,8 +137,9 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if prev.get("han") and out.get("han") != prev.get("han"):
                 st = ", ".join(v.lower() for v in out["han"].values())
                 await self.notify("notify_han_change", "Mälarenergi HAN-port", f"HAN-porten är nu: {st}.")
-        # logged in and fetching again: a fallback "login expired" alert is stale now
+        # logged in and fetching again: a fallback "login expired" alert and the repair are stale now
         persistent_notification.async_dismiss(self.hass, f"{DOMAIN}_{self.config_entry.entry_id}_notify_auth")
+        ir.async_delete_issue(self.hass, DOMAIN, auth_issue_id(self.config_entry.entry_id))
         return out
 
     @property
@@ -231,10 +234,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     client = MalarenergiClient(
         async_get_clientsession(hass), Tokens(t["access_token"], t["refresh_token"], t["expires_at"]), _save
     )
-    coord = MalarenergiCoordinator(hass, entry, client)
-    await coord.async_config_entry_first_refresh()
-    entry.runtime_data = coord
-    _register_services(hass)
+    # Before the first refresh: if the login already expired at startup that refresh raises, and the
+    # repair's Learn more link and the panel's re-login must still work.
     if not hass.data.get(f"{DOMAIN}_ws"):
         for cmd in (
             ws_data,
@@ -251,8 +252,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .panel import async_register_panel
 
     await async_register_panel(hass)
+    coord = MalarenergiCoordinator(hass, entry, client)
+    await coord.async_config_entry_first_refresh()
+    entry.runtime_data = coord
+    _register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+REAUTH_KEY = f"{DOMAIN}_panel_reauth"  # flow_id -> (entry_id, tokens before the login)
+
+
+def _reauth_entry(hass: HomeAssistant) -> ConfigEntry:
+    """The account whose login expired (it has the repair), else the first one."""
+    entries = hass.config_entries.async_entries(DOMAIN)
+    issues = ir.async_get(hass)
+    return next((e for e in entries if issues.async_get_issue(DOMAIN, auth_issue_id(e.entry_id))), entries[0])
+
+
+def auth_issue_id(entry_id: str) -> str:
+    return f"bankid_expired_{entry_id}"
+
+
+def async_create_auth_issue(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Settings -> Repairs entry for an expired BankID login; Learn more opens the panel, where it's fixed."""
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        auth_issue_id(entry.entry_id),
+        is_fixable=False,
+        severity=ir.IssueSeverity.ERROR,  # nothing updates until the login is renewed
+        translation_key="bankid_expired",
+        translation_placeholders={"title": entry.title},
+        # homeassistant:// is the only non-http form the Repairs dialog accepts; it opens the panel in place
+        learn_more_url="homeassistant://malarenergi",
+    )
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    ir.async_delete_issue(hass, DOMAIN, auth_issue_id(entry.entry_id))
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -363,6 +401,9 @@ def _coord(hass):
 @websocket_api.async_response
 async def ws_series(hass, connection, msg):
     coord = _coord(hass)
+    if coord is None:  # setup failed (e.g. the login expired at startup): only re-login works then
+        connection.send_error(msg["id"], "not_loaded", "Mälarenergi is not loaded; log in again with BankID")
+        return
     start = dt_util.as_local(dt_util.parse_datetime(msg["start"]))
     end = dt_util.as_local(dt_util.parse_datetime(msg["end"]))
     try:
@@ -374,8 +415,11 @@ async def ws_series(hass, connection, msg):
 @websocket_api.websocket_command({vol.Required("type"): "malarenergi/contracts"})
 @websocket_api.async_response
 async def ws_contracts(hass, connection, msg):
+    if (coord := _coord(hass)) is None:
+        connection.send_error(msg["id"], "not_loaded", "Mälarenergi is not loaded; log in again with BankID")
+        return
     try:
-        connection.send_result(msg["id"], await _coord(hass).contracts())
+        connection.send_result(msg["id"], await coord.contracts())
     except MalarenergiError as err:
         connection.send_error(msg["id"], "api_error", str(err))
 
@@ -414,6 +458,9 @@ async def ws_settings_get(hass, connection, msg):
 @callback
 def ws_settings_set(hass, connection, msg):
     coord = _coord(hass)
+    if coord is None:  # setup failed (e.g. the login expired at startup): only re-login works then
+        connection.send_error(msg["id"], "not_loaded", "Mälarenergi is not loaded; log in again with BankID")
+        return
     clean = {k: v for k, v in msg["options"].items() if k in DEFAULT_OPTIONS}
     if "language" in clean and clean["language"] not in LANGS:
         clean.pop("language")
@@ -434,8 +481,11 @@ def ws_reauth_status(hass, connection, msg):
         return
     except UnknownFlow:
         pass
-    coord = _coord(hass)
-    connection.send_result(msg["id"], {"done": True, "ok": bool(coord and coord.last_update_success)})
+    # The flow is gone. It succeeded if it saved new tokens; judged from the entry, not the coordinator,
+    # which doesn't exist yet while the reload it triggered is still running.
+    started = hass.data.get(REAUTH_KEY, {}).pop(msg["flow_id"], None)
+    entry = hass.config_entries.async_get_entry(started[0]) if started else None
+    connection.send_result(msg["id"], {"done": True, "ok": bool(entry and entry.data.get(CONF_TOKENS) != started[1])})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth_cancel", vol.Required("flow_id"): str})
@@ -460,10 +510,23 @@ async def ws_reauth(hass, connection, msg):
     show it in place (no detour via Settings → Devices & services)."""
     from homeassistant.config_entries import SOURCE_REAUTH
 
-    entry = _coord(hass).config_entry
+    # by config entry, not coordinator: when the login expired at startup, setup failed and there's none
+    entry = _reauth_entry(hass)
+    # HA already opened a reauth flow when the login failed; replace it rather than leave a second one
+    flows = hass.config_entries.flow.async_progress_by_handler(
+        DOMAIN, match_context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}
+    )
+    for flow in flows:
+        hass.config_entries.flow.async_abort(flow["flow_id"])
+    if flows:
+        # HA 2025.x keeps its "reauthentication required" repair after an abort (2026 removes it itself);
+        # drop it so it doesn't point at a flow that's gone. Our own repair stays until the login works.
+        ir.async_delete_issue(hass, "homeassistant", f"config_entry_reauth_{DOMAIN}_{entry.entry_id}")
     res = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}, data=dict(entry.data)
     )
     if res.get("step_id") == "reauth_confirm":
         res = await hass.config_entries.flow.async_configure(res["flow_id"], {})
+    if res.get("flow_id"):
+        hass.data.setdefault(REAUTH_KEY, {})[res["flow_id"]] = (entry.entry_id, entry.data.get(CONF_TOKENS))
     connection.send_result(msg["id"], {"started": True, "flow_id": res.get("flow_id"), "url": res.get("url")})

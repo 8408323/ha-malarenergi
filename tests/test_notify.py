@@ -94,3 +94,88 @@ def test_powerhub_state():
     assert asyncio.run(mod._powerhub_state(hass(["entry"]))) == "configured"
     mod.async_get_integration = gone
     assert asyncio.run(mod._powerhub_state(hass(["entry"]))) == "missing"  # stale entry after uninstall
+
+
+def test_auth_issue_links_to_the_panel_and_is_removed_with_the_entry():
+    mod = _load()
+    mod.ir = MagicMock()
+    entry = types.SimpleNamespace(entry_id="e1", title="Mälarenergi")
+    mod.async_create_auth_issue("hass", entry)
+    args, kwargs = mod.ir.async_create_issue.call_args
+    assert args[1:] == ("malarenergi", "bankid_expired_e1")
+    assert kwargs["learn_more_url"] == "homeassistant://malarenergi"
+    assert kwargs["severity"] == mod.ir.IssueSeverity.ERROR
+    assert kwargs["translation_key"] == "bankid_expired"
+
+    asyncio.run(mod.async_remove_entry("hass", entry))
+    mod.ir.async_delete_issue.assert_called_once_with("hass", "malarenergi", "bankid_expired_e1")
+
+
+def test_panel_commands_answer_cleanly_when_setup_failed():
+    # the login expired at startup: no coordinator, but the panel is registered and must not crash
+    comps = sys.modules.setdefault("homeassistant.components", MagicMock())
+    ws = comps.websocket_api
+    ws.websocket_command = lambda schema: lambda f: f  # real handlers instead of mocks
+    ws.async_response = ws.require_admin = lambda f: f
+    sys.modules.setdefault("homeassistant.core", MagicMock()).callback = lambda f: f
+    mod = _load()
+    hass = types.SimpleNamespace(config_entries=types.SimpleNamespace(async_entries=lambda d: []))
+    for handler in (mod.ws_contracts, mod.ws_series):
+        conn = MagicMock()
+        asyncio.run(handler(hass, conn, {"id": 1}))
+        assert conn.send_error.call_args.args[1] == "not_loaded"
+    conn = MagicMock()
+    mod.ws_settings_set(hass, conn, {"id": 2, "options": {}})
+    assert conn.send_error.call_args.args[1] == "not_loaded"
+
+
+def test_reauth_targets_the_account_with_the_expired_login():
+    mod = _load()
+    mod.ir = MagicMock()
+    a, b = types.SimpleNamespace(entry_id="a"), types.SimpleNamespace(entry_id="b")
+    hass = types.SimpleNamespace(config_entries=types.SimpleNamespace(async_entries=lambda d: [a, b]))
+    mod.ir.async_get.return_value.async_get_issue.side_effect = lambda d, i: i == "bankid_expired_b"
+    assert mod._reauth_entry(hass) is b
+    mod.ir.async_get.return_value.async_get_issue.side_effect = lambda d, i: False
+    assert mod._reauth_entry(hass) is a
+
+
+def test_panel_reauth_replaces_the_open_flow_and_judges_success_by_new_tokens():
+    comps = sys.modules.setdefault("homeassistant.components", MagicMock())
+    comps.websocket_api.websocket_command = lambda schema: lambda f: f
+    comps.websocket_api.async_response = comps.websocket_api.require_admin = lambda f: f
+    sys.modules.setdefault("homeassistant.core", MagicMock()).callback = lambda f: f
+    mod = _load()
+    mod.ir = MagicMock()
+    mod.ir.async_get.return_value.async_get_issue.return_value = True
+    entry = types.SimpleNamespace(entry_id="e1", data={"tokens": {"a": 1}})
+    flow = MagicMock()
+    flow.async_progress_by_handler.return_value = [{"flow_id": "old"}]
+
+    async def init(*a, **k):
+        return {"flow_id": "new", "step_id": "bankid", "url": "/x"}
+
+    flow.async_init = init
+
+    class UnknownFlow(Exception):
+        pass
+
+    sys.modules["homeassistant.data_entry_flow"] = types.SimpleNamespace(UnknownFlow=UnknownFlow)
+    hass = types.SimpleNamespace(
+        data={},
+        config_entries=types.SimpleNamespace(
+            flow=flow, async_entries=lambda d: [entry], async_get_entry=lambda eid: entry
+        ),
+    )
+    conn = MagicMock()
+    asyncio.run(mod.ws_reauth(hass, conn, {"id": 1}))
+    flow.async_abort.assert_called_once_with("old")  # HA's own flow is replaced, not duplicated
+    mod.ir.async_delete_issue.assert_called_once_with(hass, "homeassistant", "config_entry_reauth_malarenergi_e1")
+    assert conn.send_result.call_args.args[1]["flow_id"] == "new"
+
+    flow.async_get.side_effect = UnknownFlow  # the flow finished and the entry is reloading
+    entry.data = {"tokens": {"a": 2}}
+    mod.ws_reauth_status(hass, conn, {"id": 2, "flow_id": "new"})
+    assert conn.send_result.call_args.args[1] == {"done": True, "ok": True}
+    mod.ws_reauth_status(hass, conn, {"id": 3, "flow_id": "unknown"})  # aborted / not ours
+    assert conn.send_result.call_args.args[1] == {"done": True, "ok": False}

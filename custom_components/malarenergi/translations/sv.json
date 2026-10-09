@@ -128,5 +128,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "bankid_expired": {
+      "title": "Mälarenergi: logga in med BankID igen",
+      "description": "BankID-inloggningen för **{title}** har gått ut, så förbrukning, fakturor och notiser uppdateras inte längre. Öppna Mälarenergi-panelen (Läs mer), gå till **Inställningar** och klicka **Logga in igen med BankID**, eller använd återautentiseringen under Inställningar → Enheter och tjänster."
+    }
   }
 }

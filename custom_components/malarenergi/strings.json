@@ -128,5 +128,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "bankid_expired": {
+      "title": "Mälarenergi: log in with BankID again",
+      "description": "The BankID login for **{title}** has expired, so consumption, invoices and alerts are no longer updated. Open the Mälarenergi panel (Learn more), go to **Settings** and click **Log in again with BankID**, or use the reauthentication prompt under Settings → Devices & services."
+    }
   }
 }
