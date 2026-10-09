@@ -16,6 +16,7 @@ from homeassistant.components.http import KEY_HASS, HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
@@ -117,6 +118,7 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             out["unread"] = parse.unread_inbox(await self._get("/api/v3/customers/{cid}/inbox"))
             out["overdue"] = parse.overdue_invoices(await self._get("/api/v3/dashboard/{cid}/headsup"))
         except AuthError as err:
+            async_create_auth_issue(self.hass, self.config_entry)
             await self.notify(
                 "notify_auth", "Mälarenergi", "Inloggningen har gått ut. Logga in med BankID igen i Home Assistant."
             )
@@ -135,8 +137,9 @@ class MalarenergiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if prev.get("han") and out.get("han") != prev.get("han"):
                 st = ", ".join(v.lower() for v in out["han"].values())
                 await self.notify("notify_han_change", "Mälarenergi HAN-port", f"HAN-porten är nu: {st}.")
-        # logged in and fetching again: a fallback "login expired" alert is stale now
+        # logged in and fetching again: a fallback "login expired" alert and the repair are stale now
         persistent_notification.async_dismiss(self.hass, f"{DOMAIN}_{self.config_entry.entry_id}_notify_auth")
+        ir.async_delete_issue(self.hass, DOMAIN, auth_issue_id(self.config_entry.entry_id))
         return out
 
     @property
@@ -253,6 +256,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await async_register_panel(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+def auth_issue_id(entry_id: str) -> str:
+    return f"bankid_expired_{entry_id}"
+
+
+def async_create_auth_issue(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Settings -> Repairs entry for an expired BankID login; Learn more opens the panel, where it's fixed."""
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        auth_issue_id(entry.entry_id),
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="bankid_expired",
+        translation_placeholders={"title": entry.title},
+        learn_more_url="/malarenergi",
+    )
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    ir.async_delete_issue(hass, DOMAIN, auth_issue_id(entry.entry_id))
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

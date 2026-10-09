@@ -94,3 +94,17 @@ def test_powerhub_state():
     assert asyncio.run(mod._powerhub_state(hass(["entry"]))) == "configured"
     mod.async_get_integration = gone
     assert asyncio.run(mod._powerhub_state(hass(["entry"]))) == "missing"  # stale entry after uninstall
+
+
+def test_auth_issue_links_to_the_panel_and_is_removed_with_the_entry():
+    mod = _load()
+    mod.ir = MagicMock()
+    entry = types.SimpleNamespace(entry_id="e1", title="Mälarenergi")
+    mod.async_create_auth_issue("hass", entry)
+    args, kwargs = mod.ir.async_create_issue.call_args
+    assert args[1:] == ("malarenergi", "bankid_expired_e1")
+    assert kwargs["learn_more_url"] == "/malarenergi"
+    assert kwargs["translation_key"] == "bankid_expired"
+
+    asyncio.run(mod.async_remove_entry("hass", entry))
+    mod.ir.async_delete_issue.assert_called_once_with("hass", "malarenergi", "bankid_expired_e1")
