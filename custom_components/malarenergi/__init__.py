@@ -260,6 +260,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+REAUTH_KEY = f"{DOMAIN}_panel_reauth"  # flow_id -> (entry_id, tokens before the login)
+
+
 def _reauth_entry(hass: HomeAssistant) -> ConfigEntry:
     """The account whose login expired (it has the repair), else the first one."""
     entries = hass.config_entries.async_entries(DOMAIN)
@@ -478,8 +481,11 @@ def ws_reauth_status(hass, connection, msg):
         return
     except UnknownFlow:
         pass
-    coord = _coord(hass)
-    connection.send_result(msg["id"], {"done": True, "ok": bool(coord and coord.last_update_success)})
+    # The flow is gone. It succeeded if it saved new tokens; judged from the entry, not the coordinator,
+    # which doesn't exist yet while the reload it triggered is still running.
+    started = hass.data.get(REAUTH_KEY, {}).pop(msg["flow_id"], None)
+    entry = hass.config_entries.async_get_entry(started[0]) if started else None
+    connection.send_result(msg["id"], {"done": True, "ok": bool(entry and entry.data.get(CONF_TOKENS) != started[1])})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "malarenergi/reauth_cancel", vol.Required("flow_id"): str})
@@ -506,9 +512,17 @@ async def ws_reauth(hass, connection, msg):
 
     # by config entry, not coordinator: when the login expired at startup, setup failed and there's none
     entry = _reauth_entry(hass)
+    # HA already opened a reauth flow when the login failed; replace it rather than leave a second one
+    flows = hass.config_entries.flow.async_progress_by_handler(
+        DOMAIN, match_context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}
+    )
+    for flow in flows:
+        hass.config_entries.flow.async_abort(flow["flow_id"])
     res = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}, data=dict(entry.data)
     )
     if res.get("step_id") == "reauth_confirm":
         res = await hass.config_entries.flow.async_configure(res["flow_id"], {})
+    if res.get("flow_id"):
+        hass.data.setdefault(REAUTH_KEY, {})[res["flow_id"]] = (entry.entry_id, entry.data.get(CONF_TOKENS))
     connection.send_result(msg["id"], {"started": True, "flow_id": res.get("flow_id"), "url": res.get("url")})

@@ -138,3 +138,43 @@ def test_reauth_targets_the_account_with_the_expired_login():
     assert mod._reauth_entry(hass) is b
     mod.ir.async_get.return_value.async_get_issue.side_effect = lambda d, i: False
     assert mod._reauth_entry(hass) is a
+
+
+def test_panel_reauth_replaces_the_open_flow_and_judges_success_by_new_tokens():
+    comps = sys.modules.setdefault("homeassistant.components", MagicMock())
+    comps.websocket_api.websocket_command = lambda schema: lambda f: f
+    comps.websocket_api.async_response = comps.websocket_api.require_admin = lambda f: f
+    sys.modules.setdefault("homeassistant.core", MagicMock()).callback = lambda f: f
+    mod = _load()
+    mod.ir = MagicMock()
+    mod.ir.async_get.return_value.async_get_issue.return_value = True
+    entry = types.SimpleNamespace(entry_id="e1", data={"tokens": {"a": 1}})
+    flow = MagicMock()
+    flow.async_progress_by_handler.return_value = [{"flow_id": "old"}]
+
+    async def init(*a, **k):
+        return {"flow_id": "new", "step_id": "bankid", "url": "/x"}
+
+    flow.async_init = init
+
+    class UnknownFlow(Exception):
+        pass
+
+    sys.modules["homeassistant.data_entry_flow"] = types.SimpleNamespace(UnknownFlow=UnknownFlow)
+    hass = types.SimpleNamespace(
+        data={},
+        config_entries=types.SimpleNamespace(
+            flow=flow, async_entries=lambda d: [entry], async_get_entry=lambda eid: entry
+        ),
+    )
+    conn = MagicMock()
+    asyncio.run(mod.ws_reauth(hass, conn, {"id": 1}))
+    flow.async_abort.assert_called_once_with("old")  # HA's own flow is replaced, not duplicated
+    assert conn.send_result.call_args.args[1]["flow_id"] == "new"
+
+    flow.async_get.side_effect = UnknownFlow  # the flow finished and the entry is reloading
+    entry.data = {"tokens": {"a": 2}}
+    mod.ws_reauth_status(hass, conn, {"id": 2, "flow_id": "new"})
+    assert conn.send_result.call_args.args[1] == {"done": True, "ok": True}
+    mod.ws_reauth_status(hass, conn, {"id": 3, "flow_id": "unknown"})  # aborted / not ours
+    assert conn.send_result.call_args.args[1] == {"done": True, "ok": False}
