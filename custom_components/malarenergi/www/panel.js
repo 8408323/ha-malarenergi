@@ -29094,7 +29094,7 @@ function fz({ hass: e, t, locale: n, narrow: r, opts: i, setOpts: a, d: o }) {
 		]
 	});
 }
-var pz = "https://my.home-assistant.io/redirect/hacs_repository/?owner=8408323&repository=ha-malarenergi-powerhub&category=integration", mz = [
+var pz = "https://my.home-assistant.io/redirect/hacs_repository/?owner=8408323&repository=ha-powerhub-cloud&category=integration", mz = [
 	["ph_home", [
 		"facility_type",
 		"heating_type",

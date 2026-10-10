@@ -602,7 +602,7 @@ function Settings({ hass, t, locale, narrow, opts, setOpts, d }: Ctx & { opts: O
   );
 }
 
-const PH_REPO = "https://my.home-assistant.io/redirect/hacs_repository/?owner=8408323&repository=ha-malarenergi-powerhub&category=integration";
+const PH_REPO = "https://my.home-assistant.io/redirect/hacs_repository/?owner=8408323&repository=ha-powerhub-cloud&category=integration";
 // PowerHub's own settings, grouped; each is one of its entities, written through HA's services
 // PowerHub's own settings by translation key, grouped; each is one of its entities, written through HA's services
 const PH_GROUPS: [string, string[]][] = [
