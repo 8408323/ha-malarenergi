@@ -5,7 +5,7 @@ electricity grid owner and supplier for Västerås and the Mälardalen area. Log
 **Mitt Mälarenergi** with BankID and brings your account into Home Assistant.
 
 > **Status**: 0.6 — BankID login with automatic token refresh, sensors, invoices with line items and PDF download,
-> HAN port control, a sidebar dashboard and optional [PowerHub](https://github.com/8408323/ha-malarenergi-powerhub)
+> HAN port control, a sidebar dashboard and optional [PowerHub](https://github.com/8408323/ha-powerhub-cloud)
 > live data and settings. Tested against a real private customer account.
 
 Not an official API. Reverse-engineered from the public Mitt Mälarenergi web app — see
@@ -78,7 +78,7 @@ Your personal number is never entered or stored — BankID handles identificatio
   - *Contracts*: active and ended contracts (grid, supply, production, broadband) with fuse size and grid area
   - *Settings*: language (English, Svenska, Norsk, Dansk, Suomi, Íslenska — default follows Home Assistant),
     notification targets and events, BankID re-login, invoices per page, and PowerHub (below)
-- **PowerHub (optional)**: [Mälarenergi PowerHub](https://github.com/8408323/ha-malarenergi-powerhub) is a
+- **PowerHub (optional)**: [PowerHub](https://github.com/8408323/ha-powerhub-cloud) is a
   separate integration for the HAN-port reader. When it is installed and its meter belongs to this facility,
   the Overview shows live grid power and per-phase load against the main fuse, and *Settings → PowerHub*
   shows its status and edits its settings (home, fuse and alert limits, alert rules). Without it, the card
