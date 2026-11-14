@@ -1,8 +1,12 @@
-"""Live BankID QR page for the config flow's external step.
+"""BankID login page for the config flow's external step (and the panel's re-login dialog).
 
-The QR is animated (new frame every second), which a static config-flow image can't show, so the
-flow opens this page in a new window. It is unauthenticated (the popup has no HA token) and keyed
-by a random per-attempt token; it only exists while a login is pending.
+The page offers both ways to sign the same BankID order: a button that opens the BankID app on this
+device (phone, tablet or a computer with BankID installed) and the animated QR code (new frame every
+second, which a static config-flow image can't show) for signing with BankID on another device.
+
+It is unauthenticated (the popup has no HA token) and keyed by a random per-attempt token; it only
+exists while a login is pending. ``/open`` redirects to the BankID app for the current order, so the
+config-flow dialog can link to it even though the order (and its autostart token) is renewed.
 """
 
 from __future__ import annotations
@@ -17,70 +21,85 @@ from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
-from .api import UA, BankIDLogin, MalarenergiError, Tokens
+from .api import UA, BankIDLogin, MalarenergiError, Tokens, bankid_app_url
 
 _LOGGER = logging.getLogger(__name__)
 PATH = "/api/malarenergi/bankid"
 ATTEMPTS: dict[str, LoginAttempt] = {}
 MAX_SECONDS = 8 * 60
+# BankID hint codes of an order nobody acted on in time: start a new one instead of failing
+RENEW_HINTS = ("startFailed", "expiredTransaction")
 
 PAGE = """<!doctype html><html lang=sv><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
 <title>Mälarenergi – BankID</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;background:#0f1724;color:#e8eef6}
-.c{text-align:center;padding:28px;max-width:360px}img{width:260px;height:260px;background:#fff;padding:14px;border-radius:16px}
-a.b{display:inline-block;margin-top:16px;padding:12px 20px;border-radius:12px;background:#1f6feb;color:#fff;text-decoration:none;font-weight:600}
-.m{opacity:.8;font-size:14px;min-height:42px}.ok{color:#3fb950;font-size:22px}
+.c{text-align:center;padding:24px 20px;max-width:360px}h2{margin:0 0 16px}
+.w{display:flex;flex-direction:column;gap:14px}.mob #same{order:-1}
+section{background:#16202f;border-radius:16px;padding:16px}.lbl{margin:0 0 10px;font-weight:600}
+img{width:220px;height:220px;background:#fff;padding:12px;border-radius:14px}
+a.b{display:block;padding:14px 18px;border-radius:12px;background:#1f6feb;color:#fff;text-decoration:none;font-weight:600;font-size:17px}
+a.b.off{opacity:.45;pointer-events:none}a.l{color:#9fc3ff}
+.m{opacity:.8;font-size:14px;margin:8px 0 0}.ok{color:#3fb950;font-size:22px}
 .live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3fb950;margin-right:6px;animation:p 1s infinite}
-@keyframes p{50%{opacity:.2}}.dead img{opacity:.15}
-.seg{display:flex;gap:4px;padding:4px;background:#1b2636;border-radius:999px;margin:0 0 18px}.seg button{flex:1;border:0;background:none;color:#9fb0c4;padding:9px 10px;border-radius:999px;font:inherit;font-size:14px;cursor:pointer}
-.seg button.on{background:#1f6feb;color:#fff}</style>
-<div class=c><h2>Logga in med BankID</h2>
-<div class=seg id=seg><button id=b-this>BankID på den här enheten</button><button id=b-other>BankID på annan enhet</button></div>
-<div id=other><img id=q alt="BankID QR"><p class=m id=l><span class=live></span>QR-koden uppdateras varje sekund</p></div>
-<div id=this style="display:none"><a class=b id=a href="#" target=_blank rel=noopener style="display:none">Öppna BankID</a>
-<p class=m id=alt style="display:none">Öppnas inte appen? <a id=a2 href="#" style="color:#9fc3ff">Prova den här länken</a></p></div>
+@keyframes p{50%{opacity:.2}}.dead img,.dead a.b{opacity:.15;pointer-events:none}#s{min-height:42px}</style>
+<div class=c><h2 id=h></h2>
+<div class=w id=w>
+<section id=other><p class=lbl id=o-t></p><img id=q alt="BankID QR"><p class=m id=l><span class=live></span><span id=l-t></span></p></section>
+<section id=same><a class="b off" id=a href="#" target=_blank rel=noopener></a>
+<p class=m><span id=alt-t></span> <a class=l id=a2 href="#" target=_top></a></p></section>
+</div>
 <p class=m id=s></p></div>
 <script>
-const base=location.pathname, mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent), ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-let device=null;
-async function choose(d){
-  device=d;
-  document.getElementById('b-this').className=d==='this'?'on':''; document.getElementById('b-other').className=d==='other'?'on':'';
-  document.getElementById('this').style.display=d==='this'?'block':'none'; document.getElementById('other').style.display=d==='other'?'block':'none';
-  document.getElementById('a').style.display='none'; document.getElementById('alt').style.display='none';
-  try{ await fetch(base+'/device',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device:d})}); }catch(e){}
-}
-document.getElementById('b-this').onclick=()=>choose('this');
-document.getElementById('b-other').onclick=()=>choose('other');
-choose(mobile?'this':'other');
+const base=location.pathname, $=(i)=>document.getElementById(i);
+const sv=/^(sv|nb|nn|no|da)/i.test(navigator.language||'sv');
+const T=sv?{h:'Logga in med BankID',open:'Öppna BankID på den här enheten',alt:'Öppnas inte appen?',alt2:'Prova den här länken',
+  other:'BankID på en annan enhet: skanna QR-koden',live:'QR-koden uppdateras varje sekund',
+  hint:'Tryck på knappen för att öppna BankID här, eller skanna QR-koden med BankID på en annan enhet.',
+  ok:'✓ Inloggad',close:'Du kan stänga fönstret och gå tillbaka till Home Assistant.',
+  gone:'Den här inloggningen är avslutad. Stäng fönstret och starta om i Home Assistant.',fail:'Inloggningen misslyckades.'}
+ :{h:'Log in with BankID',open:'Open BankID on this device',alt:"The app doesn't open?",alt2:'Try this link',
+  other:'BankID on another device: scan the QR code',live:'The QR code updates every second',
+  hint:'Tap the button to open BankID here, or scan the QR code with BankID on another device.',
+  ok:'✓ Logged in',close:'You can close this window and go back to Home Assistant.',
+  gone:'This login has ended. Close the window and start again in Home Assistant.',fail:'The login failed.'};
+document.documentElement.lang=sv?'sv':'en';
+$('h').textContent=T.h; $('a').textContent=T.open; $('alt-t').textContent=T.alt; $('a2').textContent=T.alt2;
+$('o-t').textContent=T.other; $('l-t').textContent=T.live;
+// phones and tablets (iPadOS reports a Mac, but has touch): the BankID button first, QR below
+if(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform))) $('w').classList.add('mob');
+function end(){ document.querySelector('.c').classList.add('dead'); $('l').textContent=''; }
 async function tick(){
   let r; try{ r=await (await fetch(base+'/state',{cache:'no-store'})).json(); }catch(e){ setTimeout(tick,1500); return; }
-  if(r.qr && device==='other') document.getElementById('q').src='data:image/png;base64,'+r.qr;
-  if(device==='this' && r.device==='this' && r.autostart){
-    // BankID's universal link (https://app.bankid.com) works from frames, the HA app and mobile browsers,
-    // where a bankid:/// custom-scheme link is often silently ignored; keep bankid:/// as a fallback.
-    // iOS: return to this page after signing (Android must keep redirect=null).
-    const tok=(r.autostart.match(/autostarttoken=([^&]+)/)||[])[1]||'';
-    const red=ios?encodeURIComponent(location.href):'null';
-    const a=document.getElementById('a'), a2=document.getElementById('a2');
-    a.href='https://app.bankid.com/?autostarttoken='+tok+'&redirect='+red; a.style.display='inline-block';
-    a2.href='bankid:///?autostarttoken='+tok+'&redirect='+red; a2.target='_top';
-    document.getElementById('alt').style.display='block';
-  }
-  // Mälarenergi's hint for the previous order can still mention the QR code right after switching device
-  const hint=device==='this'?'Tryck på knappen för att öppna BankID-appen.':'Öppna BankID-appen och skanna QR-koden.';
-  document.getElementById('s').textContent=(device==='this'&&/QR/i.test(r.message||''))?hint:(r.message||hint);
-  if(r.status==='complete'){ document.querySelector('.c').innerHTML='<p class=ok>✓ Inloggad</p><p>Du kan stänga fönstret.</p>';
+  if(r.qr) $('q').src='data:image/png;base64,'+r.qr;
+  // Universal link: works from frames, the HA companion app and mobile browsers, where a bankid:/// link is
+  // often silently ignored; bankid:/// stays as the fallback. redirect=null: the user switches back themselves.
+  if(r.app_url){ $('a').href=r.app_url; $('a').classList.remove('off'); $('a2').href=r.app_url_legacy; }
+  // Mälarenergi's hints only mention the QR code; this page offers both ways
+  $('s').textContent=(!r.message||/QR/i.test(r.message))?T.hint:r.message;
+  if(r.status==='complete'){ document.querySelector('.c').innerHTML='<p class=ok></p><p></p>';
+    document.querySelector('.ok').textContent=T.ok; document.querySelector('.ok+p').textContent=T.close;
     if(parent!==window) parent.postMessage({malarenergi:'bankid-complete'}, location.origin);  // shown inside the panel
     setTimeout(()=>window.close(),1500); return; }
-  if(r.status==='gone'){ document.querySelector('.c').classList.add('dead'); document.getElementById('l').textContent='';
-    document.getElementById('s').textContent='Den här inloggningen är avslutad. Stäng fönstret och starta om i Home Assistant (Lägg till integration → Mälarenergi).'; return; }
-  if(r.status==='error'){ document.querySelector('.c').classList.add('dead'); document.getElementById('l').textContent='';
-    document.getElementById('s').textContent=r.message||'Inloggningen misslyckades.'; return; }
+  if(r.status==='gone'){ end(); $('s').textContent=T.gone; return; }
+  if(r.status==='error'){ end(); $('s').textContent=r.message||T.fail; return; }
   setTimeout(tick,700);
 }
 tick();
 </script></html>"""
+
+
+def bankid_links(attempt: LoginAttempt) -> dict[str, str]:
+    """description_placeholders of the config flow's BankID step: {open_app}text{end}, {open_page}text{end}.
+
+    Raw <a target=_blank> rather than Markdown links: the HA frontend routes a same-origin Markdown link
+    inside its own app (which has no such page), while a link with a target is left to the browser or the
+    companion app. Translations can't contain HTML or URLs, so the tags come in as placeholders.
+    """
+    return {
+        "open_app": f'<a href="{attempt.open_url}" target="_blank">',
+        "open_page": f'<a href="{attempt.url}" target="_blank">',
+        "end": "</a>",
+    }
 
 
 class LoginAttempt:
@@ -96,13 +115,25 @@ class LoginAttempt:
         self._login: BankIDLogin | None = None
         self._task: asyncio.Task | None = None
         self._qr_at = 0.0
-        self.this_device = False
-        self._cancelled = False  # chosen on the page: BankID app on this phone vs QR for another device
-        self._device_of_order = False
+        self._cancelled = False
 
     @property
     def url(self) -> str:
         return f"{PATH}/{self.key}"
+
+    @property
+    def open_url(self) -> str:
+        """Opens the BankID app on the device that follows it (redirects to the current order's link)."""
+        return f"{PATH}/{self.key}/open"
+
+    @property
+    def done(self) -> bool:
+        return self.status in ("complete", "error")
+
+    def app_url(self, *, legacy: bool = False) -> str:
+        """Link that opens the BankID app for the current order ("" until one has started)."""
+        token = self._login.autostart_token if self._login and self.status == "pending" else ""
+        return bankid_app_url(token, legacy=legacy) if token else ""
 
     def state(self) -> dict[str, Any]:
         lg = self._login
@@ -110,8 +141,8 @@ class LoginAttempt:
             "status": self.status,
             "message": self.message,
             "qr": lg.qr_png_b64 if lg else "",
-            "autostart": lg.autostart_url if lg else "",
-            "device": "this" if self.this_device else "other",
+            "app_url": self.app_url(),
+            "app_url_legacy": self.app_url(legacy=True),
         }
 
     def start(self) -> None:
@@ -122,8 +153,7 @@ class LoginAttempt:
         if self._login:
             await self._login.close()
         self._login = BankIDLogin(lambda: aiohttp.ClientSession(headers={"User-Agent": UA}))
-        self._device_of_order = self.this_device
-        await self._login.start(this_device=self.this_device)
+        await self._login.start()
 
     async def fresh_qr(self) -> None:
         """Called by the page's poll: fetch the current animated-QR frame (max ~1/s)."""
@@ -142,8 +172,6 @@ class LoginAttempt:
             await self._new_order()
             self.status = "pending"
             while loop.time() < deadline:
-                if self._device_of_order != self.this_device:  # the user switched device on the page
-                    await self._new_order()
                 url = await self._login.collect()
                 self.message = self._login.message
                 if url:
@@ -151,8 +179,8 @@ class LoginAttempt:
                     self.status = "complete"
                     break
                 if self._login.status == "failed":
-                    if "QR" in self.message or "startFailed" in self.message:
-                        await self._new_order()  # unscanned for 30 s -> fresh order + QR
+                    if self._login.hint_code in RENEW_HINTS or "QR" in self.message:
+                        await self._new_order()  # nobody scanned or opened the app in time -> fresh order
                         self.status = "pending"
                     else:
                         raise MalarenergiError(self.message or "BankID failed")
@@ -187,22 +215,18 @@ class BankIDPageView(HomeAssistantView):
         return web.Response(text=PAGE, content_type="text/html", headers={"Cache-Control": "no-store"})
 
 
-class BankIDDeviceView(HomeAssistantView):
-    """The page's device choice: {"device": "this"|"other"}. Keyed by the attempt's secret token."""
+class BankIDOpenView(HomeAssistantView):
+    """Redirect to the BankID app for the attempt's current order (its autostart token changes on renewal)."""
 
-    url = PATH + "/{key}/device"
-    name = "api:malarenergi:bankid:device"
+    url = PATH + "/{key}/open"
+    name = "api:malarenergi:bankid:open"
     requires_auth = False
 
-    async def post(self, request: web.Request, key: str) -> web.Response:
+    async def get(self, request: web.Request, key: str) -> web.Response:
         att = ATTEMPTS.get(key)
-        if att is None:
-            return web.json_response({"status": "gone"})
-        try:
-            att.this_device = (await request.json()).get("device") == "this"
-        except ValueError:
-            return web.Response(status=400)
-        return web.json_response({"ok": True})
+        target = att.app_url() if att else ""
+        # no order (yet, or any more): the login page explains the state and has the button when there is one
+        return web.Response(status=302, headers={"Location": target or f"{PATH}/{key}", "Cache-Control": "no-store"})
 
 
 class BankIDStateView(HomeAssistantView):
