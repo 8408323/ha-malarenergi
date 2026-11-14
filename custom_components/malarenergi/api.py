@@ -7,6 +7,8 @@ Login (IdentityServer at identity.malarenergi.se, public client ``mymejs``, auth
   2. POST /BankID/Login  button=loginMobileBankIDOtherDevice|ThisDevice
                                             -> page with LoginOrderRef, QrCode (PNG b64), QrCodeStartState,
                                                AutoStartAppUrl, AMRSelected, ReturnUrl
+     Either button gives both the QR state and AutoStartAppUrl (``bankid:///?autostarttoken=...``), so one
+     order can be signed by scanning the QR on another device or by opening the BankID app on this one.
   3. POST /BankID/QrCode  {"qrStartState"}  -> {"qrCodeAsBase64"}   (animated QR, poll every 1 s)
      POST /BankID/Collect {orderRef,...}    -> {"status": pending|complete|failed, "message", "hintCode", "returnUrl"}
   4. GET  returnUrl (/connect/authorize/callback?...) -> 302 https://mitt.malarenergi.se/callback?code=...
@@ -35,6 +37,9 @@ BFF = "https://mitt-bff.malarenergi.se"
 CLIENT_ID = "mymejs"
 REDIRECT_URI = "https://mitt.malarenergi.se/callback"
 SCOPE = "openid profile myme_bff_api myme_profile IdentityServerApi offline_access"
+# BankID's universal link: opens the BankID app on iOS and Android, also from in-app web views where the
+# legacy bankid:/// scheme is often ignored. Without the app installed it shows BankID's own page.
+BANKID_APP = "https://app.bankid.com/"
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
 
 
@@ -51,6 +56,20 @@ def _hidden(page: str, field_id: str) -> str:
         rf'name="{field_id}"[^>]*value="([^"]*)"', page
     )
     return html.unescape(m.group(1)) if m else ""
+
+
+def autostart_token(url: str) -> str:
+    """The autostarttoken of an AutoStartAppUrl (``bankid:///?autostarttoken=...&redirect=null``)."""
+    return parse_qs(urlparse(url).query).get("autostarttoken", [""])[0].strip()
+
+
+def bankid_app_url(token: str, *, legacy: bool = False) -> str:
+    """Link that opens the BankID app on this device for an order's autostart token.
+
+    redirect=null: BankID opens nothing when done; the user switches back to Home Assistant (or the
+    browser) themselves while the login is collected in the background.
+    """
+    return f"{'bankid:///' if legacy else BANKID_APP}?{urlencode({'autostarttoken': token, 'redirect': 'null'})}"
 
 
 @dataclass
@@ -77,6 +96,7 @@ class BankIDLogin:
         self.autostart_url = ""
         self.status = "starting"
         self.message = ""
+        self.hint_code = ""
         self._order_ref = ""
         self._qr_state = ""
         self._return_url = ""
@@ -116,6 +136,11 @@ class BankIDLogin:
             raise MalarenergiError("BankID order was not started")
         self.status = "pending"
 
+    @property
+    def autostart_token(self) -> str:
+        """Token for opening the BankID app on the same device ("" if the order has none)."""
+        return autostart_token(self.autostart_url)
+
     async def refresh_qr(self) -> None:
         if not self._qr_state:
             return
@@ -138,6 +163,7 @@ class BankIDLogin:
         async with self._session.post(f"{IDENTITY}/BankID/Collect", json=body) as r:
             data = await r.json(content_type=None)
         self.message = data.get("message") or ""
+        self.hint_code = data.get("hintCode") or ""
         self.status = data.get("status") or "failed"
         return data.get("returnUrl") if self.status == "complete" else None
 

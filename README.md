@@ -4,7 +4,7 @@ Home Assistant custom integration for [Mälarenergi](https://www.malarenergi.se)
 electricity grid owner and supplier for Västerås and the Mälardalen area. Logs in to
 **Mitt Mälarenergi** with BankID and brings your account into Home Assistant.
 
-> **Status**: 0.6 — BankID login with automatic token refresh, sensors, invoices with line items and PDF download,
+> **Status**: 0.7 — BankID login (on the same phone or by QR code) with automatic token refresh, sensors, invoices with line items and PDF download,
 > HAN port control, a sidebar dashboard and optional [PowerHub](https://github.com/8408323/ha-powerhub-cloud)
 > live data and settings. Tested against a real private customer account.
 
@@ -50,13 +50,22 @@ The sidebar dashboard, shown with **made-up demo data** (no real account): see
 ## Configuration
 
 1. Go to **Settings → Devices & Services → Add Integration**, search for **Mälarenergi**.
-2. Click **Submit**. A new window opens with a **live BankID QR code** (it updates every
-   second, like on Mitt Mälarenergi). Scan it with the BankID app. Allow pop-ups for your
-   HA address if the window doesn't open.
+2. Click **Submit**. A new window opens with both ways to sign in:
+   - **On a phone or tablet** (also in the Home Assistant app): tap **Open BankID on this device**
+     ("Öppna BankID på den här enheten"). The BankID app opens; sign, then switch back to Home Assistant
+     yourself. The login finishes on its own. The same button is also in the HA dialog itself, so it works
+     even if the window didn't open.
+   - **From another device**: scan the **live BankID QR code** (it updates every second, like on Mitt
+     Mälarenergi) with the BankID app. Allow pop-ups for your HA address if the window doesn't open, or
+     use the *Open the login page* link in the dialog.
 3. When the window says "✓ Inloggad" it closes and the integration is added.
 
-The login window stays open for 8 minutes; an unscanned QR is renewed automatically every
+The login window stays open for 8 minutes; a BankID order nobody signed is renewed automatically every
 30 seconds. After that the window says the time ran out — start again from step 1.
+
+Logging in again works the same way: from the reauthentication prompt under **Settings → Devices &
+services**, or from the Mälarenergi panel (**Settings → Log in again with BankID**), which the
+"log in with BankID again" repair links to.
 
 ## Authentication
 
@@ -64,7 +73,7 @@ Mitt Mälarenergi uses an OpenID Connect login (public web client, authorization
 PKCE) with BankID. The integration stores the resulting **refresh token** in the config
 entry and renews the access token in the background, so you normally don't need to scan
 again. If Mälarenergi revokes or expires the session, HA's standard **reauth** flow asks
-you to scan once more.
+you to log in once more.
 
 Your personal number is never entered or stored — BankID handles identification.
 

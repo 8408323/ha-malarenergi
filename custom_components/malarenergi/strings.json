@@ -3,15 +3,15 @@
     "step": {
       "user": {
         "title": "Mälarenergi",
-        "description": "Logga in med BankID. Ett nytt fönster öppnas med en QR-kod som du skannar med BankID-appen."
+        "description": "Logga in med BankID. Ett fönster öppnas där du antingen öppnar BankID-appen på den här enheten eller skannar en QR-kod med BankID på en annan enhet."
       },
       "reauth_confirm": {
         "title": "Logga in igen",
-        "description": "Inloggningen har gått ut. Logga in med BankID igen."
+        "description": "Inloggningen har gått ut. Logga in med BankID igen, med BankID-appen på den här enheten eller genom att skanna en QR-kod."
       },
       "bankid": {
         "title": "BankID",
-        "description": "Skanna QR-koden i fönstret som öppnades. Stäng inte den här dialogen."
+        "description": "**BankID på den här enheten (t.ex. mobilen):** {open_app}**Öppna BankID på den här enheten**{end}. Signera i BankID-appen och gå sedan tillbaka hit, inloggningen blir klar av sig själv.\n\n**BankID på en annan enhet:** skanna QR-koden i fönstret som öppnades. Öppnades inget fönster? {open_page}Öppna inloggningssidan{end}.\n\nStäng inte den här dialogen."
       }
     },
     "error": {

@@ -1,4 +1,8 @@
-"""Config flow: BankID login via an external step that shows a live (animated) QR."""
+"""Config flow: BankID login via an external step.
+
+The step opens the BankID page (button for the BankID app on this device + live animated QR for another
+device); its dialog also links straight to the BankID app, for phones where the window didn't open.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +12,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import MalarenergiClient, MalarenergiError
-from .bankid_view import BankIDDeviceView, BankIDPageView, BankIDStateView, LoginAttempt
+from .bankid_view import BankIDOpenView, BankIDPageView, BankIDStateView, LoginAttempt, bankid_links
 from .const import CONF_TOKENS, DOMAIN
 
 _VIEWS_REGISTERED = "malarenergi_views"
@@ -39,12 +43,16 @@ class MalarenergiConfigFlow(ConfigFlow, domain=DOMAIN):
             if not self.hass.data.get(_VIEWS_REGISTERED):
                 self.hass.http.register_view(BankIDPageView())
                 self.hass.http.register_view(BankIDStateView())
-                self.hass.http.register_view(BankIDDeviceView())
+                self.hass.http.register_view(BankIDOpenView())
                 self.hass.data[_VIEWS_REGISTERED] = True
             self._attempt = LoginAttempt(self.hass, self.flow_id)
             self._attempt.start()
-            return self.async_external_step(step_id="bankid", url=self._attempt.url)
-        return self.async_external_step_done(next_step_id="finish")
+        elif user_input is not None or self._attempt.done:  # the attempt reports {"done": True} when it ends
+            return self.async_external_step_done(next_step_id="finish")
+        # first time, or the frontend fetching the flow again (that re-runs this step) while BankID is pending
+        return self.async_external_step(
+            step_id="bankid", url=self._attempt.url, description_placeholders=bankid_links(self._attempt)
+        )
 
     async def async_step_finish(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         attempt, self._attempt = self._attempt, None
